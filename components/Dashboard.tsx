@@ -22,6 +22,7 @@ import PlayerPropAnalyzer from './PlayerPropAnalyzer'
 import { OddsEvent, LineDiscrepancy, EVBet, PlayerProp, SPORTS, SportKey } from '@/lib/types'
 import { findLineDiscrepancies, findEVBets } from '@/lib/odds-utils'
 import { MOCK_EVENTS, MOCK_PLAYER_PROPS } from '@/lib/mock-data'
+import { fetchOddsClient } from '@/lib/odds-api'
 
 type Tab = 'discrepancies' | 'ev' | 'props' | 'overview'
 
@@ -44,20 +45,19 @@ export default function Dashboard() {
     setError(null)
     
     try {
-      const refreshParam = forceRefresh ? '&refresh=true' : ''
-      const response = await fetch(`/api/odds?sport=${selectedSport}${refreshParam}`)
-      const result = await response.json()
+      const result = await fetchOddsClient(selectedSport, ['h2h', 'spreads', 'totals'], forceRefresh)
       
       if (result.error && !result.data) {
         setError(result.error)
         setEvents(MOCK_EVENTS)
         setIsLive(false)
+        setIsCached(false)
       } else {
         if (result.error) {
           setError(result.error)
         }
-        setEvents(result.data || [])
-        setIsLive(!result.mock)
+        setEvents(result.data || MOCK_EVENTS)
+        setIsLive(!!result.data)
         setIsCached(result.cached || false)
         if (result.remainingRequests !== undefined) {
           setRemainingRequests(result.remainingRequests)

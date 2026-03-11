@@ -114,20 +114,21 @@ hothand-analytics/
 
 ## Deployment
 
-### Vercel (Recommended)
+### GitHub Pages (Automatic)
+
+This repo auto-deploys to GitHub Pages on every push to `main`.
+
+**Setup (one-time):**
+1. Go to your repo → Settings → Secrets and variables → Actions
+2. Add a new secret: `NEXT_PUBLIC_ODDS_API_KEY` = your API key
+3. Go to Settings → Pages → Source: select "GitHub Actions"
+4. Push to `main` and the site will deploy automatically
+
+### Local Development
 
 ```bash
-npm install -g vercel
-vercel
-```
-
-Add your `ODDS_API_KEY` in Vercel's environment variables settings.
-
-### Self-hosted
-
-```bash
-npm run build
-npm start
+npm install
+npm run dev
 ```
 
 ## Disclaimer

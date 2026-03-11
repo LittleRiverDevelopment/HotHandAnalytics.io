@@ -1,6 +1,7 @@
 import { OddsEvent, SportKey } from './types'
 
-const API_KEY = process.env.ODDS_API_KEY
+// Client-side API key (bundled at build time)
+const API_KEY = process.env.NEXT_PUBLIC_ODDS_API_KEY
 const BASE_URL = 'https://api.the-odds-api.com/v4'
 
 // Colorado-legal sportsbooks + Pinnacle for fair odds
@@ -14,7 +15,7 @@ const ALL_BOOKMAKERS = [
   'pinnacle'
 ]
 
-// Server-side cache to reduce API calls
+// Client-side cache to reduce API calls
 interface CacheEntry {
   data: OddsEvent[]
   timestamp: number
@@ -31,13 +32,13 @@ export interface ApiResponse<T> {
   cached?: boolean
 }
 
-export async function fetchOdds(
+export async function fetchOddsClient(
   sport: SportKey,
   markets: string[] = ['h2h', 'spreads', 'totals'],
   forceRefresh: boolean = false
 ): Promise<ApiResponse<OddsEvent[]>> {
   if (!API_KEY) {
-    return { data: null, error: 'ODDS_API_KEY not configured' }
+    return { data: null, error: 'API key not configured' }
   }
 
   const cacheKey = `${sport}-${markets.join(',')}`
@@ -58,12 +59,9 @@ export async function fetchOdds(
   try {
     const marketsParam = markets.join(',')
     const bookmakers = ALL_BOOKMAKERS.join(',')
-    // Use us2 region which includes more books, and bookmakers param filters to what we want
     const url = `${BASE_URL}/sports/${sport}/odds/?apiKey=${API_KEY}&regions=us,us2,eu&markets=${marketsParam}&oddsFormat=american&bookmakers=${bookmakers}`
     
-    const response = await fetch(url, {
-      cache: 'no-store' // We handle caching ourselves
-    })
+    const response = await fetch(url)
 
     if (!response.ok) {
       if (response.status === 401) {
