@@ -100,15 +100,15 @@ export async function fetchOddsClient(
 }
 
 export async function fetchSports(): Promise<ApiResponse<{ key: string; title: string; active: boolean }[]>> {
-  if (!API_KEY) {
-    return { data: null, error: 'ODDS_API_KEY not configured' }
+  const apiKey = getApiKey()
+  
+  if (!apiKey) {
+    return { data: null, error: 'API key not configured' }
   }
 
   try {
-    const url = `${BASE_URL}/sports/?apiKey=${API_KEY}`
-    const response = await fetch(url, {
-      next: { revalidate: 3600 }
-    })
+    const url = `${BASE_URL}/sports/?apiKey=${apiKey}`
+    const response = await fetch(url)
 
     if (!response.ok) {
       return { data: null, error: `API error: ${response.status}` }
@@ -126,17 +126,17 @@ export async function fetchPlayerProps(
   eventId: string,
   markets: string[] = ['player_points', 'player_rebounds', 'player_assists']
 ): Promise<ApiResponse<OddsEvent>> {
-  if (!API_KEY) {
-    return { data: null, error: 'ODDS_API_KEY not configured' }
+  const apiKey = getApiKey()
+  
+  if (!apiKey) {
+    return { data: null, error: 'API key not configured' }
   }
 
   try {
     const marketsParam = markets.join(',')
-    const url = `${BASE_URL}/sports/${sport}/events/${eventId}/odds/?apiKey=${API_KEY}&regions=us&markets=${marketsParam}&oddsFormat=american`
+    const url = `${BASE_URL}/sports/${sport}/events/${eventId}/odds/?apiKey=${apiKey}&regions=us&markets=${marketsParam}&oddsFormat=american`
     
-    const response = await fetch(url, {
-      next: { revalidate: 60 }
-    })
+    const response = await fetch(url)
 
     if (!response.ok) {
       return { data: null, error: `API error: ${response.status}` }
