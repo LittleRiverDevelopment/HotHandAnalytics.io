@@ -2,14 +2,12 @@ import { OddsEvent, SportKey } from './types'
 
 const BASE_URL = 'https://api.the-odds-api.com/v4'
 const API_KEY_STORAGE_KEY = 'hothand_odds_api_key'
+const CACHE_STORAGE_KEY = 'hothand_odds_cache'
 
 function getApiKey(): string | null {
-  // Check localStorage first (user-provided key)
-  if (typeof window !== 'undefined') {
-    const storedKey = localStorage.getItem(API_KEY_STORAGE_KEY)
-    if (storedKey) return storedKey
-  }
-  // Fall back to build-time env variable
+  if (typeof window === 'undefined') return null
+  const storedKey = localStorage.getItem(API_KEY_STORAGE_KEY)
+  if (storedKey) return storedKey
   return process.env.NEXT_PUBLIC_ODDS_API_KEY || null
 }
 
@@ -24,15 +22,52 @@ const ALL_BOOKMAKERS = [
   'pinnacle'
 ]
 
-// Client-side cache to reduce API calls
+// Persistent cache in localStorage
 interface CacheEntry {
   data: OddsEvent[]
   timestamp: number
   remainingRequests?: number
 }
 
-const cache: Map<string, CacheEntry> = new Map()
-const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
+interface CacheStore {
+  [key: string]: CacheEntry
+}
+
+function getCache(): CacheStore {
+  if (typeof window === 'undefined') return {}
+  try {
+    const stored = localStorage.getItem(CACHE_STORAGE_KEY)
+    return stored ? JSON.parse(stored) : {}
+  } catch {
+    return {}
+  }
+}
+
+function setCache(key: string, entry: CacheEntry): void {
+  if (typeof window === 'undefined') return
+  try {
+    const cache = getCache()
+    cache[key] = entry
+    localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(cache))
+  } catch {
+    // localStorage full or unavailable
+  }
+}
+
+function getCacheEntry(key: string): CacheEntry | null {
+  const cache = getCache()
+  return cache[key] || null
+}
+
+export function getCacheAge(sport: string): number | null {
+  const entry = getCacheEntry(`${sport}-h2h,spreads,totals`)
+  if (!entry) return null
+  return Date.now() - entry.timestamp
+}
+
+export function hasCachedData(sport: string): boolean {
+  return !!getCacheEntry(`${sport}-h2h,spreads,totals`)
+}
 
 export interface ApiResponse<T> {
   data: T | null
@@ -46,18 +81,12 @@ export async function fetchOddsClient(
   markets: string[] = ['h2h', 'spreads', 'totals'],
   forceRefresh: boolean = false
 ): Promise<ApiResponse<OddsEvent[]>> {
-  const apiKey = getApiKey()
-  
-  if (!apiKey) {
-    return { data: null, error: 'API key not configured. Add your key in Settings.' }
-  }
-
   const cacheKey = `${sport}-${markets.join(',')}`
   
   // Check cache first (unless force refresh)
   if (!forceRefresh) {
-    const cached = cache.get(cacheKey)
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    const cached = getCacheEntry(cacheKey)
+    if (cached) {
       return { 
         data: cached.data, 
         error: null, 
@@ -65,6 +94,12 @@ export async function fetchOddsClient(
         cached: true 
       }
     }
+  }
+
+  const apiKey = getApiKey()
+  
+  if (!apiKey) {
+    return { data: null, error: 'API key not configured. Add your key in Settings.' }
   }
 
   try {
@@ -90,8 +125,8 @@ export async function fetchOddsClient(
     const remainingRequests = parseInt(response.headers.get('x-requests-remaining') || '0')
     const data: OddsEvent[] = await response.json()
 
-    // Update cache
-    cache.set(cacheKey, { data, timestamp: Date.now(), remainingRequests })
+    // Update persistent cache
+    setCache(cacheKey, { data, timestamp: Date.now(), remainingRequests })
 
     return { data, error: null, remainingRequests, cached: false }
   } catch (error) {

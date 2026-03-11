@@ -23,10 +23,23 @@ import PlayerPropAnalyzer from './PlayerPropAnalyzer'
 import { OddsEvent, LineDiscrepancy, EVBet, PlayerProp, SPORTS, SportKey } from '@/lib/types'
 import { findLineDiscrepancies, findEVBets } from '@/lib/odds-utils'
 import { MOCK_EVENTS, MOCK_PLAYER_PROPS } from '@/lib/mock-data'
-import { fetchOddsClient } from '@/lib/odds-api'
+import { fetchOddsClient, getCacheAge, hasCachedData } from '@/lib/odds-api'
 import Settings from './Settings'
 
 type Tab = 'discrepancies' | 'ev' | 'props' | 'overview'
+
+function formatCacheAge(ms: number): string {
+  const minutes = Math.floor(ms / 60000)
+  const hours = Math.floor(minutes / 60)
+  
+  if (hours > 0) {
+    return `${hours}h ${minutes % 60}m ago`
+  }
+  if (minutes > 0) {
+    return `${minutes}m ago`
+  }
+  return 'Just now'
+}
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<Tab>('overview')
@@ -42,6 +55,7 @@ export default function Dashboard() {
   const [remainingRequests, setRemainingRequests] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
+  const [cacheAge, setCacheAge] = useState<number | null>(null)
   
   const loadData = useCallback(async (forceRefresh: boolean = false) => {
     setIsLoading(true)
@@ -55,6 +69,7 @@ export default function Dashboard() {
         setEvents(MOCK_EVENTS)
         setIsLive(false)
         setIsCached(false)
+        setCacheAge(null)
       } else {
         if (result.error) {
           setError(result.error)
@@ -65,6 +80,9 @@ export default function Dashboard() {
         if (result.remainingRequests !== undefined) {
           setRemainingRequests(result.remainingRequests)
         }
+        // Update cache age
+        const age = getCacheAge(selectedSport)
+        setCacheAge(age)
       }
       
       const eventData = result.data || MOCK_EVENTS
@@ -82,9 +100,19 @@ export default function Dashboard() {
     }
   }, [selectedSport])
   
+  // Load cached data on mount (no API call unless user clicks refresh)
   useEffect(() => {
-    loadData()
-  }, [loadData])
+    if (hasCachedData(selectedSport)) {
+      loadData(false) // Load from cache
+    } else {
+      // No cache - show mock data, user must click refresh
+      setEvents(MOCK_EVENTS)
+      setDiscrepancies(findLineDiscrepancies(MOCK_EVENTS))
+      setEvBets(findEVBets(MOCK_EVENTS))
+      setIsLoading(false)
+      setIsLive(false)
+    }
+  }, [selectedSport, loadData])
   
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Activity },
@@ -145,7 +173,9 @@ export default function Dashboard() {
                 {isLive ? (
                   <div className="flex items-center gap-1 text-green-400">
                     <Wifi className="w-3 h-3" />
-                    <span className="hidden sm:inline">{isCached ? 'Cached' : 'Live'}</span>
+                    <span className="hidden sm:inline">
+                      {cacheAge !== null ? formatCacheAge(cacheAge) : 'Live'}
+                    </span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-1 text-yellow-400">
@@ -153,9 +183,9 @@ export default function Dashboard() {
                     <span className="hidden sm:inline">Demo</span>
                   </div>
                 )}
-                {remainingRequests !== null && isLive && (
+                {remainingRequests !== null && (
                   <span className="hidden sm:inline text-slate-500">
-                    ({remainingRequests} API calls left)
+                    ({remainingRequests} left)
                   </span>
                 )}
               </div>
@@ -163,7 +193,7 @@ export default function Dashboard() {
               <button
                 onClick={() => loadData(true)}
                 disabled={isLoading}
-                title="Force refresh from API"
+                title="Refresh data (uses 1 API call)"
                 className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 transition-colors disabled:opacity-50"
               >
                 <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
