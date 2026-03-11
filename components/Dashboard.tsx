@@ -41,6 +41,44 @@ function formatCacheAge(ms: number): string {
   return 'Just now'
 }
 
+interface DataStatusBarProps {
+  isLive: boolean
+  cacheAge: number | null
+  isLoading: boolean
+  onRefresh: () => void
+  sport: string
+}
+
+function DataStatusBar({ isLive, cacheAge, isLoading, onRefresh, sport }: DataStatusBarProps) {
+  return (
+    <div className="flex items-center justify-between p-3 mb-4 bg-slate-800/30 rounded-lg border border-slate-700/50">
+      <div className="flex items-center gap-3 text-sm">
+        {isLive ? (
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+            <span className="text-slate-300">
+              {sport} data {cacheAge !== null ? `• ${formatCacheAge(cacheAge)}` : ''}
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-yellow-400 rounded-full" />
+            <span className="text-slate-400">Demo data</span>
+          </div>
+        )}
+      </div>
+      <button
+        onClick={onRefresh}
+        disabled={isLoading}
+        className="flex items-center gap-2 px-3 py-1.5 text-sm bg-slate-700/50 hover:bg-slate-600/50 rounded-lg transition-colors disabled:opacity-50"
+      >
+        <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+        <span className="hidden sm:inline">Refresh</span>
+      </button>
+    </div>
+  )
+}
+
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [isLoading, setIsLoading] = useState(true)
@@ -170,34 +208,12 @@ export default function Dashboard() {
               </select>
               
               <div className="flex items-center gap-2 text-xs">
-                {isLive ? (
-                  <div className="flex items-center gap-1 text-green-400">
-                    <Wifi className="w-3 h-3" />
-                    <span className="hidden sm:inline">
-                      {cacheAge !== null ? formatCacheAge(cacheAge) : 'Live'}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1 text-yellow-400">
-                    <WifiOff className="w-3 h-3" />
-                    <span className="hidden sm:inline">Demo</span>
-                  </div>
-                )}
                 {remainingRequests !== null && (
                   <span className="hidden sm:inline text-slate-500">
-                    ({remainingRequests} left)
+                    {remainingRequests} API calls left
                   </span>
                 )}
               </div>
-              
-              <button
-                onClick={() => loadData(true)}
-                disabled={isLoading}
-                title="Refresh data (uses 1 API call)"
-                className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 transition-colors disabled:opacity-50"
-              >
-                <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-              </button>
               
               <button
                 onClick={() => setShowSettings(true)}
@@ -249,6 +265,13 @@ export default function Dashboard() {
               exit={{ opacity: 0, y: -20 }}
               className="space-y-6"
             >
+              <DataStatusBar
+                isLive={isLive}
+                cacheAge={cacheAge}
+                isLoading={isLoading}
+                onRefresh={() => loadData(true)}
+                sport={SPORTS.find(s => s.key === selectedSport)?.title || selectedSport}
+              />
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="card p-4 card-hover">
                   <div className="flex items-center justify-between">
@@ -404,6 +427,13 @@ export default function Dashboard() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
+              <DataStatusBar
+                isLive={isLive}
+                cacheAge={cacheAge}
+                isLoading={isLoading}
+                onRefresh={() => loadData(true)}
+                sport={SPORTS.find(s => s.key === selectedSport)?.title || selectedSport}
+              />
               <LineDiscrepancyTable discrepancies={discrepancies} />
             </motion.div>
           )}
@@ -415,6 +445,13 @@ export default function Dashboard() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
+              <DataStatusBar
+                isLive={isLive}
+                cacheAge={cacheAge}
+                isLoading={isLoading}
+                onRefresh={() => loadData(true)}
+                sport={SPORTS.find(s => s.key === selectedSport)?.title || selectedSport}
+              />
               <EVCalculator evBets={evBets} />
             </motion.div>
           )}
@@ -426,6 +463,12 @@ export default function Dashboard() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
+              <div className="flex items-center justify-between p-3 mb-4 bg-slate-800/30 rounded-lg border border-slate-700/50">
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="w-2 h-2 bg-purple-400 rounded-full" />
+                  <span className="text-slate-400">Sample data • No API calls used</span>
+                </div>
+              </div>
               <PlayerPropAnalyzer playerProps={playerProps} />
             </motion.div>
           )}
