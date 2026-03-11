@@ -1,0 +1,215 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --sharp-bg: #0a0b0f;
+  --sharp-card: #12141a;
+  --sharp-card-hover: #181b22;
+  --sharp-border: #1e2129;
+  --sharp-green: #22c55e;
+  --sharp-green-dim: #16a34a;
+  --sharp-red: #ef4444;
+  --sharp-red-dim: #dc2626;
+  --sharp-blue: #3b82f6;
+  --sharp-cyan: #06b6d4;
+  --sharp-yellow: #eab308;
+  --sharp-orange: #f97316;
+  --sharp-purple: #a855f7;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--sharp-bg);
+  color: #f1f5f9;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--sharp-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--sharp-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--sharp-green);
+}
+
+.grid-bg {
+  background-image: 
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(34, 197, 94, 0.08), transparent),
+    linear-gradient(rgba(30, 33, 41, 0.2) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30, 33, 41, 0.2) 1px, transparent 1px);
+  background-size: 100% 100%, 40px 40px, 40px 40px;
+}
+
+.card {
+  background: linear-gradient(
+    145deg,
+    rgba(18, 20, 26, 0.95) 0%,
+    rgba(18, 20, 26, 0.85) 100%
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--sharp-border);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.card-hover:hover {
+  border-color: rgba(34, 197, 94, 0.3);
+  box-shadow: 0 4px 20px rgba(34, 197, 94, 0.1);
+}
+
+.stat-bar {
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.15),
+    transparent
+  );
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 200%; }
+}
+
+.pulse-dot {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.9); }
+}
+
+.odds-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+}
+
+.table-header {
+  background: linear-gradient(180deg, rgba(30, 33, 41, 0.8) 0%, rgba(18, 20, 26, 0.6) 100%);
+}
+
+.table-row {
+  transition: background-color 0.15s ease;
+}
+
+.table-row:hover {
+  background-color: rgba(34, 197, 94, 0.05);
+}
+
+.nav-item {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.nav-item::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--sharp-green);
+  transform: scaleX(0);
+  transition: transform 0.2s ease;
+}
+
+.nav-item.active::after,
+.nav-item:hover::after {
+  transform: scaleX(1);
+}
+
+.nav-item.active {
+  color: var(--sharp-green);
+}
+
+.edge-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.edge-tag-high {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+}
+
+.edge-tag-medium {
+  background: rgba(234, 179, 8, 0.2);
+  color: #facc15;
+}
+
+.edge-tag-low {
+  background: rgba(249, 115, 22, 0.2);
+  color: #fb923c;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+::selection {
+  background: rgba(34, 197, 94, 0.3);
+  color: #ffffff;
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', monospace;
+}
