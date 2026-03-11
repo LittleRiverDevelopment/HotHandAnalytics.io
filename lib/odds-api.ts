@@ -1,8 +1,17 @@
 import { OddsEvent, SportKey } from './types'
 
-// Client-side API key (bundled at build time)
-const API_KEY = process.env.NEXT_PUBLIC_ODDS_API_KEY
 const BASE_URL = 'https://api.the-odds-api.com/v4'
+const API_KEY_STORAGE_KEY = 'hothand_odds_api_key'
+
+function getApiKey(): string | null {
+  // Check localStorage first (user-provided key)
+  if (typeof window !== 'undefined') {
+    const storedKey = localStorage.getItem(API_KEY_STORAGE_KEY)
+    if (storedKey) return storedKey
+  }
+  // Fall back to build-time env variable
+  return process.env.NEXT_PUBLIC_ODDS_API_KEY || null
+}
 
 // Colorado-legal sportsbooks + Pinnacle for fair odds
 const ALL_BOOKMAKERS = [
@@ -37,8 +46,10 @@ export async function fetchOddsClient(
   markets: string[] = ['h2h', 'spreads', 'totals'],
   forceRefresh: boolean = false
 ): Promise<ApiResponse<OddsEvent[]>> {
-  if (!API_KEY) {
-    return { data: null, error: 'API key not configured' }
+  const apiKey = getApiKey()
+  
+  if (!apiKey) {
+    return { data: null, error: 'API key not configured. Add your key in Settings.' }
   }
 
   const cacheKey = `${sport}-${markets.join(',')}`
@@ -59,7 +70,7 @@ export async function fetchOddsClient(
   try {
     const marketsParam = markets.join(',')
     const bookmakers = ALL_BOOKMAKERS.join(',')
-    const url = `${BASE_URL}/sports/${sport}/odds/?apiKey=${API_KEY}&regions=us,us2,eu&markets=${marketsParam}&oddsFormat=american&bookmakers=${bookmakers}`
+    const url = `${BASE_URL}/sports/${sport}/odds/?apiKey=${apiKey}&regions=us,us2,eu&markets=${marketsParam}&oddsFormat=american&bookmakers=${bookmakers}`
     
     const response = await fetch(url)
 

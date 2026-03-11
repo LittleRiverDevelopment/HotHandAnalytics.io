@@ -14,7 +14,8 @@ import {
   BarChart3,
   AlertCircle,
   Wifi,
-  WifiOff
+  WifiOff,
+  Settings as SettingsIcon
 } from 'lucide-react'
 import LineDiscrepancyTable from './LineDiscrepancy'
 import EVCalculator from './EVCalculator'
@@ -23,6 +24,7 @@ import { OddsEvent, LineDiscrepancy, EVBet, PlayerProp, SPORTS, SportKey } from 
 import { findLineDiscrepancies, findEVBets } from '@/lib/odds-utils'
 import { MOCK_EVENTS, MOCK_PLAYER_PROPS } from '@/lib/mock-data'
 import { fetchOddsClient } from '@/lib/odds-api'
+import Settings from './Settings'
 
 type Tab = 'discrepancies' | 'ev' | 'props' | 'overview'
 
@@ -39,6 +41,7 @@ export default function Dashboard() {
   const [isCached, setIsCached] = useState(false)
   const [remainingRequests, setRemainingRequests] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [showSettings, setShowSettings] = useState(false)
   
   const loadData = useCallback(async (forceRefresh: boolean = false) => {
     setIsLoading(true)
@@ -164,6 +167,14 @@ export default function Dashboard() {
                 className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 transition-colors disabled:opacity-50"
               >
                 <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+              </button>
+              
+              <button
+                onClick={() => setShowSettings(true)}
+                title="Settings"
+                className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 transition-colors"
+              >
+                <SettingsIcon className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -406,6 +417,12 @@ export default function Dashboard() {
           </div>
         </div>
       </footer>
+      
+      <Settings 
+        isOpen={showSettings} 
+        onClose={() => setShowSettings(false)}
+        onApiKeyChange={() => loadData(true)}
+      />
     </div>
   )
 }
