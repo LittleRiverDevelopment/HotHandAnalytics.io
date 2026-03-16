@@ -69,9 +69,9 @@ export default function Settings({ isOpen, onClose, onApiKeyChange }: SettingsPr
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md"
+            className="fixed inset-4 z-50 flex items-center justify-center pointer-events-none"
           >
-            <div className="card p-6 m-4">
+            <div className="card p-6 w-full max-w-md pointer-events-auto">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-green-500/10 rounded-lg">
