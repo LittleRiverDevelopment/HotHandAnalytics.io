@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { OddsEvent } from '@/lib/types'
 import { impliedProbability, americanToDecimal } from '@/lib/odds-utils'
 import { Grid3X3, Info } from 'lucide-react'
@@ -9,100 +9,125 @@ interface EdgeHeatmapProps {
   events: OddsEvent[]
 }
 
-const DISPLAY_BOOKS = [
-  { key: 'pinnacle', name: 'Pinnacle', isBaseline: true },
-  { key: 'draftkings', name: 'DraftKings', isBaseline: false },
-  { key: 'fanduel', name: 'FanDuel', isBaseline: false },
-  { key: 'betmgm', name: 'BetMGM', isBaseline: false },
-  { key: 'caesars', name: 'Caesars', isBaseline: false },
-  { key: 'pointsbetus', name: 'PointsBet', isBaseline: false },
-  { key: 'betrivers', name: 'BetRivers', isBaseline: false },
-]
+const BOOK_NAMES: { [key: string]: string } = {
+  pinnacle: 'Pinnacle',
+  draftkings: 'DraftKings',
+  fanduel: 'FanDuel',
+  betmgm: 'BetMGM',
+  caesars: 'Caesars',
+  pointsbetus: 'PointsBet',
+  betrivers: 'BetRivers',
+}
 
-type MarketType = 'h2h' | 'spreads' | 'totals'
+interface BetTypeData {
+  betType: string
+  market: string
+  point?: number
+  pinnacleOdds: number | null
+  pinnacleNoVigProb: number | null
+  bookOdds: { bookKey: string; bookName: string; odds: number; edge: number }[]
+  bestOdds: number | null
+}
 
-function calculateEdge(bookOdds: number, pinnacleOdds: number, pinnacleOpposingOdds: number): number {
-  const bookProb = impliedProbability(bookOdds)
-  const pinnProb = impliedProbability(pinnacleOdds)
-  const pinnOppProb = impliedProbability(pinnacleOpposingOdds)
-  const fairProb = pinnProb / (pinnProb + pinnOppProb)
-  
+function calculateNoVigProb(odds1: number, odds2: number): [number, number] {
+  const imp1 = impliedProbability(odds1)
+  const imp2 = impliedProbability(odds2)
+  const total = imp1 + imp2
+  return [imp1 / total, imp2 / total]
+}
+
+function calculateEdge(bookOdds: number, fairProb: number): number {
   const bookDecimal = americanToDecimal(bookOdds)
   const ev = (fairProb * (bookDecimal - 1)) - (1 - fairProb)
   return ev * 100
 }
 
-function getEdgeColor(edge: number): string {
-  if (edge >= 5) return 'bg-green-500'
-  if (edge >= 3) return 'bg-green-600'
-  if (edge >= 1) return 'bg-green-700'
-  if (edge >= 0) return 'bg-green-900/50'
-  if (edge >= -2) return 'bg-slate-700'
-  if (edge >= -5) return 'bg-red-900/50'
-  return 'bg-red-800/50'
-}
-
-function getEdgeTextColor(edge: number): string {
-  if (edge >= 3) return 'text-white'
-  if (edge >= 0) return 'text-green-300'
-  return 'text-slate-400'
-}
-
 export default function EdgeHeatmap({ events }: EdgeHeatmapProps) {
-  const [selectedMarket, setSelectedMarket] = useState<MarketType>('h2h')
-  const [selectedSide, setSelectedSide] = useState<'home' | 'away'>('home')
+  const [selectedEventId, setSelectedEventId] = useState<string>(events[0]?.id || '')
 
-  const getHeatmapData = () => {
-    return events.map(event => {
-      const pinnacle = event.bookmakers.find(b => b.key === 'pinnacle')
-      const pinnacleMarket = pinnacle?.markets.find(m => m.key === selectedMarket)
+  const selectedEvent = events.find(e => e.id === selectedEventId)
+
+  const betTypes = useMemo(() => {
+    if (!selectedEvent) return []
+
+    const pinnacle = selectedEvent.bookmakers.find(b => b.key === 'pinnacle')
+    const otherBooks = selectedEvent.bookmakers.filter(b => b.key !== 'pinnacle')
+    
+    const results: BetTypeData[] = []
+    const markets = ['h2h', 'spreads', 'totals']
+    
+    markets.forEach(marketKey => {
+      const pinnacleMarket = pinnacle?.markets.find(m => m.key === marketKey)
+      if (!pinnacleMarket || pinnacleMarket.outcomes.length < 2) return
       
-      const teamName = selectedSide === 'home' ? event.home_team : event.away_team
-      const opposingTeam = selectedSide === 'home' ? event.away_team : event.home_team
-      
-      const pinnacleOutcome = pinnacleMarket?.outcomes.find(o => o.name === teamName)
-      const pinnacleOpposing = pinnacleMarket?.outcomes.find(o => o.name === opposingTeam || o.name === 'Over' || o.name === 'Under')
-      
-      const bookData: { [key: string]: { edge: number | null; odds: number | null } } = {}
-      
-      DISPLAY_BOOKS.forEach(book => {
-        const bookmaker = event.bookmakers.find(b => b.key === book.key)
-        const market = bookmaker?.markets.find(m => m.key === selectedMarket)
-        const outcome = market?.outcomes.find(o => o.name === teamName)
+      pinnacleMarket.outcomes.forEach((outcome, idx) => {
+        const opposingIdx = idx === 0 ? 1 : 0
+        const opposingOutcome = pinnacleMarket.outcomes[opposingIdx]
         
-        if (book.isBaseline) {
-          // Pinnacle shows actual odds as baseline
-          bookData[book.key] = { 
-            edge: null, 
-            odds: pinnacleOutcome?.price || null 
-          }
-        } else if (outcome && pinnacleOutcome && pinnacleOpposing) {
-          bookData[book.key] = { 
-            edge: calculateEdge(outcome.price, pinnacleOutcome.price, pinnacleOpposing.price),
-            odds: outcome.price
-          }
-        } else {
-          bookData[book.key] = { edge: null, odds: null }
-        }
-      })
-      
-      const gameDate = new Date(event.commence_time)
-      const dateStr = gameDate.toLocaleDateString([], { month: 'short', day: 'numeric' })
-      const timeStr = gameDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-      
-      return {
-        id: event.id,
-        homeTeam: event.home_team,
-        awayTeam: event.away_team,
-        displayName: `${event.away_team.split(' ').pop()} @ ${event.home_team.split(' ').pop()}`,
-        gameTime: `${dateStr}, ${timeStr}`,
-        bookData
-      }
-    })
-  }
+        const [fairProb] = idx === 0 
+          ? calculateNoVigProb(outcome.price, opposingOutcome.price)
+          : calculateNoVigProb(opposingOutcome.price, outcome.price).reverse()
+        
+        const actualFairProb = idx === 0
+          ? calculateNoVigProb(outcome.price, opposingOutcome.price)[0]
+          : calculateNoVigProb(outcome.price, opposingOutcome.price)[1]
 
-  const heatmapData = getHeatmapData()
-  const hasData = heatmapData.some(row => Object.values(row.bookData).some(d => d.odds !== null))
+        let betTypeLabel = outcome.name
+        if (marketKey === 'spreads' && outcome.point !== undefined) {
+          betTypeLabel = `${outcome.name} ${outcome.point > 0 ? '+' : ''}${outcome.point}`
+        } else if (marketKey === 'totals' && outcome.point !== undefined) {
+          betTypeLabel = `${outcome.name} ${outcome.point}`
+        }
+
+        const marketLabel = marketKey === 'h2h' ? 'ML' : marketKey === 'spreads' ? 'Spread' : 'Total'
+
+        const bookOdds: { bookKey: string; bookName: string; odds: number; edge: number }[] = []
+        
+        otherBooks.forEach(bookmaker => {
+          const market = bookmaker.markets.find(m => m.key === marketKey)
+          if (!market) return
+          
+          let bookOutcome = market.outcomes.find(o => o.name === outcome.name)
+          
+          // For spreads/totals, match by point as well
+          if ((marketKey === 'spreads' || marketKey === 'totals') && outcome.point !== undefined) {
+            bookOutcome = market.outcomes.find(o => 
+              o.name === outcome.name && Math.abs((o.point || 0) - outcome.point!) < 0.1
+            )
+          }
+          
+          if (bookOutcome) {
+            const edge = calculateEdge(bookOutcome.price, actualFairProb)
+            bookOdds.push({
+              bookKey: bookmaker.key,
+              bookName: BOOK_NAMES[bookmaker.key] || bookmaker.title,
+              odds: bookOutcome.price,
+              edge
+            })
+          }
+        })
+
+        // Sort by edge (highest first = best odds)
+        bookOdds.sort((a, b) => b.edge - a.edge)
+        
+        const bestOdds = bookOdds.length > 0 ? bookOdds[0].odds : null
+
+        results.push({
+          betType: betTypeLabel,
+          market: marketLabel,
+          point: outcome.point,
+          pinnacleOdds: outcome.price,
+          pinnacleNoVigProb: actualFairProb,
+          bookOdds,
+          bestOdds
+        })
+      })
+    })
+
+    return results
+  }, [selectedEvent])
+
+  const formatOdds = (odds: number) => odds > 0 ? `+${odds}` : `${odds}`
 
   return (
     <div className="card">
@@ -113,89 +138,97 @@ export default function EdgeHeatmap({ events }: EdgeHeatmapProps) {
             <h2 className="font-semibold">Edge Heatmap</h2>
           </div>
           
-          <div className="flex items-center gap-2 flex-wrap">
-            <select
-              value={selectedMarket}
-              onChange={(e) => setSelectedMarket(e.target.value as MarketType)}
-              className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm"
-            >
-              <option value="h2h">Moneyline</option>
-              <option value="spreads">Spread</option>
-              <option value="totals">Total</option>
-            </select>
-            
-            <select
-              value={selectedSide}
-              onChange={(e) => setSelectedSide(e.target.value as 'home' | 'away')}
-              className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm"
-            >
-              <option value="home">Home</option>
-              <option value="away">Away</option>
-            </select>
-          </div>
+          <select
+            value={selectedEventId}
+            onChange={(e) => setSelectedEventId(e.target.value)}
+            className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm"
+          >
+            {events.map(event => {
+              const gameDate = new Date(event.commence_time)
+              const dateStr = gameDate.toLocaleDateString([], { month: 'short', day: 'numeric' })
+              const timeStr = gameDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+              return (
+                <option key={event.id} value={event.id}>
+                  {event.away_team.split(' ').pop()} @ {event.home_team.split(' ').pop()} • {dateStr}, {timeStr}
+                </option>
+              )
+            })}
+          </select>
         </div>
       </div>
 
-      {!hasData ? (
+      {!selectedEvent || betTypes.length === 0 ? (
         <div className="p-8 text-center text-slate-500">
-          <p>No edge data available. Refresh to load odds.</p>
+          <p>No odds data available. Refresh to load odds.</p>
         </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-800">
-                <th className="text-left p-3 font-medium text-slate-400">Game</th>
-                {DISPLAY_BOOKS.map(book => (
-                  <th key={book.key} className={`p-3 font-medium text-center min-w-[80px] text-xs ${book.isBaseline ? 'text-cyan-400 bg-cyan-500/5' : 'text-slate-400'}`}>
-                    <div>{book.name}</div>
-                    {book.isBaseline && <div className="text-[10px] opacity-70">Fair Odds</div>}
-                  </th>
-                ))}
+                <th className="text-left p-3 font-medium text-slate-400 sticky left-0 bg-[#0f1117] z-10">Bet Type</th>
+                <th className="p-3 font-medium text-cyan-400 text-center min-w-[90px] bg-cyan-500/5">
+                  <div>Pinnacle</div>
+                  <div className="text-[10px] opacity-70 font-normal">Fair Odds</div>
+                </th>
+                <th colSpan={10} className="p-3 font-medium text-slate-400 text-left text-xs">
+                  Books (sorted by edge, best → worst)
+                </th>
               </tr>
             </thead>
             <tbody>
-              {heatmapData.map(row => (
-                <tr key={row.id} className="border-b border-slate-800/50">
-                  <td className="p-3 whitespace-nowrap">
-                    <div className="font-medium text-slate-300">{row.displayName}</div>
-                    <div className="text-xs text-slate-500">{row.gameTime}</div>
+              {betTypes.map((bet, idx) => (
+                <tr key={idx} className="border-b border-slate-800/50">
+                  <td className="p-3 whitespace-nowrap sticky left-0 bg-[#0f1117] z-10">
+                    <div className="font-medium text-slate-300">{bet.betType}</div>
+                    <div className="text-xs text-slate-500">{bet.market}</div>
                   </td>
-                  {DISPLAY_BOOKS.map(book => {
-                    const data = row.bookData[book.key]
-                    const isBaseline = book.isBaseline
+                  
+                  {/* Pinnacle Fair Odds */}
+                  <td className="p-1.5 bg-cyan-500/5">
+                    {bet.pinnacleOdds !== null ? (
+                      <div className="bg-cyan-900/30 border border-cyan-700/30 rounded p-2 text-center font-mono text-xs text-cyan-300">
+                        {formatOdds(bet.pinnacleOdds)}
+                      </div>
+                    ) : (
+                      <div className="bg-slate-800/30 rounded p-2 text-center text-slate-600 text-xs">—</div>
+                    )}
+                  </td>
+                  
+                  {/* Book odds sorted by edge */}
+                  {bet.bookOdds.map((book, bookIdx) => {
+                    const isBest = book.odds === bet.bestOdds
+                    const isPositiveEdge = book.edge > 0
                     
                     return (
-                      <td key={book.key} className={`p-1.5 ${isBaseline ? 'bg-cyan-500/5' : ''}`}>
-                        {isBaseline ? (
-                          // Pinnacle baseline - show actual odds
-                          data.odds !== null ? (
-                            <div className="bg-cyan-900/30 border border-cyan-700/30 rounded p-2 text-center font-mono text-xs text-cyan-300">
-                              {data.odds > 0 ? '+' : ''}{data.odds}
-                            </div>
-                          ) : (
-                            <div className="bg-slate-800/30 rounded p-2 text-center text-slate-600 text-xs">
-                              —
-                            </div>
-                          )
-                        ) : (
-                          // Other books - show edge %
-                          data.edge !== null ? (
-                            <div
-                              className={`${getEdgeColor(data.edge)} ${getEdgeTextColor(data.edge)} rounded p-2 text-center font-mono text-xs`}
-                              title={`Odds: ${data.odds !== null ? (data.odds > 0 ? '+' : '') + data.odds : 'N/A'}`}
-                            >
-                              {data.edge >= 0 ? '+' : ''}{data.edge.toFixed(1)}%
-                            </div>
-                          ) : (
-                            <div className="bg-slate-800/30 rounded p-2 text-center text-slate-600 text-xs">
-                              —
-                            </div>
-                          )
-                        )}
+                      <td key={book.bookKey} className="p-1.5">
+                        <div
+                          className={`rounded p-2 text-center text-xs ${
+                            isBest 
+                              ? 'bg-green-600/30 border border-green-500/40' 
+                              : isPositiveEdge
+                                ? 'bg-green-900/20 border border-green-800/30'
+                                : 'bg-slate-800/50 border border-slate-700/30'
+                          }`}
+                        >
+                          <div className={`font-mono ${isBest ? 'text-green-300 font-semibold' : 'text-slate-300'}`}>
+                            {formatOdds(book.odds)}
+                          </div>
+                          <div className={`text-[10px] mt-0.5 ${book.edge >= 0 ? 'text-green-400' : 'text-slate-500'}`}>
+                            {book.edge >= 0 ? '+' : ''}{book.edge.toFixed(1)}%
+                          </div>
+                          <div className="text-[10px] text-slate-500 truncate">{book.bookName}</div>
+                        </div>
                       </td>
                     )
                   })}
+                  
+                  {/* Fill empty cells if fewer than 6 books */}
+                  {Array.from({ length: Math.max(0, 6 - bet.bookOdds.length) }).map((_, i) => (
+                    <td key={`empty-${i}`} className="p-1.5">
+                      <div className="bg-slate-800/20 rounded p-2 text-center text-slate-700 text-xs">—</div>
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>
@@ -205,7 +238,7 @@ export default function EdgeHeatmap({ events }: EdgeHeatmapProps) {
 
       <div className="p-3 border-t border-slate-800 flex items-center gap-2 text-xs text-slate-500">
         <Info className="w-3.5 h-3.5" />
-        <span>Pinnacle shows fair odds (baseline). Other books show edge % vs Pinnacle. Green = +EV.</span>
+        <span>Pinnacle = fair odds baseline. Books sorted left→right by edge. Green highlight = best available odds.</span>
       </div>
     </div>
   )
