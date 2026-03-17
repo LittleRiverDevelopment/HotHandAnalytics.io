@@ -177,9 +177,11 @@ export default function LineMovement({ events }: LineMovementProps) {
       },
       tooltip: {
         callbacks: {
-          label: (context: { dataset: { label: string }; parsed: { y: number } }) => {
+          label: (context: { dataset: { label?: string }; parsed: { y: number | null } }) => {
             const value = context.parsed.y
-            return `${context.dataset.label}: ${value > 0 ? '+' : ''}${value}`
+            if (value === null) return ''
+            const label = context.dataset.label || ''
+            return `${label}: ${value > 0 ? '+' : ''}${value}`
           }
         }
       }
@@ -195,7 +197,7 @@ export default function LineMovement({ events }: LineMovementProps) {
           color: '#64748b',
           callback: (value: number | string) => {
             const num = Number(value)
-            return num > 0 ? `+${num}` : num
+            return num > 0 ? `+${num}` : String(num)
           }
         }
       }
