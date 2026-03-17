@@ -20,13 +20,15 @@ import {
 import LineDiscrepancyTable from './LineDiscrepancy'
 import EVCalculator from './EVCalculator'
 import PlayerPropAnalyzer from './PlayerPropAnalyzer'
+import EdgeHeatmap from './EdgeHeatmap'
+import LineMovement, { recordOddsSnapshot } from './LineMovement'
 import { OddsEvent, LineDiscrepancy, EVBet, PlayerProp, SPORTS, SportKey } from '@/lib/types'
 import { findLineDiscrepancies, findEVBets } from '@/lib/odds-utils'
 import { MOCK_EVENTS, MOCK_PLAYER_PROPS } from '@/lib/mock-data'
 import { fetchOddsClient, getCacheAge, hasCachedData } from '@/lib/odds-api'
 import Settings from './Settings'
 
-type Tab = 'discrepancies' | 'ev' | 'props' | 'overview'
+type Tab = 'discrepancies' | 'ev' | 'props' | 'overview' | 'analytics'
 
 function formatCacheAge(ms: number): string {
   const minutes = Math.floor(ms / 60000)
@@ -127,6 +129,11 @@ export default function Dashboard() {
       setDiscrepancies(findLineDiscrepancies(eventData))
       setEvBets(findEVBets(eventData))
       setLastUpdated(new Date())
+      
+      // Record snapshot for line movement tracking
+      if (result.data && !result.cached) {
+        recordOddsSnapshot(result.data)
+      }
     } catch (err) {
       setError('Failed to fetch data')
       setEvents(MOCK_EVENTS)
@@ -156,6 +163,7 @@ export default function Dashboard() {
     { id: 'overview', label: 'Overview', icon: Activity },
     { id: 'discrepancies', label: 'Line Shop', icon: TrendingUp },
     { id: 'ev', label: '+EV Finder', icon: Calculator },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'props', label: 'Player Props', icon: User },
   ] as const
   
@@ -453,6 +461,26 @@ export default function Dashboard() {
                 sport={SPORTS.find(s => s.key === selectedSport)?.title || selectedSport}
               />
               <EVCalculator evBets={evBets} />
+            </motion.div>
+          )}
+          
+          {activeTab === 'analytics' && (
+            <motion.div
+              key="analytics"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-6"
+            >
+              <DataStatusBar
+                isLive={isLive}
+                cacheAge={cacheAge}
+                isLoading={isLoading}
+                onRefresh={() => loadData(true)}
+                sport={SPORTS.find(s => s.key === selectedSport)?.title || selectedSport}
+              />
+              <EdgeHeatmap events={events} />
+              <LineMovement events={events} />
             </motion.div>
           )}
           
