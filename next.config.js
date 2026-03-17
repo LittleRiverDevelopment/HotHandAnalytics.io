@@ -2,7 +2,7 @@
 const nextConfig = {
   output: 'export',
   images: { unoptimized: true },
-  basePath: process.env.NODE_ENV === 'production' ? '/LittleRiverDevelopment.HotHandAnalytics.io' : '',
+  basePath: process.env.NODE_ENV === 'production' ? '/HotHandAnalytics.io' : '',
   trailingSlash: true,
 }
 
