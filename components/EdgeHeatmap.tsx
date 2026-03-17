@@ -10,12 +10,13 @@ interface EdgeHeatmapProps {
 }
 
 const DISPLAY_BOOKS = [
-  { key: 'draftkings', name: 'DraftKings' },
-  { key: 'fanduel', name: 'FanDuel' },
-  { key: 'betmgm', name: 'BetMGM' },
-  { key: 'caesars', name: 'Caesars' },
-  { key: 'pointsbetus', name: 'PointsBet' },
-  { key: 'betrivers', name: 'BetRivers' },
+  { key: 'pinnacle', name: 'Pinnacle', isBaseline: true },
+  { key: 'draftkings', name: 'DraftKings', isBaseline: false },
+  { key: 'fanduel', name: 'FanDuel', isBaseline: false },
+  { key: 'betmgm', name: 'BetMGM', isBaseline: false },
+  { key: 'caesars', name: 'Caesars', isBaseline: false },
+  { key: 'pointsbetus', name: 'PointsBet', isBaseline: false },
+  { key: 'betrivers', name: 'BetRivers', isBaseline: false },
 ]
 
 type MarketType = 'h2h' | 'spreads' | 'totals'
@@ -62,17 +63,26 @@ export default function EdgeHeatmap({ events }: EdgeHeatmapProps) {
       const pinnacleOutcome = pinnacleMarket?.outcomes.find(o => o.name === teamName)
       const pinnacleOpposing = pinnacleMarket?.outcomes.find(o => o.name === opposingTeam || o.name === 'Over' || o.name === 'Under')
       
-      const bookEdges: { [key: string]: number | null } = {}
+      const bookData: { [key: string]: { edge: number | null; odds: number | null } } = {}
       
       DISPLAY_BOOKS.forEach(book => {
         const bookmaker = event.bookmakers.find(b => b.key === book.key)
         const market = bookmaker?.markets.find(m => m.key === selectedMarket)
         const outcome = market?.outcomes.find(o => o.name === teamName)
         
-        if (outcome && pinnacleOutcome && pinnacleOpposing) {
-          bookEdges[book.key] = calculateEdge(outcome.price, pinnacleOutcome.price, pinnacleOpposing.price)
+        if (book.isBaseline) {
+          // Pinnacle shows actual odds as baseline
+          bookData[book.key] = { 
+            edge: null, 
+            odds: pinnacleOutcome?.price || null 
+          }
+        } else if (outcome && pinnacleOutcome && pinnacleOpposing) {
+          bookData[book.key] = { 
+            edge: calculateEdge(outcome.price, pinnacleOutcome.price, pinnacleOpposing.price),
+            odds: outcome.price
+          }
         } else {
-          bookEdges[book.key] = null
+          bookData[book.key] = { edge: null, odds: null }
         }
       })
       
@@ -86,13 +96,13 @@ export default function EdgeHeatmap({ events }: EdgeHeatmapProps) {
         awayTeam: event.away_team,
         displayName: `${event.away_team.split(' ').pop()} @ ${event.home_team.split(' ').pop()}`,
         gameTime: `${dateStr}, ${timeStr}`,
-        edges: bookEdges
+        bookData
       }
     })
   }
 
   const heatmapData = getHeatmapData()
-  const hasData = heatmapData.some(row => Object.values(row.edges).some(e => e !== null))
+  const hasData = heatmapData.some(row => Object.values(row.bookData).some(d => d.odds !== null))
 
   return (
     <div className="card">
@@ -137,8 +147,9 @@ export default function EdgeHeatmap({ events }: EdgeHeatmapProps) {
               <tr className="border-b border-slate-800">
                 <th className="text-left p-3 font-medium text-slate-400">Game</th>
                 {DISPLAY_BOOKS.map(book => (
-                  <th key={book.key} className="p-3 font-medium text-slate-400 text-center min-w-[80px] text-xs">
-                    {book.name}
+                  <th key={book.key} className={`p-3 font-medium text-center min-w-[80px] text-xs ${book.isBaseline ? 'text-cyan-400 bg-cyan-500/5' : 'text-slate-400'}`}>
+                    <div>{book.name}</div>
+                    {book.isBaseline && <div className="text-[10px] opacity-70">Fair Odds</div>}
                   </th>
                 ))}
               </tr>
@@ -151,20 +162,36 @@ export default function EdgeHeatmap({ events }: EdgeHeatmapProps) {
                     <div className="text-xs text-slate-500">{row.gameTime}</div>
                   </td>
                   {DISPLAY_BOOKS.map(book => {
-                    const edge = row.edges[book.key]
+                    const data = row.bookData[book.key]
+                    const isBaseline = book.isBaseline
+                    
                     return (
-                      <td key={book.key} className="p-1.5">
-                        {edge !== null ? (
-                          <div
-                            className={`${getEdgeColor(edge)} ${getEdgeTextColor(edge)} rounded p-2 text-center font-mono text-xs`}
-                            title={`${edge >= 0 ? '+' : ''}${edge.toFixed(1)}% EV`}
-                          >
-                            {edge >= 0 ? '+' : ''}{edge.toFixed(1)}%
-                          </div>
+                      <td key={book.key} className={`p-1.5 ${isBaseline ? 'bg-cyan-500/5' : ''}`}>
+                        {isBaseline ? (
+                          // Pinnacle baseline - show actual odds
+                          data.odds !== null ? (
+                            <div className="bg-cyan-900/30 border border-cyan-700/30 rounded p-2 text-center font-mono text-xs text-cyan-300">
+                              {data.odds > 0 ? '+' : ''}{data.odds}
+                            </div>
+                          ) : (
+                            <div className="bg-slate-800/30 rounded p-2 text-center text-slate-600 text-xs">
+                              —
+                            </div>
+                          )
                         ) : (
-                          <div className="bg-slate-800/30 rounded p-2 text-center text-slate-600 text-xs">
-                            —
-                          </div>
+                          // Other books - show edge %
+                          data.edge !== null ? (
+                            <div
+                              className={`${getEdgeColor(data.edge)} ${getEdgeTextColor(data.edge)} rounded p-2 text-center font-mono text-xs`}
+                              title={`Odds: ${data.odds !== null ? (data.odds > 0 ? '+' : '') + data.odds : 'N/A'}`}
+                            >
+                              {data.edge >= 0 ? '+' : ''}{data.edge.toFixed(1)}%
+                            </div>
+                          ) : (
+                            <div className="bg-slate-800/30 rounded p-2 text-center text-slate-600 text-xs">
+                              —
+                            </div>
+                          )
                         )}
                       </td>
                     )
@@ -178,7 +205,7 @@ export default function EdgeHeatmap({ events }: EdgeHeatmapProps) {
 
       <div className="p-3 border-t border-slate-800 flex items-center gap-2 text-xs text-slate-500">
         <Info className="w-3.5 h-3.5" />
-        <span>Edge % vs Pinnacle fair odds. Green = +EV opportunity.</span>
+        <span>Pinnacle shows fair odds (baseline). Other books show edge % vs Pinnacle. Green = +EV.</span>
       </div>
     </div>
   )
