@@ -10,12 +10,12 @@ interface EdgeHeatmapProps {
 }
 
 const DISPLAY_BOOKS = [
-  { key: 'draftkings', name: 'DK' },
-  { key: 'fanduel', name: 'FD' },
-  { key: 'betmgm', name: 'MGM' },
-  { key: 'caesars', name: 'CZR' },
-  { key: 'pointsbetus', name: 'PB' },
-  { key: 'betrivers', name: 'BR' },
+  { key: 'draftkings', name: 'DraftKings' },
+  { key: 'fanduel', name: 'FanDuel' },
+  { key: 'betmgm', name: 'BetMGM' },
+  { key: 'caesars', name: 'Caesars' },
+  { key: 'pointsbetus', name: 'PointsBet' },
+  { key: 'betrivers', name: 'BetRivers' },
 ]
 
 type MarketType = 'h2h' | 'spreads' | 'totals'
@@ -76,11 +76,16 @@ export default function EdgeHeatmap({ events }: EdgeHeatmapProps) {
         }
       })
       
+      const gameDate = new Date(event.commence_time)
+      const dateStr = gameDate.toLocaleDateString([], { month: 'short', day: 'numeric' })
+      const timeStr = gameDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+      
       return {
         id: event.id,
         homeTeam: event.home_team,
         awayTeam: event.away_team,
         displayName: `${event.away_team.split(' ').pop()} @ ${event.home_team.split(' ').pop()}`,
+        gameTime: `${dateStr}, ${timeStr}`,
         edges: bookEdges
       }
     })
@@ -132,7 +137,7 @@ export default function EdgeHeatmap({ events }: EdgeHeatmapProps) {
               <tr className="border-b border-slate-800">
                 <th className="text-left p-3 font-medium text-slate-400">Game</th>
                 {DISPLAY_BOOKS.map(book => (
-                  <th key={book.key} className="p-3 font-medium text-slate-400 text-center min-w-[60px]">
+                  <th key={book.key} className="p-3 font-medium text-slate-400 text-center min-w-[80px] text-xs">
                     {book.name}
                   </th>
                 ))}
@@ -141,8 +146,9 @@ export default function EdgeHeatmap({ events }: EdgeHeatmapProps) {
             <tbody>
               {heatmapData.map(row => (
                 <tr key={row.id} className="border-b border-slate-800/50">
-                  <td className="p-3 font-medium text-slate-300 whitespace-nowrap">
-                    {row.displayName}
+                  <td className="p-3 whitespace-nowrap">
+                    <div className="font-medium text-slate-300">{row.displayName}</div>
+                    <div className="text-xs text-slate-500">{row.gameTime}</div>
                   </td>
                   {DISPLAY_BOOKS.map(book => {
                     const edge = row.edges[book.key]
