@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, Fragment } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowUpDown, TrendingUp, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import { LineDiscrepancy as LineDiscrepancyType } from '@/lib/types'
@@ -143,21 +143,28 @@ export default function LineDiscrepancyTable({ discrepancies }: Props) {
                 {filteredDiscrepancies.map((disc, index) => {
                   const rowKey = `${disc.eventId}-${disc.market}-${disc.betType}`
                   const isExpanded = expandedRow === rowKey
+                  const sortedBooks = [...disc.allBookOdds].sort((a, b) => b.odds - a.odds)
                   
                   return (
+                    <Fragment key={rowKey}>
                     <motion.tr
-                      key={rowKey}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
                       transition={{ delay: index * 0.03 }}
-                      className="table-row cursor-pointer"
+                      className={`table-row cursor-pointer hover:bg-slate-800/40 ${isExpanded ? 'bg-slate-800/30' : ''}`}
                       onClick={() => setExpandedRow(isExpanded ? null : rowKey)}
+                      aria-expanded={isExpanded}
                     >
                       <td className="py-3 px-4">
-                        <div className="flex flex-col">
-                          <span className="font-medium text-sm">{disc.awayTeam}</span>
-                          <span className="text-slate-400 text-sm">@ {disc.homeTeam}</span>
+                        <div className="flex items-start gap-2">
+                          <span className="text-slate-500 mt-0.5 shrink-0" aria-hidden>
+                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                          </span>
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-medium text-sm">{disc.awayTeam}</span>
+                            <span className="text-slate-400 text-sm">@ {disc.homeTeam}</span>
+                          </div>
                         </div>
                       </td>
                       <td className="py-3 px-4">
@@ -198,6 +205,59 @@ export default function LineDiscrepancyTable({ discrepancies }: Props) {
                         </div>
                       </td>
                     </motion.tr>
+                    {isExpanded && (
+                      <tr key={`${rowKey}-detail`} className="bg-slate-900/50">
+                        <td colSpan={7} className="p-0 border-b border-slate-800">
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="px-4 py-4"
+                          >
+                            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-3">
+                              All lines — {disc.betType} ({disc.market})
+                            </p>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                              {sortedBooks.map((row, i) => {
+                                const isBest = row.odds === disc.bestOdds
+                                const isWorst = row.odds === disc.worstOdds
+                                return (
+                                  <div
+                                    key={`${row.book}-${i}`}
+                                    className={`rounded-lg border px-3 py-2.5 text-center ${
+                                      isBest
+                                        ? 'border-green-500/50 bg-green-500/10'
+                                        : isWorst
+                                          ? 'border-slate-600 bg-slate-800/40'
+                                          : 'border-slate-700/50 bg-slate-800/30'
+                                    }`}
+                                  >
+                                    <div className="text-[10px] text-slate-500 truncate" title={row.book}>
+                                      {row.book}
+                                    </div>
+                                    <div className={`font-mono text-sm font-semibold mt-1 ${isBest ? 'text-green-400' : 'text-slate-200'}`}>
+                                      {formatOdds(row.odds)}
+                                    </div>
+                                    {row.point !== undefined && (
+                                      <div className="text-[10px] text-slate-500 mt-0.5">
+                                        Line {row.point > 0 ? '+' : ''}{row.point}
+                                      </div>
+                                    )}
+                                    {isBest && (
+                                      <span className="text-[10px] text-green-400/90">Best</span>
+                                    )}
+                                    {isWorst && !isBest && (
+                                      <span className="text-[10px] text-slate-500">Worst</span>
+                                    )}
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </motion.div>
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>
                   )
                 })}
               </AnimatePresence>
@@ -224,7 +284,7 @@ export default function LineDiscrepancyTable({ discrepancies }: Props) {
             <p className="text-sm text-slate-400 mt-1">
               Line discrepancies show the difference in odds between sportsbooks. 
               A higher edge means a bigger price difference. Always bet the best available line.
-              An edge of 10+ cents is considered significant.
+              Click any row to expand and see every book&apos;s line side by side.
             </p>
           </div>
         </div>
