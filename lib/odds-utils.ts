@@ -53,6 +53,13 @@ function isColoradoBook(bookKey: string): boolean {
   return COLORADO_BOOK_KEYS.includes(bookKey.toLowerCase())
 }
 
+/** How actionable the shop looks: more books + larger price gap → higher score (0–100). */
+export function computeLineShopConfidence(bookCount: number, spread: number): number {
+  const coverage = Math.min(60, 22 + Math.max(0, bookCount - 2) * 9.5)
+  const edgeBoost = Math.min(40, Math.max(0, spread - 5) * 1.6)
+  return Math.round(Math.min(100, coverage + edgeBoost))
+}
+
 export function findLineDiscrepancies(events: OddsEvent[]): LineDiscrepancy[] {
   const discrepancies: LineDiscrepancy[] = []
 
@@ -111,6 +118,7 @@ export function findLineDiscrepancies(events: OddsEvent[]): LineDiscrepancy[] {
             worstOdds: worst.odds,
             worstBook: worst.book,
             spread,
+            confidenceScore: computeLineShopConfidence(bookOdds.length, spread),
             commenceTime: event.commence_time,
             allBookOdds: bookOdds
           })

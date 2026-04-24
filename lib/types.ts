@@ -43,6 +43,8 @@ export interface LineDiscrepancy {
   worstOdds: number
   worstBook: string
   spread: number
+  /** 0–100: stronger with more books quoting the outcome and a wider best-vs-worst gap */
+  confidenceScore: number
   commenceTime: string
   allBookOdds: { book: string; odds: number; point?: number }[]
 }

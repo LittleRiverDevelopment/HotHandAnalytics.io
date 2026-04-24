@@ -11,7 +11,7 @@ interface Props {
   discrepancies: LineDiscrepancyType[]
 }
 
-type SortField = 'spread' | 'game' | 'market' | 'time'
+type SortField = 'spread' | 'confidence' | 'game' | 'market' | 'time'
 type SortDirection = 'asc' | 'desc'
 
 export default function LineDiscrepancyTable({ discrepancies }: Props) {
@@ -26,6 +26,9 @@ export default function LineDiscrepancyTable({ discrepancies }: Props) {
       switch (sortField) {
         case 'spread':
           comparison = a.spread - b.spread
+          break
+        case 'confidence':
+          comparison = a.confidenceScore - b.confidenceScore
           break
         case 'game':
           comparison = `${a.homeTeam} vs ${a.awayTeam}`.localeCompare(`${b.homeTeam} vs ${b.awayTeam}`)
@@ -59,6 +62,12 @@ export default function LineDiscrepancyTable({ discrepancies }: Props) {
     if (spread >= 15) return 'edge-tag-high'
     if (spread >= 8) return 'edge-tag-medium'
     return 'edge-tag-low'
+  }
+
+  const getConfidenceClass = (score: number) => {
+    if (score >= 70) return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+    if (score >= 45) return 'text-amber-300 bg-amber-500/10 border-amber-500/25'
+    return 'text-slate-400 bg-slate-800/80 border-slate-600/50'
   }
   
   return (
@@ -124,6 +133,16 @@ export default function LineDiscrepancyTable({ discrepancies }: Props) {
                 >
                   <div className="flex items-center justify-center gap-1">
                     Edge
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </th>
+                <th 
+                  className="text-center py-3 px-4 text-xs font-medium text-slate-400 uppercase tracking-wider cursor-pointer hover:text-slate-200"
+                  onClick={() => handleSort('confidence')}
+                  title="Based on how many books post this outcome and the size of the price gap"
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    Confidence
                     <ArrowUpDown className="w-3 h-3" />
                   </div>
                 </th>
@@ -194,6 +213,13 @@ export default function LineDiscrepancyTable({ discrepancies }: Props) {
                           +{disc.spread}
                         </span>
                       </td>
+                      <td className="py-3 px-4 text-center">
+                        <span
+                          className={`inline-flex min-w-[3rem] justify-center rounded-md border px-2 py-1 font-mono text-sm font-semibold tabular-nums ${getConfidenceClass(disc.confidenceScore)}`}
+                        >
+                          {disc.confidenceScore}
+                        </span>
+                      </td>
                       <td className="py-3 px-4 text-right">
                         <div className="flex flex-col items-end">
                           <span className="text-sm">
@@ -207,7 +233,7 @@ export default function LineDiscrepancyTable({ discrepancies }: Props) {
                     </motion.tr>
                     {isExpanded && (
                       <tr key={`${rowKey}-detail`} className="bg-slate-900/50">
-                        <td colSpan={7} className="p-0 border-b border-slate-800">
+                        <td colSpan={8} className="p-0 border-b border-slate-800">
                           <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
@@ -284,6 +310,7 @@ export default function LineDiscrepancyTable({ discrepancies }: Props) {
             <p className="text-sm text-slate-400 mt-1">
               Line discrepancies show the difference in odds between sportsbooks. 
               A higher edge means a bigger price difference. Always bet the best available line.
+              Confidence (0–100) rises when more books quote that outcome and the best-to-worst gap is wider.
               Click any row to expand and see every book&apos;s line side by side.
             </p>
           </div>
