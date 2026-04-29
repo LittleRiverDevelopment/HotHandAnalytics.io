@@ -60,6 +60,13 @@ export function computeLineShopConfidence(bookCount: number, spread: number): nu
   return Math.round(Math.min(100, coverage + edgeBoost))
 }
 
+/** +EV signal strength vs Pinnacle no-vig (0–100): larger EV% and Kelly fraction → higher score. */
+export function computeEVConfidence(evPercent: number, kellyCriterion: number): number {
+  const edgeScore = Math.min(58, 24 + evPercent * 2.4)
+  const kellyScore = Math.min(42, kellyCriterion * 85)
+  return Math.round(Math.min(100, edgeScore + kellyScore))
+}
+
 export function findLineDiscrepancies(events: OddsEvent[]): LineDiscrepancy[] {
   const discrepancies: LineDiscrepancy[] = []
 
@@ -142,6 +149,10 @@ export function findEVBets(events: OddsEvent[], minEV: number = 0.02): EVBet[] {
     marketTypes.forEach(marketKey => {
       // Get Pinnacle's market for fair odds calculation
       const pinnacleMarket = pinnacle?.markets.find(m => m.key === marketKey)
+      const pinnacleLineAsOf =
+        pinnacleMarket?.last_update ||
+        pinnacle?.last_update ||
+        ''
       
       // Build map of outcomes with their opposing outcome (for no-vig calculation)
       const pinnacleOddsMap: Map<string, { odds: number; opposingOdds: number }> = new Map()
@@ -189,7 +200,9 @@ export function findEVBets(events: OddsEvent[], minEV: number = 0.02): EVBet[] {
             const marketLabel = marketKey === 'h2h' ? 'Moneyline' 
               : marketKey === 'spreads' ? 'Spread' 
               : 'Total'
-            
+            const kelly = calculateKellyCriterion(outcome.price, fairProb)
+            const evPercent = ev * 100
+
             evBets.push({
               eventId: event.id,
               homeTeam: event.home_team,
@@ -201,9 +214,11 @@ export function findEVBets(events: OddsEvent[], minEV: number = 0.02): EVBet[] {
               odds: outcome.price,
               book: bookmaker.title,
               fairOdds: decimalToAmerican(1 / fairProb),
+              pinnacleLastUpdate: pinnacleLineAsOf,
               ev,
-              evPercent: ev * 100,
-              kellyCriterion: calculateKellyCriterion(outcome.price, fairProb),
+              evPercent,
+              kellyCriterion: kelly,
+              confidenceScore: computeEVConfidence(evPercent, kelly),
               commenceTime: event.commence_time
             })
           }

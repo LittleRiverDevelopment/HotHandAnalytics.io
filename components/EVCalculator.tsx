@@ -5,12 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Calculator, TrendingUp, Zap, AlertTriangle, ArrowUpDown } from 'lucide-react'
 import { EVBet } from '@/lib/types'
 import { formatOdds } from '@/lib/odds-utils'
+import { format } from 'date-fns'
 
 interface Props {
   evBets: EVBet[]
 }
 
-type SortField = 'ev' | 'kelly' | 'game' | 'time'
+type SortField = 'ev' | 'confidence' | 'kelly' | 'game' | 'time'
 
 export default function EVCalculator({ evBets }: Props) {
   const [sortField, setSortField] = useState<SortField>('ev')
@@ -24,6 +25,8 @@ export default function EVCalculator({ evBets }: Props) {
         switch (sortField) {
           case 'ev':
             return b.evPercent - a.evPercent
+          case 'confidence':
+            return b.confidenceScore - a.confidenceScore
           case 'kelly':
             return b.kellyCriterion - a.kellyCriterion
           case 'game':
@@ -42,7 +45,20 @@ export default function EVCalculator({ evBets }: Props) {
     if (ev >= 1) return 'text-yellow-400'
     return 'text-orange-400'
   }
+
+  const getConfidenceClass = (score: number) => {
+    if (score >= 70) return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+    if (score >= 45) return 'text-amber-300 bg-amber-500/10 border-amber-500/25'
+    return 'text-slate-400 bg-slate-800/80 border-slate-600/50'
+  }
   
+  const formatPinnacleAsOf = (iso: string) => {
+    if (!iso) return null
+    const d = new Date(iso)
+    if (Number.isNaN(d.getTime())) return null
+    return format(d, 'MMM d, yyyy · h:mm a')
+  }
+
   const getKellyBet = (kelly: number) => {
     const fractionalKelly = kelly * 0.25
     return Math.round(bankroll * fractionalKelly)
@@ -161,10 +177,29 @@ export default function EVCalculator({ evBets }: Props) {
                 </th>
                 <th 
                   className="text-center py-3 px-4 text-xs font-medium text-slate-400 uppercase tracking-wider cursor-pointer hover:text-slate-200"
+                  onClick={() => setSortField('confidence')}
+                  title="Higher when estimated edge and Kelly fraction are larger vs Pinnacle fair odds"
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    Confidence
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </th>
+                <th 
+                  className="text-center py-3 px-4 text-xs font-medium text-slate-400 uppercase tracking-wider cursor-pointer hover:text-slate-200"
                   onClick={() => setSortField('kelly')}
                 >
                   <div className="flex items-center justify-center gap-1">
                     Kelly Bet
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </th>
+                <th 
+                  className="text-right py-3 px-4 text-xs font-medium text-slate-400 uppercase tracking-wider cursor-pointer hover:text-slate-200"
+                  onClick={() => setSortField('time')}
+                >
+                  <div className="flex items-center justify-end gap-1">
+                    Starts
                     <ArrowUpDown className="w-3 h-3" />
                   </div>
                 </th>
@@ -175,7 +210,9 @@ export default function EVCalculator({ evBets }: Props) {
             </thead>
             <tbody className="divide-y divide-slate-800">
               <AnimatePresence>
-                {sortedBets.map((bet, index) => (
+                {sortedBets.map((bet, index) => {
+                  const pinnacleAsOf = formatPinnacleAsOf(bet.pinnacleLastUpdate)
+                  return (
                   <motion.tr
                     key={`${bet.eventId}-${bet.selection}-${bet.book}`}
                     initial={{ opacity: 0, y: 10 }}
@@ -202,13 +239,29 @@ export default function EVCalculator({ evBets }: Props) {
                       </span>
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <span className="odds-badge text-slate-400">
-                        {formatOdds(bet.fairOdds)}
-                      </span>
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="odds-badge text-slate-400">
+                          {formatOdds(bet.fairOdds)}
+                        </span>
+                        <span className="text-[10px] text-slate-500 leading-tight max-w-[9rem]">
+                          {pinnacleAsOf ? (
+                            <>Pinnacle line as of {pinnacleAsOf}</>
+                          ) : (
+                            <span className="text-slate-600">No Pinnacle timestamp</span>
+                          )}
+                        </span>
+                      </div>
                     </td>
                     <td className="py-3 px-4 text-center">
                       <span className={`font-bold mono ${getEVColor(bet.evPercent)}`}>
                         +{bet.evPercent.toFixed(1)}%
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span
+                        className={`inline-flex min-w-[3rem] justify-center rounded-md border px-2 py-1 font-mono text-sm font-semibold tabular-nums ${getConfidenceClass(bet.confidenceScore)}`}
+                      >
+                        {bet.confidenceScore}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-center">
@@ -221,13 +274,24 @@ export default function EVCalculator({ evBets }: Props) {
                         </span>
                       </div>
                     </td>
+                    <td className="py-3 px-4 text-right">
+                      <div className="flex flex-col items-end">
+                        <span className="text-sm">
+                          {format(new Date(bet.commenceTime), 'h:mm a')}
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          {format(new Date(bet.commenceTime), 'MMM d, yyyy')}
+                        </span>
+                      </div>
+                    </td>
                     <td className="py-3 px-4 text-center">
                       <span className="px-2 py-1 bg-slate-800 rounded text-xs">
                         {bet.book}
                       </span>
                     </td>
                   </motion.tr>
-                ))}
+                  )
+                })}
               </AnimatePresence>
             </tbody>
           </table>
@@ -253,6 +317,7 @@ export default function EVCalculator({ evBets }: Props) {
               Fair odds are calculated from <span className="text-cyan-400 font-medium">Pinnacle</span> (industry's sharpest book) with vig removed.
               +EV bets have better odds than Pinnacle's no-vig line. Kelly Criterion suggests 
               optimal bet sizing based on edge. We use quarter-Kelly for conservative bankroll management.
+              Confidence (0–100) reflects stronger estimated edge and Kelly-suggested stake versus that fair line.
             </p>
           </div>
         </div>

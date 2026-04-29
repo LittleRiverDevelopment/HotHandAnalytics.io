@@ -58,9 +58,13 @@ export interface EVBet {
   odds: number
   book: string
   fairOdds: number
+  /** ISO timestamp from The Odds API: Pinnacle market `last_update`, else book `last_update` */
+  pinnacleLastUpdate: string
   ev: number
   evPercent: number
   kellyCriterion: number
+  /** 0–100: stronger edge vs Pinnacle fair odds and higher Kelly-suggested sizing */
+  confidenceScore: number
   commenceTime: string
 }
 
