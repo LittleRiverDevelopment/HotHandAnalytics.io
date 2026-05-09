@@ -318,6 +318,7 @@ export default function EVCalculator({ evBets }: Props) {
               +EV bets have better odds than Pinnacle's no-vig line. Kelly Criterion suggests 
               optimal bet sizing based on edge. We use quarter-Kelly for conservative bankroll management.
               Confidence (0–100) reflects stronger estimated edge and Kelly-suggested stake versus that fair line.
+              Rows are dropped when Pinnacle&apos;s line for that market is more than about 25 minutes older than the local book&apos;s update, or when the fair price cannot be paired to the correct counter-side (common with many alternate lines in one market).
             </p>
           </div>
         </div>

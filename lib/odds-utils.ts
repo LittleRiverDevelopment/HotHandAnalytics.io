@@ -6,6 +6,52 @@ const COLORADO_BOOK_KEYS = [
   'pointsbetus', 'betrivers', 'espnbet', 'superbook', 'betfred', 'fanatics'
 ]
 
+/** If the book's market is updated much later than Pinnacle, no-vig fair odds are a stale reference. */
+const STALE_PINNACLE_VS_BOOK_MS = 25 * 60 * 1000
+
+/**
+ * True counterparty for two-way no-vig (not "other index" — alt lines can reorder outcomes).
+ */
+function getOpposingOutcomeForNoVig(
+  marketKey: string,
+  outcomes: Outcome[],
+  outcome: Outcome
+): Outcome | undefined {
+  if (marketKey === 'h2h') {
+    const others = outcomes.filter(o => o.name !== outcome.name)
+    return others.length === 1 ? others[0] : undefined
+  }
+  if (marketKey === 'totals') {
+    if (outcome.point === undefined) return undefined
+    return outcomes.find(
+      o =>
+        o !== outcome &&
+        o.point === outcome.point &&
+        o.name !== outcome.name &&
+        (o.name === 'Over' || o.name === 'Under')
+    )
+  }
+  if (marketKey === 'spreads') {
+    if (outcome.point === undefined) return undefined
+    const p = outcome.point
+    return outcomes.find(
+      o =>
+        o !== outcome &&
+        o.point !== undefined &&
+        o.name !== outcome.name &&
+        Math.abs(o.point + p) < 0.001
+    )
+  }
+  return undefined
+}
+
+function isPinnacleStaleVsBook(pinnacleIso: string, bookMarketIso: string): boolean {
+  const pin = new Date(pinnacleIso).getTime()
+  const book = new Date(bookMarketIso).getTime()
+  if (Number.isNaN(pin) || Number.isNaN(book)) return false
+  return book - pin > STALE_PINNACLE_VS_BOOK_MS
+}
+
 export function americanToDecimal(american: number): number {
   if (american > 0) {
     return (american / 100) + 1
@@ -158,20 +204,16 @@ export function findEVBets(events: OddsEvent[], minEV: number = 0.02): EVBet[] {
       const pinnacleOddsMap: Map<string, { odds: number; opposingOdds: number }> = new Map()
       
       if (pinnacleMarket && pinnacleMarket.outcomes.length >= 2) {
-        pinnacleMarket.outcomes.forEach((outcome, idx) => {
-          const key = outcome.point !== undefined 
-            ? `${outcome.name}|${outcome.point}` 
-            : outcome.name
-          
-          // Find the opposing outcome
-          const opposingIdx = idx === 0 ? 1 : 0
-          const opposing = pinnacleMarket.outcomes[opposingIdx]
-          
+        for (const outcome of pinnacleMarket.outcomes) {
+          const opposing = getOpposingOutcomeForNoVig(marketKey, pinnacleMarket.outcomes, outcome)
+          if (!opposing) continue
+          const key =
+            outcome.point !== undefined ? `${outcome.name}|${outcome.point}` : outcome.name
           pinnacleOddsMap.set(key, {
             odds: outcome.price,
-            opposingOdds: opposing?.price || outcome.price
+            opposingOdds: opposing.price
           })
-        })
+        }
       }
       
       // Now check Colorado book odds against Pinnacle fair odds
@@ -189,6 +231,15 @@ export function findEVBets(events: OddsEvent[], minEV: number = 0.02): EVBet[] {
           
           const pinnacleData = pinnacleOddsMap.get(key)
           if (!pinnacleData) return
+
+          const bookMarketAsOf = market.last_update || ''
+          if (
+            pinnacleLineAsOf &&
+            bookMarketAsOf &&
+            isPinnacleStaleVsBook(pinnacleLineAsOf, bookMarketAsOf)
+          ) {
+            return
+          }
           
           // Calculate no-vig fair probability from Pinnacle
           const [fairProb] = calculateNoVigFromPair(pinnacleData.odds, pinnacleData.opposingOdds)
