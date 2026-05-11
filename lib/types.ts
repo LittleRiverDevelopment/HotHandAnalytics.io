@@ -7,11 +7,14 @@ export interface Outcome {
   name: string
   price: number
   point?: number
+  /** The Odds API bookmaker deep link when `includeLinks=true` */
+  link?: string
 }
 
 export interface Market {
   key: string
   last_update: string
+  link?: string
   outcomes: Outcome[]
 }
 
@@ -19,6 +22,7 @@ export interface Bookmaker {
   key: string
   title: string
   last_update: string
+  link?: string
   markets: Market[]
 }
 
@@ -46,7 +50,10 @@ export interface LineDiscrepancy {
   /** 0–100: stronger with more books quoting the outcome and a wider best-vs-worst gap */
   confidenceScore: number
   commenceTime: string
-  allBookOdds: { book: string; odds: number; point?: number }[]
+  allBookOdds: { book: string; odds: number; point?: number; link?: string }[]
+  /** Deepest API link for best book (outcome → market → event) */
+  bestDeepLink?: string
+  worstDeepLink?: string
 }
 
 export interface EVBet {
@@ -66,6 +73,8 @@ export interface EVBet {
   /** 0–100: stronger edge vs Pinnacle fair odds and higher Kelly-suggested sizing */
   confidenceScore: number
   commenceTime: string
+  /** The Odds API deep link for this book/selection when `includeLinks=true` */
+  bookDeepLink?: string
 }
 
 export interface PlayerGameLog {

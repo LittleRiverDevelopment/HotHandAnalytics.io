@@ -305,7 +305,11 @@ export default function EVCalculator({ evBets }: Props) {
                         <span className="px-2 py-1 bg-slate-800 rounded text-xs">
                           {bet.book}
                         </span>
-                        <BookOpenLink bookTitle={bet.book} stopPropagation />
+                        <BookOpenLink
+                          bookTitle={bet.book}
+                          deepLink={bet.bookDeepLink}
+                          stopPropagation
+                        />
                       </div>
                     </td>
                   </motion.tr>
@@ -337,6 +341,7 @@ export default function EVCalculator({ evBets }: Props) {
               +EV bets have better odds than Pinnacle's no-vig line. Kelly Criterion suggests 
               optimal bet sizing based on edge. We use quarter-Kelly for conservative bankroll management.
               Confidence (0–100) reflects stronger estimated edge and Kelly-suggested stake versus that fair line.
+              The book link opens that selection at the sportsbook when The Odds API provides a deep link; otherwise it opens the book&apos;s home page.
               Rows are dropped when Pinnacle&apos;s line for that market is more than about 25 minutes older than the local book&apos;s update, or when the fair price cannot be paired to the correct counter-side (common with many alternate lines in one market).
             </p>
           </div>

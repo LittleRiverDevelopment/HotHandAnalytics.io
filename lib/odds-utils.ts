@@ -1,4 +1,4 @@
-import { OddsEvent, LineDiscrepancy, EVBet, Outcome } from './types'
+import { OddsEvent, LineDiscrepancy, EVBet, Outcome, Market, Bookmaker } from './types'
 
 // Colorado books only (exclude Pinnacle from betting display)
 const COLORADO_BOOK_KEYS = [
@@ -50,6 +50,19 @@ function isPinnacleStaleVsBook(pinnacleIso: string, bookMarketIso: string): bool
   const book = new Date(bookMarketIso).getTime()
   if (Number.isNaN(pin) || Number.isNaN(book)) return false
   return book - pin > STALE_PINNACLE_VS_BOOK_MS
+}
+
+/** Odds API: outcome → market → bookmaker event page (see includeLinks). */
+function getDeepestBookmakerLink(
+  outcome: Outcome,
+  market: Market,
+  bookmaker: Bookmaker
+): string | undefined {
+  const pick = (s: string | undefined) => {
+    const t = s?.trim()
+    return t && /^https?:\/\//i.test(t) ? t : undefined
+  }
+  return pick(outcome.link) ?? pick(market.link) ?? pick(bookmaker.link)
 }
 
 export function americanToDecimal(american: number): number {
@@ -120,7 +133,10 @@ export function findLineDiscrepancies(events: OddsEvent[]): LineDiscrepancy[] {
     const marketTypes = ['h2h', 'spreads', 'totals']
     
     marketTypes.forEach(marketKey => {
-      const bookOddsMap: Map<string, { book: string; bookKey: string; odds: number; point?: number }[]> = new Map()
+      const bookOddsMap: Map<
+        string,
+        { book: string; bookKey: string; odds: number; point?: number; link?: string }[]
+      > = new Map()
       
       event.bookmakers.forEach(bookmaker => {
         // Only include Colorado books for line shopping
@@ -141,7 +157,8 @@ export function findLineDiscrepancies(events: OddsEvent[]): LineDiscrepancy[] {
             book: bookmaker.title,
             bookKey: bookmaker.key,
             odds: outcome.price,
-            point: outcome.point
+            point: outcome.point,
+            link: getDeepestBookmakerLink(outcome, market, bookmaker),
           })
         })
       })
@@ -173,7 +190,9 @@ export function findLineDiscrepancies(events: OddsEvent[]): LineDiscrepancy[] {
             spread,
             confidenceScore: computeLineShopConfidence(bookOdds.length, spread),
             commenceTime: event.commence_time,
-            allBookOdds: bookOdds
+            allBookOdds: bookOdds,
+            bestDeepLink: best.link,
+            worstDeepLink: worst.link,
           })
         }
       })
@@ -253,6 +272,7 @@ export function findEVBets(events: OddsEvent[], minEV: number = 0.02): EVBet[] {
               : 'Total'
             const kelly = calculateKellyCriterion(outcome.price, fairProb)
             const evPercent = ev * 100
+            const bookDeepLink = getDeepestBookmakerLink(outcome, market, bookmaker)
 
             evBets.push({
               eventId: event.id,
@@ -270,7 +290,8 @@ export function findEVBets(events: OddsEvent[], minEV: number = 0.02): EVBet[] {
               evPercent,
               kellyCriterion: kelly,
               confidenceScore: computeEVConfidence(evPercent, kelly),
-              commenceTime: event.commence_time
+              commenceTime: event.commence_time,
+              ...(bookDeepLink ? { bookDeepLink } : {}),
             })
           }
         })

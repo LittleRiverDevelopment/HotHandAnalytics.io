@@ -60,13 +60,13 @@ function getCacheEntry(key: string): CacheEntry | null {
 }
 
 export function getCacheAge(sport: string): number | null {
-  const entry = getCacheEntry(`${sport}-h2h,spreads,totals`)
+  const entry = getCacheEntry(`${sport}-h2h,spreads,totals-lnk1`)
   if (!entry) return null
   return Date.now() - entry.timestamp
 }
 
 export function hasCachedData(sport: string): boolean {
-  return !!getCacheEntry(`${sport}-h2h,spreads,totals`)
+  return !!getCacheEntry(`${sport}-h2h,spreads,totals-lnk1`)
 }
 
 export interface ApiResponse<T> {
@@ -81,7 +81,7 @@ export async function fetchOddsClient(
   markets: string[] = ['h2h', 'spreads', 'totals'],
   forceRefresh: boolean = false
 ): Promise<ApiResponse<OddsEvent[]>> {
-  const cacheKey = `${sport}-${markets.join(',')}`
+  const cacheKey = `${sport}-${markets.join(',')}-lnk1`
   
   // Check cache first (unless force refresh)
   if (!forceRefresh) {
@@ -105,7 +105,7 @@ export async function fetchOddsClient(
   try {
     const marketsParam = markets.join(',')
     const bookmakers = ALL_BOOKMAKERS.join(',')
-    const url = `${BASE_URL}/sports/${sport}/odds/?apiKey=${apiKey}&regions=us,us2,eu&markets=${marketsParam}&oddsFormat=american&bookmakers=${bookmakers}`
+    const url = `${BASE_URL}/sports/${sport}/odds/?apiKey=${apiKey}&regions=us,us2,eu&markets=${marketsParam}&oddsFormat=american&bookmakers=${bookmakers}&includeLinks=true`
     
     const response = await fetch(url)
 

@@ -1,14 +1,18 @@
 'use client'
 
-import { useMemo, useSyncExternalStore } from 'react'
+import { useMemo, useSyncExternalStore, type ReactNode } from 'react'
 import { ExternalLink } from 'lucide-react'
 import { getSportsbookHomeUrlFromTitle } from '@/lib/sportsbook-links'
 
 interface Props {
   bookTitle: string
+  /** The Odds API deep link (event / market / betslip) — takes priority over homepage */
+  deepLink?: string | null
   className?: string
   /** Stop row click / expand when used inside clickable tables */
   stopPropagation?: boolean
+  /** When set, shown instead of the icon (e.g. bet label) */
+  children?: ReactNode
 }
 
 function subscribeMobileLayout(cb: () => void) {
@@ -25,40 +29,56 @@ function getServerMobileLayoutSnapshot() {
   return false
 }
 
-export default function BookOpenLink({ bookTitle, className = '', stopPropagation }: Props) {
-  const useMobileLink = useSyncExternalStore(
+export default function BookOpenLink({
+  bookTitle,
+  deepLink,
+  className = '',
+  stopPropagation,
+  children,
+}: Props) {
+  const useMobileLayout = useSyncExternalStore(
     subscribeMobileLayout,
     getMobileLayoutSnapshot,
     getServerMobileLayoutSnapshot
   )
 
-  const href = useMemo(
-    () => getSportsbookHomeUrlFromTitle(bookTitle, { mobile: useMobileLink }),
-    [bookTitle, useMobileLink]
-  )
+  const trimmedDeep = deepLink?.trim()
+  const href = useMemo(() => {
+    if (trimmedDeep && /^https?:\/\//i.test(trimmedDeep)) return trimmedDeep
+    return getSportsbookHomeUrlFromTitle(bookTitle, {
+      mobile: useMobileLayout,
+    })
+  }, [bookTitle, trimmedDeep, useMobileLayout])
 
-  if (!href) return null
+  if (!href) {
+    if (children) return <span className={className}>{children}</span>
+    return null
+  }
 
-  // Same-tab on phones avoids juggling tabs; new tab on desktop keeps HotHand open.
+  const isApiDeepLink = !!(trimmedDeep && /^https?:\/\//i.test(trimmedDeep))
+
   return (
     <a
       href={href}
-      target={useMobileLink ? undefined : '_blank'}
+      target={useMobileLayout ? undefined : '_blank'}
       rel="noopener noreferrer"
-      title={`Open ${bookTitle}${useMobileLink ? '' : ' in new tab'}`}
-      aria-label={`Open ${bookTitle} sportsbook`}
+      title={
+        isApiDeepLink
+          ? `Open at ${bookTitle}`
+          : `Open ${bookTitle}${useMobileLayout ? '' : ' in new tab'}`
+      }
+      aria-label={isApiDeepLink ? `Open this bet at ${bookTitle}` : `Open ${bookTitle} sportsbook`}
       onClick={e => {
         if (stopPropagation) e.stopPropagation()
       }}
       className={[
-        'inline-flex items-center justify-center rounded-md text-slate-500',
-        'hover:text-green-400 hover:bg-slate-800/80 active:bg-slate-700/80 transition-colors',
-        'touch-manipulation select-none',
-        'min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 p-2 sm:p-1',
+        children
+          ? 'inline-flex items-center min-h-[44px] py-1.5 sm:min-h-0 sm:py-0 text-left font-medium text-slate-200 hover:text-green-400 hover:underline decoration-green-400/50 underline-offset-2'
+          : 'inline-flex items-center justify-center rounded-md text-slate-500 hover:text-green-400 hover:bg-slate-800/80 active:bg-slate-700/80 transition-colors touch-manipulation select-none min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 p-2 sm:p-1',
         className,
       ].join(' ')}
     >
-      <ExternalLink className="w-4 h-4 sm:w-3.5 sm:h-3.5" aria-hidden />
+      {children ?? <ExternalLink className="w-4 h-4 sm:w-3.5 sm:h-3.5" aria-hidden />}
     </a>
   )
 }

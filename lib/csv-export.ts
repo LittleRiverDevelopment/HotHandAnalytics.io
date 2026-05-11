@@ -36,6 +36,8 @@ export function lineDiscrepanciesToCsvRows(rows: LineDiscrepancy[]): (string | n
     'WorstBook',
     'Edge',
     'Confidence',
+    'BestDeepLink',
+    'WorstDeepLink',
     'CommenceTime',
   ]
   const body = rows.map(d => [
@@ -49,6 +51,8 @@ export function lineDiscrepanciesToCsvRows(rows: LineDiscrepancy[]): (string | n
     d.worstBook,
     d.spread,
     d.confidenceScore,
+    d.bestDeepLink ?? '',
+    d.worstDeepLink ?? '',
     d.commenceTime,
   ])
   return [header, ...body]
@@ -67,6 +71,7 @@ export function evBetsToCsvRows(rows: EVBet[]): (string | number)[][] {
     'Confidence',
     'Kelly',
     'Book',
+    'BookDeepLink',
     'CommenceTime',
   ]
   const body = rows.map(b => [
@@ -81,6 +86,7 @@ export function evBetsToCsvRows(rows: EVBet[]): (string | number)[][] {
     b.confidenceScore,
     b.kellyCriterion.toFixed(4),
     b.book,
+    b.bookDeepLink ?? '',
     b.commenceTime,
   ])
   return [header, ...body]

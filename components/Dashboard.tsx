@@ -114,7 +114,7 @@ function DataFreshnessStrip({
       </div>
       <p className="text-xs text-slate-500 leading-relaxed">
         Line movement chart (Analytics tab) records home moneyline per book on each successful refresh.
-        Sportsbook links open the book&apos;s site in a new tab (not tied to a specific game).
+        Sportsbook links use The Odds API deep links to the event or bet slip when the book provides them; otherwise they open the book&apos;s home page.
       </p>
     </div>
   )
