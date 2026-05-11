@@ -15,7 +15,9 @@ import {
   AlertCircle,
   Wifi,
   WifiOff,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  Database,
+  Clock,
 } from 'lucide-react'
 import LineDiscrepancyTable from './LineDiscrepancy'
 import EVCalculator from './EVCalculator'
@@ -43,40 +45,77 @@ function formatCacheAge(ms: number): string {
   return 'Just now'
 }
 
-interface DataStatusBarProps {
+interface DataFreshnessStripProps {
   isLive: boolean
+  isCached: boolean
   cacheAge: number | null
+  remainingRequests: number | null
+  lastUpdated: Date
   isLoading: boolean
   onRefresh: () => void
   sport: string
 }
 
-function DataStatusBar({ isLive, cacheAge, isLoading, onRefresh, sport }: DataStatusBarProps) {
+function DataFreshnessStrip({
+  isLive,
+  isCached,
+  cacheAge,
+  remainingRequests,
+  lastUpdated,
+  isLoading,
+  onRefresh,
+  sport,
+}: DataFreshnessStripProps) {
+  const source = !isLive ? 'Demo data' : isCached ? 'Cached odds' : 'Live fetch'
+
   return (
-    <div className="flex items-center justify-between p-3 mb-4 bg-slate-800/30 rounded-lg border border-slate-700/50">
-      <div className="flex items-center gap-3 text-sm">
-        {isLive ? (
+    <div className="flex flex-col gap-3 p-3 mb-4 rounded-lg border border-slate-700/50 bg-slate-900/40">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-300">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-            <span className="text-slate-300">
-              {sport} data {cacheAge !== null ? `• ${formatCacheAge(cacheAge)}` : ''}
+            {isLive ? (
+              <Wifi className="w-4 h-4 text-green-400 shrink-0" />
+            ) : (
+              <WifiOff className="w-4 h-4 text-amber-400 shrink-0" />
+            )}
+            <span className="font-medium text-slate-200">{sport}</span>
+            <span className="text-slate-500">·</span>
+            <span className="text-slate-400">{source}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-slate-400">
+            <Database className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+            <span>
+              {cacheAge !== null && isLive
+                ? `Data age ${formatCacheAge(cacheAge)}`
+                : isLive
+                  ? 'Fresh pull'
+                  : 'Not connected to live odds'}
             </span>
           </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-yellow-400 rounded-full" />
-            <span className="text-slate-400">Demo data</span>
+          <div className="flex items-center gap-1.5 text-slate-400">
+            <Clock className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+            <span>Updated {lastUpdated.toLocaleString()}</span>
           </div>
-        )}
+          {remainingRequests !== null && isLive && (
+            <span className="text-xs text-slate-500 font-mono">
+              Odds API: {remainingRequests} left this month
+            </span>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={isLoading}
+          className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-green-500/15 hover:bg-green-500/25 border border-green-500/30 text-green-400 rounded-lg transition-colors disabled:opacity-50 shrink-0"
+        >
+          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh odds
+        </button>
       </div>
-      <button
-        onClick={onRefresh}
-        disabled={isLoading}
-        className="flex items-center gap-2 px-3 py-1.5 text-sm bg-slate-700/50 hover:bg-slate-600/50 rounded-lg transition-colors disabled:opacity-50"
-      >
-        <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-        <span className="hidden sm:inline">Refresh</span>
-      </button>
+      <p className="text-xs text-slate-500 leading-relaxed">
+        Line movement chart (Analytics tab) records home moneyline per book on each successful refresh.
+        Sportsbook links open the book&apos;s site in a new tab (not tied to a specific game).
+      </p>
     </div>
   )
 }
@@ -132,7 +171,7 @@ export default function Dashboard() {
       
       // Record snapshot for line movement tracking
       if (result.data && !result.cached) {
-        recordOddsSnapshot(result.data)
+        recordOddsSnapshot(result.data, { force: forceRefresh })
       }
     } catch (err) {
       setError('Failed to fetch data')
@@ -214,16 +253,9 @@ export default function Dashboard() {
                   <option key={sport.key} value={sport.key}>{sport.title}</option>
                 ))}
               </select>
-              
-              <div className="flex items-center gap-2 text-xs">
-                {remainingRequests !== null && (
-                  <span className="hidden sm:inline text-slate-500">
-                    {remainingRequests} API calls left
-                  </span>
-                )}
-              </div>
-              
+
               <button
+                type="button"
                 onClick={() => setShowSettings(true)}
                 title="Settings"
                 className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 transition-colors"
@@ -273,9 +305,12 @@ export default function Dashboard() {
               exit={{ opacity: 0, y: -20 }}
               className="space-y-6"
             >
-              <DataStatusBar
+              <DataFreshnessStrip
                 isLive={isLive}
+                isCached={isCached}
                 cacheAge={cacheAge}
+                remainingRequests={remainingRequests}
+                lastUpdated={lastUpdated}
                 isLoading={isLoading}
                 onRefresh={() => loadData(true)}
                 sport={SPORTS.find(s => s.key === selectedSport)?.title || selectedSport}
@@ -435,9 +470,12 @@ export default function Dashboard() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <DataStatusBar
+              <DataFreshnessStrip
                 isLive={isLive}
+                isCached={isCached}
                 cacheAge={cacheAge}
+                remainingRequests={remainingRequests}
+                lastUpdated={lastUpdated}
                 isLoading={isLoading}
                 onRefresh={() => loadData(true)}
                 sport={SPORTS.find(s => s.key === selectedSport)?.title || selectedSport}
@@ -453,9 +491,12 @@ export default function Dashboard() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <DataStatusBar
+              <DataFreshnessStrip
                 isLive={isLive}
+                isCached={isCached}
                 cacheAge={cacheAge}
+                remainingRequests={remainingRequests}
+                lastUpdated={lastUpdated}
                 isLoading={isLoading}
                 onRefresh={() => loadData(true)}
                 sport={SPORTS.find(s => s.key === selectedSport)?.title || selectedSport}
@@ -472,9 +513,12 @@ export default function Dashboard() {
               exit={{ opacity: 0, y: -20 }}
               className="space-y-6"
             >
-              <DataStatusBar
+              <DataFreshnessStrip
                 isLive={isLive}
+                isCached={isCached}
                 cacheAge={cacheAge}
+                remainingRequests={remainingRequests}
+                lastUpdated={lastUpdated}
                 isLoading={isLoading}
                 onRefresh={() => loadData(true)}
                 sport={SPORTS.find(s => s.key === selectedSport)?.title || selectedSport}

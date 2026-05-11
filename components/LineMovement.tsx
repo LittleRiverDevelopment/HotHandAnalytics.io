@@ -35,7 +35,6 @@ interface LineSnapshot {
 
 interface LineMovementProps {
   events: OddsEvent[]
-  onHistoryUpdate?: () => void
 }
 
 const BOOK_COLORS: { [key: string]: string } = {
@@ -45,6 +44,10 @@ const BOOK_COLORS: { [key: string]: string } = {
   caesars: '#1d5c2e',
   pointsbetus: '#e51a38',
   betrivers: '#0055a5',
+  espnbet: '#a855f7',
+  superbook: '#f97316',
+  betfred: '#0ea5e9',
+  fanatics: '#22c55e',
   pinnacle: '#dc2626',
 }
 
@@ -55,6 +58,10 @@ const BOOK_NAMES: { [key: string]: string } = {
   caesars: 'Caesars',
   pointsbetus: 'PointsBet',
   betrivers: 'BetRivers',
+  espnbet: 'ESPN BET',
+  superbook: 'SuperBook',
+  betfred: 'Betfred',
+  fanatics: 'Fanatics',
   pinnacle: 'Pinnacle',
 }
 
@@ -83,14 +90,18 @@ function clearHistory(): void {
   localStorage.removeItem(HISTORY_STORAGE_KEY)
 }
 
-export function recordOddsSnapshot(events: OddsEvent[]): void {
+export function recordOddsSnapshot(
+  events: OddsEvent[],
+  options?: { force?: boolean }
+): void {
   if (events.length === 0) return
-  
+
   const history = getHistory()
   const lastSnapshot = history[history.length - 1]
-  
-  // Don't record if last snapshot was less than 1 minute ago
-  if (lastSnapshot && Date.now() - lastSnapshot.timestamp < 60000) {
+  const minGapMs = options?.force ? 0 : 15_000
+
+  // Manual refresh (force) records every point; otherwise debounce rapid repeats
+  if (minGapMs > 0 && lastSnapshot && Date.now() - lastSnapshot.timestamp < minGapMs) {
     return
   }
   
@@ -120,7 +131,13 @@ export function recordOddsSnapshot(events: OddsEvent[]): void {
 export default function LineMovement({ events }: LineMovementProps) {
   const [history, setHistory] = useState<LineSnapshot[]>([])
   const [selectedGame, setSelectedGame] = useState<string>('')
-  const [selectedBooks, setSelectedBooks] = useState<string[]>(['draftkings', 'fanduel', 'pinnacle'])
+  const [selectedBooks, setSelectedBooks] = useState<string[]>([
+    'draftkings',
+    'fanduel',
+    'betmgm',
+    'caesars',
+    'pinnacle',
+  ])
 
   useEffect(() => {
     setHistory(getHistory())
@@ -148,7 +165,7 @@ export default function LineMovement({ events }: LineMovementProps) {
   const chartData = {
     labels: history.map(h => {
       const date = new Date(h.timestamp)
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     }),
     datasets: selectedBooks
       .filter(book => availableBooks.includes(book))
@@ -276,7 +293,10 @@ export default function LineMovement({ events }: LineMovementProps) {
 
       <div className="p-3 border-t border-slate-800 flex items-center gap-2 text-xs text-slate-500">
         <Info className="w-3.5 h-3.5" />
-        <span>Tracks home team moneyline. History saved locally, builds over time.</span>
+        <span>
+          Tracks home team moneyline across books (toggle lines). Each successful odds refresh adds a
+          point; history is stored locally in your browser.
+        </span>
       </div>
     </div>
   )

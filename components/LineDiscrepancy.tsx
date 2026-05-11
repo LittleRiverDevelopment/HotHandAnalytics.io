@@ -2,10 +2,12 @@
 
 import { useState, useMemo, Fragment } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowUpDown, TrendingUp, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowUpDown, TrendingUp, AlertCircle, ChevronDown, ChevronUp, Download } from 'lucide-react'
 import { LineDiscrepancy as LineDiscrepancyType } from '@/lib/types'
 import { formatOdds } from '@/lib/odds-utils'
 import { format } from 'date-fns'
+import BookOpenLink from './BookOpenLink'
+import { downloadCsv, lineDiscrepanciesToCsvRows } from '@/lib/csv-export'
 
 interface Props {
   discrepancies: LineDiscrepancyType[]
@@ -82,6 +84,19 @@ export default function LineDiscrepancyTable({ discrepancies }: Props) {
         </div>
         
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() =>
+              downloadCsv(
+                `line-shop-${format(new Date(), 'yyyy-MM-dd-HHmm')}.csv`,
+                lineDiscrepanciesToCsvRows(filteredDiscrepancies)
+              )
+            }
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-slate-600 bg-slate-800/50 text-slate-300 hover:text-green-400 hover:border-green-500/40 transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </button>
           <select
             value={filterMarket}
             onChange={(e) => setFilterMarket(e.target.value)}
@@ -197,7 +212,10 @@ export default function LineDiscrepancyTable({ discrepancies }: Props) {
                           <span className="odds-badge text-green-400 font-semibold">
                             {formatOdds(disc.bestOdds)}
                           </span>
-                          <span className="text-xs text-slate-500">{disc.bestBook}</span>
+                          <div className="flex items-center justify-center gap-1 mt-0.5">
+                            <span className="text-xs text-slate-500">{disc.bestBook}</span>
+                            <BookOpenLink bookTitle={disc.bestBook} stopPropagation />
+                          </div>
                         </div>
                       </td>
                       <td className="py-3 px-4 text-center">
@@ -205,7 +223,10 @@ export default function LineDiscrepancyTable({ discrepancies }: Props) {
                           <span className="odds-badge text-slate-400">
                             {formatOdds(disc.worstOdds)}
                           </span>
-                          <span className="text-xs text-slate-500">{disc.worstBook}</span>
+                          <div className="flex items-center justify-center gap-1 mt-0.5">
+                            <span className="text-xs text-slate-500">{disc.worstBook}</span>
+                            <BookOpenLink bookTitle={disc.worstBook} stopPropagation />
+                          </div>
                         </div>
                       </td>
                       <td className="py-3 px-4 text-center">
@@ -258,8 +279,9 @@ export default function LineDiscrepancyTable({ discrepancies }: Props) {
                                           : 'border-slate-700/50 bg-slate-800/30'
                                     }`}
                                   >
-                                    <div className="text-[10px] text-slate-500 truncate" title={row.book}>
-                                      {row.book}
+                                    <div className="text-[10px] text-slate-500 truncate flex items-center justify-center gap-1" title={row.book}>
+                                      <span className="truncate">{row.book}</span>
+                                      <BookOpenLink bookTitle={row.book} />
                                     </div>
                                     <div className={`font-mono text-sm font-semibold mt-1 ${isBest ? 'text-green-400' : 'text-slate-200'}`}>
                                       {formatOdds(row.odds)}
@@ -311,7 +333,7 @@ export default function LineDiscrepancyTable({ discrepancies }: Props) {
               Line discrepancies show the difference in odds between sportsbooks. 
               A higher edge means a bigger price difference. Always bet the best available line.
               Confidence (0–100) rises when more books quote that outcome and the best-to-worst gap is wider.
-              Click any row to expand and see every book&apos;s line side by side.
+              Click any row to expand and see every book&apos;s line side by side. Use the link icon to open that sportsbook in a new tab (general site, not a specific bet slip).
             </p>
           </div>
         </div>

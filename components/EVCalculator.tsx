@@ -2,10 +2,12 @@
 
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Calculator, TrendingUp, Zap, AlertTriangle, ArrowUpDown } from 'lucide-react'
+import { Calculator, TrendingUp, Zap, AlertTriangle, ArrowUpDown, Download } from 'lucide-react'
 import { EVBet } from '@/lib/types'
 import { formatOdds } from '@/lib/odds-utils'
 import { format } from 'date-fns'
+import BookOpenLink from './BookOpenLink'
+import { downloadCsv, evBetsToCsvRows } from '@/lib/csv-export'
 
 interface Props {
   evBets: EVBet[]
@@ -107,6 +109,20 @@ export default function EVCalculator({ evBets }: Props) {
               step="100"
             />
           </div>
+
+          <button
+            type="button"
+            onClick={() =>
+              downloadCsv(
+                `ev-finder-${format(new Date(), 'yyyy-MM-dd-HHmm')}.csv`,
+                evBetsToCsvRows(sortedBets)
+              )
+            }
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-slate-600 bg-slate-800/50 text-slate-300 hover:text-green-400 hover:border-green-500/40 transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </button>
         </div>
       </div>
       
@@ -285,9 +301,12 @@ export default function EVCalculator({ evBets }: Props) {
                       </div>
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <span className="px-2 py-1 bg-slate-800 rounded text-xs">
-                        {bet.book}
-                      </span>
+                      <div className="flex items-center justify-center gap-1">
+                        <span className="px-2 py-1 bg-slate-800 rounded text-xs">
+                          {bet.book}
+                        </span>
+                        <BookOpenLink bookTitle={bet.book} stopPropagation />
+                      </div>
                     </td>
                   </motion.tr>
                   )
