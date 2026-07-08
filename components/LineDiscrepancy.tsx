@@ -3,20 +3,22 @@
 import { useState, useMemo, Fragment } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowUpDown, TrendingUp, AlertCircle, ChevronDown, ChevronUp, Download } from 'lucide-react'
-import { LineDiscrepancy as LineDiscrepancyType } from '@/lib/types'
+import { LineDiscrepancy as LineDiscrepancyType, ScoreEvent } from '@/lib/types'
 import { formatOdds } from '@/lib/odds-utils'
 import { format } from 'date-fns'
 import BookOpenLink from './BookOpenLink'
+import LiveScoreBadge, { findScoreForGame } from './LiveScore'
 import { downloadCsv, lineDiscrepanciesToCsvRows } from '@/lib/csv-export'
 
 interface Props {
   discrepancies: LineDiscrepancyType[]
+  scores?: ScoreEvent[]
 }
 
 type SortField = 'spread' | 'confidence' | 'game' | 'market' | 'time'
 type SortDirection = 'asc' | 'desc'
 
-export default function LineDiscrepancyTable({ discrepancies }: Props) {
+export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
   const [sortField, setSortField] = useState<SortField>('spread')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
@@ -178,6 +180,7 @@ export default function LineDiscrepancyTable({ discrepancies }: Props) {
                   const rowKey = `${disc.eventId}-${disc.market}-${disc.betType}`
                   const isExpanded = expandedRow === rowKey
                   const sortedBooks = [...disc.allBookOdds].sort((a, b) => b.odds - a.odds)
+                  const liveScore = findScoreForGame(scores, disc.eventId, disc.homeTeam, disc.awayTeam)
                   
                   return (
                     <Fragment key={rowKey}>
@@ -195,9 +198,12 @@ export default function LineDiscrepancyTable({ discrepancies }: Props) {
                           <span className="text-slate-500 mt-0.5 shrink-0" aria-hidden>
                             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                           </span>
-                          <div className="flex flex-col min-w-0">
+                          <div className="flex flex-col min-w-0 gap-1">
                             <span className="font-medium text-sm">{disc.awayTeam}</span>
                             <span className="text-slate-400 text-sm">@ {disc.homeTeam}</span>
+                            {liveScore && (
+                              <LiveScoreBadge score={liveScore} homeTeam={disc.homeTeam} awayTeam={disc.awayTeam} />
+                            )}
                           </div>
                         </div>
                       </td>

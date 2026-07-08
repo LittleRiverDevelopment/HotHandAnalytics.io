@@ -1,8 +1,11 @@
-import { OddsEvent, SportKey } from './types'
+import { OddsEvent, ScoreEvent, SportKey } from './types'
 
 const BASE_URL = 'https://api.the-odds-api.com/v4'
 const API_KEY_STORAGE_KEY = 'hothand_odds_api_key'
 const CACHE_STORAGE_KEY = 'hothand_odds_cache'
+const SCORES_CACHE_STORAGE_KEY = 'hothand_scores_cache'
+// Scores change constantly while games are live, so cached scores go stale fast.
+const SCORES_CACHE_TTL_MS = 60 * 1000
 
 function getApiKey(): string | null {
   if (typeof window === 'undefined') return null
@@ -127,6 +130,79 @@ export async function fetchOddsClient(
 
     // Update persistent cache
     setCache(cacheKey, { data, timestamp: Date.now(), remainingRequests })
+
+    return { data, error: null, remainingRequests, cached: false }
+  } catch (error) {
+    return { data: null, error: `Network error: ${error}` }
+  }
+}
+
+interface ScoresCacheEntry {
+  data: ScoreEvent[]
+  timestamp: number
+}
+
+interface ScoresCacheStore {
+  [key: string]: ScoresCacheEntry
+}
+
+function getScoresCache(): ScoresCacheStore {
+  if (typeof window === 'undefined') return {}
+  try {
+    const stored = localStorage.getItem(SCORES_CACHE_STORAGE_KEY)
+    return stored ? JSON.parse(stored) : {}
+  } catch {
+    return {}
+  }
+}
+
+function setScoresCache(key: string, entry: ScoresCacheEntry): void {
+  if (typeof window === 'undefined') return
+  try {
+    const cache = getScoresCache()
+    cache[key] = entry
+    localStorage.setItem(SCORES_CACHE_STORAGE_KEY, JSON.stringify(cache))
+  } catch {
+    // localStorage full or unavailable
+  }
+}
+
+/**
+ * Live/recent scores for a sport. Uses The Odds API `/scores` endpoint, which
+ * returns in-progress and completed games from the last `daysFrom` days.
+ * Cached briefly since scores are only refreshed on demand (no polling).
+ */
+export async function fetchScoresClient(
+  sport: SportKey,
+  forceRefresh: boolean = false
+): Promise<ApiResponse<ScoreEvent[]>> {
+  const cacheKey = sport
+
+  if (!forceRefresh) {
+    const cached = getScoresCache()[cacheKey]
+    if (cached && Date.now() - cached.timestamp < SCORES_CACHE_TTL_MS) {
+      return { data: cached.data, error: null, cached: true }
+    }
+  }
+
+  const apiKey = getApiKey()
+
+  if (!apiKey) {
+    return { data: null, error: 'API key not configured' }
+  }
+
+  try {
+    const url = `${BASE_URL}/sports/${sport}/scores/?apiKey=${apiKey}&daysFrom=2`
+    const response = await fetch(url)
+
+    if (!response.ok) {
+      return { data: null, error: `API error: ${response.status}` }
+    }
+
+    const remainingRequests = parseInt(response.headers.get('x-requests-remaining') || '0')
+    const data: ScoreEvent[] = await response.json()
+
+    setScoresCache(cacheKey, { data, timestamp: Date.now() })
 
     return { data, error: null, remainingRequests, cached: false }
   } catch (error) {

@@ -36,6 +36,24 @@ export interface OddsEvent {
   bookmakers: Bookmaker[]
 }
 
+export interface ScoreEntry {
+  name: string
+  score: string
+}
+
+export interface ScoreEvent {
+  id: string
+  sport_key: string
+  sport_title?: string
+  commence_time: string
+  completed: boolean
+  home_team: string
+  away_team: string
+  /** null until the game has actually started */
+  scores: ScoreEntry[] | null
+  last_update: string | null
+}
+
 export interface LineDiscrepancy {
   eventId: string
   homeTeam: string

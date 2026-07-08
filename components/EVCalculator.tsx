@@ -3,19 +3,21 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Calculator, TrendingUp, Zap, AlertTriangle, ArrowUpDown, Download } from 'lucide-react'
-import { EVBet } from '@/lib/types'
+import { EVBet, ScoreEvent } from '@/lib/types'
 import { formatOdds } from '@/lib/odds-utils'
 import { format } from 'date-fns'
 import BookOpenLink from './BookOpenLink'
+import LiveScoreBadge, { findScoreForGame } from './LiveScore'
 import { downloadCsv, evBetsToCsvRows } from '@/lib/csv-export'
 
 interface Props {
   evBets: EVBet[]
+  scores?: ScoreEvent[]
 }
 
 type SortField = 'ev' | 'confidence' | 'kelly' | 'game' | 'time'
 
-export default function EVCalculator({ evBets }: Props) {
+export default function EVCalculator({ evBets, scores }: Props) {
   const [sortField, setSortField] = useState<SortField>('ev')
   const [minEV, setMinEV] = useState(0)
   const [bankroll, setBankroll] = useState(1000)
@@ -228,6 +230,7 @@ export default function EVCalculator({ evBets }: Props) {
               <AnimatePresence>
                 {sortedBets.map((bet, index) => {
                   const pinnacleAsOf = formatPinnacleAsOf(bet.pinnacleLastUpdate)
+                  const liveScore = findScoreForGame(scores, bet.eventId, bet.homeTeam, bet.awayTeam)
                   return (
                   <motion.tr
                     key={`${bet.eventId}-${bet.selection}-${bet.book}`}
@@ -238,9 +241,12 @@ export default function EVCalculator({ evBets }: Props) {
                     className="table-row"
                   >
                     <td className="py-3 px-4">
-                      <div className="flex flex-col">
+                      <div className="flex flex-col gap-1">
                         <span className="font-medium text-sm">{bet.awayTeam}</span>
                         <span className="text-slate-400 text-sm">@ {bet.homeTeam}</span>
+                        {liveScore && (
+                          <LiveScoreBadge score={liveScore} homeTeam={bet.homeTeam} awayTeam={bet.awayTeam} />
+                        )}
                       </div>
                     </td>
                     <td className="py-3 px-4">

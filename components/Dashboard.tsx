@@ -24,10 +24,11 @@ import EVCalculator from './EVCalculator'
 import PlayerPropAnalyzer from './PlayerPropAnalyzer'
 import EdgeHeatmap from './EdgeHeatmap'
 import LineMovement, { recordOddsSnapshot } from './LineMovement'
-import { OddsEvent, LineDiscrepancy, EVBet, PlayerProp, SPORTS, SportKey } from '@/lib/types'
+import LiveScoreBadge, { findScoreForGame } from './LiveScore'
+import { OddsEvent, ScoreEvent, LineDiscrepancy, EVBet, PlayerProp, SPORTS, SportKey } from '@/lib/types'
 import { findLineDiscrepancies, findEVBets } from '@/lib/odds-utils'
 import { MOCK_EVENTS, MOCK_PLAYER_PROPS } from '@/lib/mock-data'
-import { fetchOddsClient, getCacheAge, hasCachedData } from '@/lib/odds-api'
+import { fetchOddsClient, fetchScoresClient, getCacheAge, hasCachedData } from '@/lib/odds-api'
 import Settings from './Settings'
 
 type Tab = 'discrepancies' | 'ev' | 'props' | 'overview' | 'analytics'
@@ -125,10 +126,11 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
   const [events, setEvents] = useState<OddsEvent[]>([])
+  const [scores, setScores] = useState<ScoreEvent[]>([])
   const [discrepancies, setDiscrepancies] = useState<LineDiscrepancy[]>([])
   const [evBets, setEvBets] = useState<EVBet[]>([])
   const [playerProps] = useState<PlayerProp[]>(MOCK_PLAYER_PROPS)
-  const [selectedSport, setSelectedSport] = useState<SportKey>('basketball_nba')
+  const [selectedSport, setSelectedSport] = useState<SportKey>('baseball_mlb')
   const [isLive, setIsLive] = useState(false)
   const [isCached, setIsCached] = useState(false)
   const [remainingRequests, setRemainingRequests] = useState<number | null>(null)
@@ -146,6 +148,7 @@ export default function Dashboard() {
       if (result.error && !result.data) {
         setError(result.error)
         setEvents(MOCK_EVENTS)
+        setScores([])
         setIsLive(false)
         setIsCached(false)
         setCacheAge(null)
@@ -162,6 +165,19 @@ export default function Dashboard() {
         // Update cache age
         const age = getCacheAge(selectedSport)
         setCacheAge(age)
+
+        // Live scores only make sense against real (non-mock) events
+        if (result.data) {
+          const scoresResult = await fetchScoresClient(selectedSport, forceRefresh)
+          if (scoresResult.data) {
+            setScores(scoresResult.data)
+            if (scoresResult.remainingRequests !== undefined) {
+              setRemainingRequests(scoresResult.remainingRequests)
+            }
+          }
+        } else {
+          setScores([])
+        }
       }
       
       const eventData = result.data || MOCK_EVENTS
@@ -176,6 +192,7 @@ export default function Dashboard() {
     } catch (err) {
       setError('Failed to fetch data')
       setEvents(MOCK_EVENTS)
+      setScores([])
       setDiscrepancies(findLineDiscrepancies(MOCK_EVENTS))
       setEvBets(findEVBets(MOCK_EVENTS))
       setIsLive(false)
@@ -191,6 +208,7 @@ export default function Dashboard() {
     } else {
       // No cache - show mock data, user must click refresh
       setEvents(MOCK_EVENTS)
+      setScores([])
       setDiscrepancies(findLineDiscrepancies(MOCK_EVENTS))
       setEvBets(findEVBets(MOCK_EVENTS))
       setIsLoading(false)
@@ -441,23 +459,30 @@ export default function Dashboard() {
               <div className="card p-4">
                 <div className="flex items-center gap-2 mb-4">
                   <Activity className="w-4 h-4 text-slate-400" />
-                  <span className="font-medium">Upcoming Games</span>
+                  <span className="font-medium">Games</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {events.slice(0, 6).map(event => (
-                    <div key={event.id} className="p-4 bg-slate-800/30 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs text-slate-500">{event.sport_title}</span>
-                        <span className="text-xs text-green-400">
-                          {new Date(event.commence_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                  {events.slice(0, 6).map(event => {
+                    const score = findScoreForGame(scores, event.id, event.home_team, event.away_team)
+                    return (
+                      <div key={event.id} className="p-4 bg-slate-800/30 rounded-lg">
+                        <div className="flex items-center justify-between mb-2 gap-2">
+                          <span className="text-xs text-slate-500">{event.sport_title}</span>
+                          {score ? (
+                            <LiveScoreBadge score={score} homeTeam={event.home_team} awayTeam={event.away_team} />
+                          ) : (
+                            <span className="text-xs text-green-400">
+                              {new Date(event.commence_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          )}
+                        </div>
+                        <div className="space-y-1">
+                          <p className="font-medium">{event.away_team}</p>
+                          <p className="text-slate-400">@ {event.home_team}</p>
+                        </div>
                       </div>
-                      <div className="space-y-1">
-                        <p className="font-medium">{event.away_team}</p>
-                        <p className="text-slate-400">@ {event.home_team}</p>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             </motion.div>
@@ -480,7 +505,7 @@ export default function Dashboard() {
                 onRefresh={() => loadData(true)}
                 sport={SPORTS.find(s => s.key === selectedSport)?.title || selectedSport}
               />
-              <LineDiscrepancyTable discrepancies={discrepancies} />
+              <LineDiscrepancyTable discrepancies={discrepancies} scores={scores} />
             </motion.div>
           )}
           
@@ -501,7 +526,7 @@ export default function Dashboard() {
                 onRefresh={() => loadData(true)}
                 sport={SPORTS.find(s => s.key === selectedSport)?.title || selectedSport}
               />
-              <EVCalculator evBets={evBets} />
+              <EVCalculator evBets={evBets} scores={scores} />
             </motion.div>
           )}
           
