@@ -18,6 +18,7 @@ import {
   Settings as SettingsIcon,
   Database,
   Clock,
+  History,
 } from 'lucide-react'
 import LineDiscrepancyTable from './LineDiscrepancy'
 import EVCalculator from './EVCalculator'
@@ -25,13 +26,15 @@ import PlayerPropAnalyzer from './PlayerPropAnalyzer'
 import EdgeHeatmap from './EdgeHeatmap'
 import LineMovement, { recordOddsSnapshot } from './LineMovement'
 import LiveScoreBadge, { findScoreForGame } from './LiveScore'
+import BetTracker from './BetTracker'
 import { OddsEvent, ScoreEvent, LineDiscrepancy, EVBet, PlayerProp, SPORTS, SportKey } from '@/lib/types'
 import { findLineDiscrepancies, findEVBets } from '@/lib/odds-utils'
 import { MOCK_EVENTS, MOCK_PLAYER_PROPS } from '@/lib/mock-data'
+import { BET_HISTORY } from '@/lib/bet-history'
 import { fetchOddsClient, fetchScoresClient, getCacheAge, hasCachedData } from '@/lib/odds-api'
 import Settings from './Settings'
 
-type Tab = 'discrepancies' | 'ev' | 'props' | 'overview' | 'analytics'
+type Tab = 'discrepancies' | 'ev' | 'props' | 'overview' | 'analytics' | 'tracker'
 
 function formatCacheAge(ms: number): string {
   const minutes = Math.floor(ms / 60000)
@@ -222,6 +225,7 @@ export default function Dashboard() {
     { id: 'ev', label: '+EV Finder', icon: Calculator },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'props', label: 'Player Props', icon: User },
+    { id: 'tracker', label: 'Bet Tracker', icon: History },
   ] as const
   
   const topEVBets = evBets.slice(0, 3)
@@ -567,6 +571,23 @@ export default function Dashboard() {
                 </div>
               </div>
               <PlayerPropAnalyzer playerProps={playerProps} />
+            </motion.div>
+          )}
+
+          {activeTab === 'tracker' && (
+            <motion.div
+              key="tracker"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <div className="flex items-center justify-between p-3 mb-4 bg-slate-800/30 rounded-lg border border-slate-700/50">
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="w-2 h-2 bg-purple-400 rounded-full" />
+                  <span className="text-slate-400">Historical sample data • No API calls used</span>
+                </div>
+              </div>
+              <BetTracker bets={BET_HISTORY} />
             </motion.div>
           )}
         </AnimatePresence>

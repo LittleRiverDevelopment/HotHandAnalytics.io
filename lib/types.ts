@@ -158,3 +158,21 @@ export const SPORTS = [
 ] as const
 
 export type SportKey = typeof SPORTS[number]['key']
+
+export interface HistoricalBet {
+  id: number
+  /** ISO date (YYYY-MM-DD) the bet was placed */
+  date: string
+  description: string
+  sport: string
+  book: string
+  units: number
+  odds: number
+  status: 'W' | 'L' | 'Push' | 'Open'
+  /** Net units won/lost on this bet; null while status is 'Open' */
+  delta: number | null
+  /** Running bankroll total (in units) after this bet settles; null while 'Open' */
+  cumulative: number | null
+  /** Optional bet-slip share link (sportsbook or Pikkit) */
+  tailLink?: string
+}

@@ -1,4 +1,4 @@
-import { LineDiscrepancy, EVBet } from '@/lib/types'
+import { LineDiscrepancy, EVBet, HistoricalBet } from '@/lib/types'
 
 function escapeCsvCell(value: string | number): string {
   const s = String(value)
@@ -88,6 +88,34 @@ export function evBetsToCsvRows(rows: EVBet[]): (string | number)[][] {
     b.book,
     b.bookDeepLink ?? '',
     b.commenceTime,
+  ])
+  return [header, ...body]
+}
+
+export function betHistoryToCsvRows(rows: HistoricalBet[]): (string | number)[][] {
+  const header = [
+    'Date',
+    'Description',
+    'Sport',
+    'Book',
+    'Units',
+    'Odds',
+    'Status',
+    'UnitsWL',
+    'RunningTotal',
+    'TailLink',
+  ]
+  const body = rows.map(b => [
+    b.date,
+    b.description,
+    b.sport,
+    b.book,
+    b.units,
+    b.odds,
+    b.status,
+    b.delta ?? '',
+    b.cumulative ?? '',
+    b.tailLink ?? '',
   ])
   return [header, ...body]
 }
