@@ -224,7 +224,10 @@ export default function BetTracker({ bets }: Props) {
             {summary.wins}-{summary.losses}
             {summary.pushes > 0 ? `-${summary.pushes}` : ''}
           </p>
-          <p className="text-xs text-slate-500 mt-1">{summary.winRate.toFixed(1)}% win rate</p>
+          <p className="text-xs text-slate-500 mt-1">
+            {summary.winRate.toFixed(1)}% win rate
+            {summary.openBets > 0 ? ` · ${summary.openBets} open (not counted)` : ''}
+          </p>
         </div>
 
         <div className="card p-4 card-hover">
