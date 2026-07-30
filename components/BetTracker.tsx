@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Line } from 'react-chartjs-2'
 import {
@@ -26,18 +26,20 @@ import {
   Download,
   ExternalLink,
   Info,
+  RefreshCw,
+  Wifi,
+  WifiOff,
+  AlertCircle,
 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { HistoricalBet } from '@/lib/types'
 import { computeSummary, sortByDate } from '@/lib/bet-tracker-utils'
 import { formatOdds } from '@/lib/odds-utils'
 import { downloadCsv, betHistoryToCsvRows } from '@/lib/csv-export'
+import { fetchBetHistoryFromSheet } from '@/lib/bet-sheet'
+import { BET_HISTORY } from '@/lib/bet-history'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Title, Tooltip, Legend)
-
-interface Props {
-  bets: HistoricalBet[]
-}
 
 type SortField = 'date' | 'units' | 'odds' | 'delta'
 type SortDirection = 'asc' | 'desc'
@@ -47,12 +49,53 @@ function formatUnits(n: number): string {
   return `${sign}${n.toFixed(2)}`
 }
 
-export default function BetTracker({ bets }: Props) {
+function formatSyncAge(ms: number): string {
+  const minutes = Math.floor(ms / 60000)
+  const hours = Math.floor(minutes / 60)
+  if (hours > 0) return `${hours}h ${minutes % 60}m ago`
+  if (minutes > 0) return `${minutes}m ago`
+  return 'just now'
+}
+
+export default function BetTracker() {
+  const [bets, setBets] = useState<HistoricalBet[]>(BET_HISTORY)
+  const [isSyncing, setIsSyncing] = useState(true)
+  const [isLive, setIsLive] = useState(false)
+  const [syncError, setSyncError] = useState<string | null>(null)
+  const [lastSynced, setLastSynced] = useState<number | null>(null)
+  const [now, setNow] = useState(() => Date.now())
+
   const [sortField, setSortField] = useState<SortField>('date')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const [sportFilter, setSportFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [search, setSearch] = useState('')
+
+  const loadFromSheet = useCallback(async (forceRefresh: boolean) => {
+    setIsSyncing(true)
+    const result = await fetchBetHistoryFromSheet(forceRefresh)
+    if (result.data) {
+      setBets(result.data)
+      setIsLive(!result.error)
+    } else {
+      // Sheet unreachable and nothing cached — fall back to the bundled snapshot.
+      setBets(BET_HISTORY)
+      setIsLive(false)
+    }
+    setSyncError(result.error)
+    setLastSynced(result.lastSynced)
+    setIsSyncing(false)
+  }, [])
+
+  useEffect(() => {
+    loadFromSheet(false)
+  }, [loadFromSheet])
+
+  // Keep the "X min ago" label ticking without needing a manual refresh.
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 30000)
+    return () => clearInterval(interval)
+  }, [])
 
   const chronological = useMemo(() => sortByDate(bets), [bets])
   const summary = useMemo(() => computeSummary(bets), [bets])
@@ -187,6 +230,8 @@ export default function BetTracker({ bets }: Props) {
       ? '—'
       : `${summary.currentStreak.count}${summary.currentStreak.type}`
 
+  const syncAge = lastSynced !== null ? formatSyncAge(now - lastSynced) : null
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-4">
@@ -210,6 +255,42 @@ export default function BetTracker({ bets }: Props) {
         >
           <Download className="w-4 h-4" />
           Export CSV
+        </button>
+      </div>
+
+      {/* Sync status */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-lg border border-slate-700/50 bg-slate-900/40">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-300">
+          <div className="flex items-center gap-2">
+            {isLive ? (
+              <Wifi className="w-4 h-4 text-green-400 shrink-0" />
+            ) : (
+              <WifiOff className="w-4 h-4 text-amber-400 shrink-0" />
+            )}
+            <span className="text-slate-400">
+              {isLive
+                ? 'Synced from Google Sheet'
+                : syncError
+                  ? 'Could not reach sheet — showing last known data'
+                  : 'Demo data'}
+            </span>
+          </div>
+          {syncAge && <span className="text-xs text-slate-500">Updated {syncAge}</span>}
+          {syncError && (
+            <span className="flex items-center gap-1 text-xs text-amber-400">
+              <AlertCircle className="w-3.5 h-3.5" />
+              {syncError}
+            </span>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={() => loadFromSheet(true)}
+          disabled={isSyncing}
+          className="flex items-center justify-center gap-2 px-3 py-1.5 text-sm bg-green-500/15 hover:bg-green-500/25 border border-green-500/30 text-green-400 rounded-lg transition-colors disabled:opacity-50 shrink-0"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+          Sync now
         </button>
       </div>
 
@@ -480,11 +561,11 @@ export default function BetTracker({ bets }: Props) {
           <div>
             <h3 className="font-medium text-sm">About this tracker</h3>
             <p className="text-sm text-slate-400 mt-1">
-              Historical sample bet log for demonstration purposes — sourced from a personal bet-tracking
-              spreadsheet spanning the NBA/CBB season through the 2026 World Cup. Units W/L and running
-              totals come directly from the sheet (not recomputed from odds), so results reflect
-              real settlement including any partial cash-outs. The equity curve plots cumulative units
-              won/lost after each settled bet; the current &quot;Open&quot; bet is excluded until it settles.
+              Historical bet log for demonstration purposes — synced live from a personal Google Sheets
+              bet tracker spanning the NBA/CBB season through the 2026 World Cup and into MLB. Units W/L
+              and running totals come directly from the sheet (not recomputed from odds), so results
+              reflect real settlement including any partial cash-outs. The equity curve plots cumulative
+              units won/lost after each settled bet; any &quot;Open&quot; bet is excluded until it settles.
             </p>
           </div>
         </div>

@@ -30,7 +30,6 @@ import BetTracker from './BetTracker'
 import { OddsEvent, ScoreEvent, LineDiscrepancy, EVBet, PlayerProp, SPORTS, SportKey } from '@/lib/types'
 import { findLineDiscrepancies, findEVBets } from '@/lib/odds-utils'
 import { MOCK_EVENTS, MOCK_PLAYER_PROPS } from '@/lib/mock-data'
-import { BET_HISTORY } from '@/lib/bet-history'
 import { fetchOddsClient, fetchScoresClient, getCacheAge, hasCachedData } from '@/lib/odds-api'
 import Settings from './Settings'
 
@@ -581,13 +580,7 @@ export default function Dashboard() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <div className="flex items-center justify-between p-3 mb-4 bg-slate-800/30 rounded-lg border border-slate-700/50">
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="w-2 h-2 bg-purple-400 rounded-full" />
-                  <span className="text-slate-400">Historical sample data • No API calls used</span>
-                </div>
-              </div>
-              <BetTracker bets={BET_HISTORY} />
+              <BetTracker />
             </motion.div>
           )}
         </AnimatePresence>
