@@ -5,7 +5,7 @@ import { HistoricalBet } from './types'
 // `delta` and `cumulative` are derived from the running-total column (self-consistent
 // with the sheet), not recomputed from odds, since some entries include manual
 // adjustments (partial cash-outs, etc.) that a pure odds formula would miss.
-export const BET_HISTORY_SYNCED_AT = "2026-08-03T15:46:48.997Z"
+export const BET_HISTORY_SYNCED_AT = "2026-08-03T21:57:00.961Z"
 
 export const BET_HISTORY: HistoricalBet[] = [
   {
@@ -710,7 +710,7 @@ export const BET_HISTORY: HistoricalBet[] = [
   {
     id: 56,
     date: '2026-07-22',
-    description: "Shohei Ohtani over 0.5 bases • Yordan Alvarez over 0.5 bases",
+    description: "Shohei Ohtani over 0.5 bases + Yordan Alvarez over 0.5 bases",
     sport: "MLB",
     book: "FanDuel",
     units: 1,
@@ -801,7 +801,7 @@ export const BET_HISTORY: HistoricalBet[] = [
   {
     id: 63,
     date: '2026-07-29',
-    description: "Drake Baldwin 1+ Hit • Matt Olson 1+ Hit • Braves Over 0.5 Team Runs",
+    description: "Drake Baldwin 1+ Hit Matt Olson 1+ Hit Braves Over 0.5 Team Runs",
     sport: "MLB",
     book: "BetMGM",
     units: 1,
@@ -814,7 +814,7 @@ export const BET_HISTORY: HistoricalBet[] = [
   {
     id: 64,
     date: '2026-07-30',
-    description: "Nathaniel Lowe 1+ Hit • Brandon Lowe 1+ Hit",
+    description: "Nathaniel Lowe 1+ Hit & Brandon Lowe 1+ Hit",
     sport: "MLB",
     book: "FanDuel",
     units: 1,
@@ -827,7 +827,7 @@ export const BET_HISTORY: HistoricalBet[] = [
   {
     id: 65,
     date: '2026-07-31',
-    description: "Kyle Karros to Record a Hit • Brenton Doyle to Record a Hit",
+    description: "Kyle Karros to Record a Hit +Brenton Doyle to Record a Hit",
     sport: "MLB",
     book: "FanDuel",
     units: 1,
@@ -849,5 +849,18 @@ export const BET_HISTORY: HistoricalBet[] = [
     delta: 0.752,
     cumulative: 14.96388,
     tailLink: "https://links.pikkit.com/bets/b52ce7ba-0066-4eb2-b29b-da12e30de8c2",
+  },
+  {
+    id: 67,
+    date: '2026-08-03',
+    description: "Jung Hoo Lee Hit + Jordan Alvarez Hit",
+    sport: "MLB",
+    book: "FanDuel",
+    units: 2.5,
+    odds: 126,
+    status: 'W',
+    delta: 1.26,
+    cumulative: 16.224,
+    tailLink: "https://links.pikkit.com/bets/232be923-293b-4b29-b36e-c56decf63da0",
   },
 ]
