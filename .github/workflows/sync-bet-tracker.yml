@@ -1,0 +1,49 @@
+name: Sync Bet Tracker
+
+on:
+  schedule:
+    - cron: "0 */3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Sync bet history from Google Sheet
+        id: sync
+        run: |
+          set +e
+          node scripts/sync-bet-history.mjs
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          set -e
+
+      # Script exit code 42 means the sheet was reachable but no bet data actually
+      # changed (only the embedded sync timestamp did) — discard that no-op diff so
+      # we don't create an empty commit / redeploy for nothing.
+      - name: Discard no-op timestamp-only change
+        if: steps.sync.outputs.exit_code == '42'
+        run: git checkout -- lib/bet-history.ts
+
+      - name: Fail job on real sync error
+        if: steps.sync.outputs.exit_code != '0' && steps.sync.outputs.exit_code != '42'
+        run: exit 1
+
+      - name: Commit and push updated bet history
+        if: steps.sync.outputs.exit_code == '0'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add lib/bet-history.ts
+          git commit -m "Auto-sync bet tracker data"
+          git push
