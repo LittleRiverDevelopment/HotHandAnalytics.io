@@ -5,7 +5,7 @@ import { HistoricalBet } from './types'
 // `delta` and `cumulative` are derived from the running-total column (self-consistent
 // with the sheet), not recomputed from odds, since some entries include manual
 // adjustments (partial cash-outs, etc.) that a pure odds formula would miss.
-export const BET_HISTORY_SYNCED_AT = "2026-08-04T01:20:58.657Z"
+export const BET_HISTORY_SYNCED_AT = "2026-08-04T22:01:55.551Z"
 
 export const BET_HISTORY: HistoricalBet[] = [
   {
@@ -862,5 +862,18 @@ export const BET_HISTORY: HistoricalBet[] = [
     delta: 1.26,
     cumulative: 16.22388,
     tailLink: "https://links.pikkit.com/bets/232be923-293b-4b29-b36e-c56decf63da0",
+  },
+  {
+    id: 68,
+    date: '2026-08-04',
+    description: "Nick Gonzales + Freddie Freeman to record a hit",
+    sport: "MLB",
+    book: "BetMGM",
+    units: 1,
+    odds: 104,
+    status: 'Push',
+    delta: NaN,
+    cumulative: NaN,
+    tailLink: "https://links.pikkit.com/bets/a756f742-a44e-4724-a9a6-6678e2032485",
   },
 ]
