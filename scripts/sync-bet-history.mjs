@@ -102,6 +102,17 @@ function parseCsv(text) {
   return rows
 }
 
+// Safely parses a numeric cell, collapsing blanks *and* any non-numeric text
+// (e.g. the sheet writes the literal word "Open" into the W/L and Running Total
+// columns for a live bet) down to null instead of leaking NaN into the output.
+function parseNum(raw) {
+  if (!raw) return null
+  const trimmed = raw.trim()
+  if (trimmed === '') return null
+  const n = parseFloat(trimmed)
+  return Number.isNaN(n) ? null : n
+}
+
 function cleanDescription(desc) {
   return desc
     .replace(/\r\n|\r|\n/g, ' • ')
@@ -144,10 +155,13 @@ function parseBetSheetCsv(csvText) {
     if (sport === 'ML') sport = 'MLB' // data-entry slip seen in the sheet (e.g. "All-Star NRFI")
     const book = (bookRaw || '').trim()
     const statusText = (statusRaw || '').trim()
-    const wl = !wlRaw || wlRaw.trim() === '' ? null : parseFloat(wlRaw)
-    const running = !runningRaw || runningRaw.trim() === '' ? null : parseFloat(runningRaw)
+    const wl = parseNum(wlRaw)
+    const running = parseNum(runningRaw)
     const tailLink = (tailLinkRaw || '').trim() || undefined
-    const isOpen = statusText === 'Open' && wl === null && running === null
+    // Trust the Status column as the source of truth for "still live" — the sheet
+    // also writes the literal text "Open" into the W/L and Running Total cells,
+    // which parseNum correctly reduces to null rather than a stray "Open" string.
+    const isOpen = statusText.toLowerCase() === 'open'
 
     let delta = null
     let cumulativeAfter = cumulative
@@ -171,6 +185,13 @@ function parseBetSheetCsv(csvText) {
     else if (delta > 0) status = 'W'
     else if (delta < 0) status = 'L'
     else status = 'Push'
+
+    // Belt-and-suspenders: never let a NaN slip into the generated file — treat an
+    // unparseable settled row as still-open rather than corrupting the running total.
+    if (Number.isNaN(delta) || Number.isNaN(cumulativeAfter)) {
+      console.warn(`Skipping unparseable row (would produce NaN): ${dateLabel} — ${description}`)
+      continue
+    }
 
     bets.push({
       id: bets.length + 1,
