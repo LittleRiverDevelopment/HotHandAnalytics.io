@@ -52,7 +52,6 @@ interface DataFreshnessStripProps {
   isLive: boolean
   isCached: boolean
   cacheAge: number | null
-  remainingRequests: number | null
   lastUpdated: Date
   isLoading: boolean
   onRefresh: () => void
@@ -63,7 +62,6 @@ function DataFreshnessStrip({
   isLive,
   isCached,
   cacheAge,
-  remainingRequests,
   lastUpdated,
   isLoading,
   onRefresh,
@@ -99,11 +97,6 @@ function DataFreshnessStrip({
             <Clock className="w-3.5 h-3.5 shrink-0 text-slate-500" />
             <span>Updated {lastUpdated.toLocaleString()}</span>
           </div>
-          {remainingRequests !== null && isLive && (
-            <span className="text-xs text-slate-500 font-mono">
-              Odds API: {remainingRequests} left this month
-            </span>
-          )}
         </div>
         <button
           type="button"
@@ -115,10 +108,6 @@ function DataFreshnessStrip({
           Refresh odds
         </button>
       </div>
-      <p className="text-xs text-slate-500 leading-relaxed">
-        Line movement chart (Analytics tab) records home moneyline per book on each successful refresh.
-        Sportsbook links use The Odds API deep links to the event or bet slip when the book provides them; otherwise they open the book&apos;s home page.
-      </p>
     </div>
   )
 }
@@ -330,7 +319,6 @@ export default function Dashboard() {
                 isLive={isLive}
                 isCached={isCached}
                 cacheAge={cacheAge}
-                remainingRequests={remainingRequests}
                 lastUpdated={lastUpdated}
                 isLoading={isLoading}
                 onRefresh={() => loadData(true)}
@@ -502,7 +490,6 @@ export default function Dashboard() {
                 isLive={isLive}
                 isCached={isCached}
                 cacheAge={cacheAge}
-                remainingRequests={remainingRequests}
                 lastUpdated={lastUpdated}
                 isLoading={isLoading}
                 onRefresh={() => loadData(true)}
@@ -523,7 +510,6 @@ export default function Dashboard() {
                 isLive={isLive}
                 isCached={isCached}
                 cacheAge={cacheAge}
-                remainingRequests={remainingRequests}
                 lastUpdated={lastUpdated}
                 isLoading={isLoading}
                 onRefresh={() => loadData(true)}
@@ -545,7 +531,6 @@ export default function Dashboard() {
                 isLive={isLive}
                 isCached={isCached}
                 cacheAge={cacheAge}
-                remainingRequests={remainingRequests}
                 lastUpdated={lastUpdated}
                 isLoading={isLoading}
                 onRefresh={() => loadData(true)}

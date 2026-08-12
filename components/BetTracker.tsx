@@ -27,6 +27,7 @@ import {
   ExternalLink,
   Info,
   Wifi,
+  RefreshCw,
 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { computeSummary, sortByDate } from '@/lib/bet-tracker-utils'
@@ -234,13 +235,24 @@ export default function BetTracker() {
       </div>
 
       {/* Sync status */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 p-3 rounded-lg border border-slate-700/50 bg-slate-900/40 text-sm">
-        <div className="flex items-center gap-2">
-          <Wifi className="w-4 h-4 text-green-400 shrink-0" />
-          <span className="text-slate-400">Auto-synced from Google Sheet</span>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 p-3 rounded-lg border border-slate-700/50 bg-slate-900/40 text-sm">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="flex items-center gap-2">
+            <Wifi className="w-4 h-4 text-green-400 shrink-0" />
+            <span className="text-slate-400">Auto-synced from Google Sheet</span>
+          </div>
+          <span className="text-xs text-slate-500">Last synced {syncAge}</span>
+          <span className="text-xs text-slate-600">· Runs every 3h via scheduled GitHub Action</span>
         </div>
-        <span className="text-xs text-slate-500">Last synced {syncAge}</span>
-        <span className="text-xs text-slate-600">· Runs every 3h via scheduled GitHub Action</span>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          title="Reload the page to pick up the latest deployed sync"
+          className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm bg-slate-800/60 hover:bg-slate-700/60 border border-slate-600/50 text-slate-300 hover:text-green-400 rounded-lg transition-colors shrink-0"
+        >
+          <RefreshCw className="w-3.5 h-3.5" />
+          Refresh
+        </button>
       </div>
 
       {/* Summary cards */}
