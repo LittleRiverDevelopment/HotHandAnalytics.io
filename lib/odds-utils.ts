@@ -1,4 +1,4 @@
-import { OddsEvent, LineDiscrepancy, EVBet, Outcome, Market, Bookmaker } from './types'
+import { OddsEvent, LineDiscrepancy, EVBet, ArbitrageOpportunity, ArbitrageLeg, Outcome, Market, Bookmaker } from './types'
 
 // Colorado books only (exclude Pinnacle from betting display)
 const COLORADO_BOOK_KEYS = [
@@ -300,6 +300,175 @@ export function findEVBets(events: OddsEvent[], minEV: number = 0.02): EVBet[] {
   })
 
   return evBets.sort((a, b) => b.evPercent - a.evPercent)
+}
+
+/** Formats a point value into the same string used as a bookOddsMap key, so pairs match reliably. */
+function pointKey(point: number): string {
+  return `${point}`
+}
+
+/** For a given key (e.g. "Over|1.5" or "Lakers|-4.5"), returns the key of its true counterparty leg. */
+function getOpposingArbKey(
+  marketKey: string,
+  key: string,
+  homeTeam: string,
+  awayTeam: string
+): string | undefined {
+  if (marketKey === 'totals') {
+    const [name, pointStr] = key.split('|')
+    if (pointStr === undefined) return undefined
+    const other = name === 'Over' ? 'Under' : name === 'Under' ? 'Over' : undefined
+    return other ? `${other}|${pointStr}` : undefined
+  }
+  if (marketKey === 'spreads') {
+    const [name, pointStr] = key.split('|')
+    if (pointStr === undefined) return undefined
+    const point = parseFloat(pointStr)
+    if (Number.isNaN(point)) return undefined
+    const otherTeam = name === homeTeam ? awayTeam : name === awayTeam ? homeTeam : undefined
+    if (!otherTeam) return undefined
+    return `${otherTeam}|${pointKey(-point)}`
+  }
+  return undefined
+}
+
+/** Stronger with a bigger locked-in profit margin and closer-together book update times (less staleness risk). */
+function computeArbConfidence(profitPercent: number, maxUpdateGapMinutes: number): number {
+  const profitScore = Math.min(70, profitPercent * 16)
+  const staleness = Math.min(45, maxUpdateGapMinutes * 1.2)
+  return Math.round(Math.max(5, Math.min(100, 30 + profitScore - staleness)))
+}
+
+function buildArbLegs(
+  entries: { book: string; odds: number; point?: number; link?: string; lastUpdate: string }[],
+  names: string[]
+): { legs: ArbitrageLeg[]; impliedProbabilitySum: number; profitPercent: number; maxUpdateGapMinutes: number } | null {
+  const impliedProbs = entries.map(e => impliedProbability(e.odds))
+  const impliedProbabilitySum = impliedProbs.reduce((a, b) => a + b, 0)
+  if (impliedProbabilitySum >= 1) return null
+
+  const profitPercent = (1 / impliedProbabilitySum - 1) * 100
+  const legs: ArbitrageLeg[] = entries.map((e, i) => ({
+    selection: names[i],
+    odds: e.odds,
+    book: e.book,
+    point: e.point,
+    stakePercent: (impliedProbs[i] / impliedProbabilitySum) * 100,
+    lastUpdate: e.lastUpdate,
+    deepLink: e.link,
+  }))
+
+  const updateTimes = entries
+    .map(e => new Date(e.lastUpdate).getTime())
+    .filter(t => !Number.isNaN(t))
+  const maxUpdateGapMinutes =
+    updateTimes.length >= 2
+      ? (Math.max(...updateTimes) - Math.min(...updateTimes)) / 60000
+      : 0
+
+  return { legs, impliedProbabilitySum, profitPercent, maxUpdateGapMinutes }
+}
+
+/**
+ * Finds guaranteed-profit spots: betting every side of a market across different books where the
+ * combined implied probability is under 100%, locking in a profit no matter how the game ends.
+ */
+export function findArbitrageOpportunities(
+  events: OddsEvent[],
+  minProfitPercent: number = 0.1
+): ArbitrageOpportunity[] {
+  const opportunities: ArbitrageOpportunity[] = []
+
+  events.forEach(event => {
+    const marketTypes = ['h2h', 'spreads', 'totals']
+
+    marketTypes.forEach(marketKey => {
+      type Entry = { book: string; odds: number; point?: number; link?: string; lastUpdate: string }
+      const bestByKey: Map<string, Entry> = new Map()
+
+      event.bookmakers.forEach(bookmaker => {
+        if (!isColoradoBook(bookmaker.key)) return
+        const market = bookmaker.markets.find(m => m.key === marketKey)
+        if (!market) return
+
+        market.outcomes.forEach(outcome => {
+          const key = outcome.point !== undefined ? `${outcome.name}|${outcome.point}` : outcome.name
+          const existing = bestByKey.get(key)
+          if (!existing || outcome.price > existing.odds) {
+            bestByKey.set(key, {
+              book: bookmaker.title,
+              odds: outcome.price,
+              point: outcome.point,
+              link: getDeepestBookmakerLink(outcome, market, bookmaker),
+              lastUpdate: market.last_update || bookmaker.last_update || '',
+            })
+          }
+        })
+      })
+
+      const marketLabel = marketKey === 'h2h' ? 'Moneyline' : marketKey === 'spreads' ? 'Spread' : 'Total'
+
+      if (marketKey === 'h2h') {
+        // The h2h market for one event is already the full outcome set (2-way, or 3-way with a draw).
+        if (bestByKey.size < 2) return
+        const names = Array.from(bestByKey.keys())
+        const entries = names.map(n => bestByKey.get(n)!)
+        const built = buildArbLegs(entries, names)
+        if (!built || built.profitPercent < minProfitPercent) return
+
+        opportunities.push({
+          eventId: event.id,
+          homeTeam: event.home_team,
+          awayTeam: event.away_team,
+          market: marketLabel,
+          commenceTime: event.commence_time,
+          legs: built.legs,
+          impliedProbabilitySum: built.impliedProbabilitySum,
+          profitPercent: built.profitPercent,
+          confidenceScore: computeArbConfidence(built.profitPercent, built.maxUpdateGapMinutes),
+        })
+        return
+      }
+
+      // spreads / totals: pair each key with its true counterparty leg, once per pair.
+      const processed = new Set<string>()
+      bestByKey.forEach((entry, key) => {
+        if (processed.has(key)) return
+        const opposingKey = getOpposingArbKey(marketKey, key, event.home_team, event.away_team)
+        if (!opposingKey || opposingKey === key) return
+        const opposingEntry = bestByKey.get(opposingKey)
+        if (!opposingEntry) return
+
+        processed.add(key)
+        processed.add(opposingKey)
+
+        const [nameA] = key.split('|')
+        const [nameB] = opposingKey.split('|')
+        const label = (name: string, point?: number) =>
+          point !== undefined ? `${name} ${point > 0 ? '+' : ''}${point}` : name
+
+        const built = buildArbLegs(
+          [entry, opposingEntry],
+          [label(nameA, entry.point), label(nameB, opposingEntry.point)]
+        )
+        if (!built || built.profitPercent < minProfitPercent) return
+
+        opportunities.push({
+          eventId: event.id,
+          homeTeam: event.home_team,
+          awayTeam: event.away_team,
+          market: marketLabel,
+          commenceTime: event.commence_time,
+          legs: built.legs,
+          impliedProbabilitySum: built.impliedProbabilitySum,
+          profitPercent: built.profitPercent,
+          confidenceScore: computeArbConfidence(built.profitPercent, built.maxUpdateGapMinutes),
+        })
+      })
+    })
+  })
+
+  return opportunities.sort((a, b) => b.profitPercent - a.profitPercent)
 }
 
 export function getEdgeClass(spread: number): string {

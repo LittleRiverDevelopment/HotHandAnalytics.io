@@ -95,6 +95,32 @@ export interface EVBet {
   bookDeepLink?: string
 }
 
+export interface ArbitrageLeg {
+  selection: string
+  odds: number
+  book: string
+  point?: number
+  /** Share of total stake this leg should receive to lock in equal profit on every outcome */
+  stakePercent: number
+  lastUpdate: string
+  deepLink?: string
+}
+
+export interface ArbitrageOpportunity {
+  eventId: string
+  homeTeam: string
+  awayTeam: string
+  market: string
+  commenceTime: string
+  legs: ArbitrageLeg[]
+  /** Sum of implied probabilities across legs; below 100% means a guaranteed profit */
+  impliedProbabilitySum: number
+  /** Guaranteed profit % on total stake when sized per each leg's stakePercent */
+  profitPercent: number
+  /** 0–100: stronger with higher profit% and tighter timing between the legs' book updates */
+  confidenceScore: number
+}
+
 export interface PlayerGameLog {
   date: string
   matchup: string

@@ -19,21 +19,25 @@ import {
   Database,
   Clock,
   History,
+  Scale,
+  Dice5,
 } from 'lucide-react'
 import LineDiscrepancyTable from './LineDiscrepancy'
 import EVCalculator from './EVCalculator'
+import ArbitrageFinder from './ArbitrageFinder'
 import PlayerPropAnalyzer from './PlayerPropAnalyzer'
 import EdgeHeatmap from './EdgeHeatmap'
 import LineMovement, { recordOddsSnapshot } from './LineMovement'
 import LiveScoreBadge, { findScoreForGame } from './LiveScore'
 import BetTracker from './BetTracker'
-import { OddsEvent, ScoreEvent, LineDiscrepancy, EVBet, PlayerProp, SPORTS, SportKey } from '@/lib/types'
-import { findLineDiscrepancies, findEVBets } from '@/lib/odds-utils'
+import BankrollSimulator from './BankrollSimulator'
+import { OddsEvent, ScoreEvent, LineDiscrepancy, EVBet, ArbitrageOpportunity, PlayerProp, SPORTS, SportKey } from '@/lib/types'
+import { findLineDiscrepancies, findEVBets, findArbitrageOpportunities } from '@/lib/odds-utils'
 import { MOCK_EVENTS, MOCK_PLAYER_PROPS } from '@/lib/mock-data'
 import { fetchOddsClient, fetchScoresClient, getCacheAge, hasCachedData } from '@/lib/odds-api'
 import Settings from './Settings'
 
-type Tab = 'discrepancies' | 'ev' | 'props' | 'overview' | 'analytics' | 'tracker'
+type Tab = 'discrepancies' | 'ev' | 'arbitrage' | 'props' | 'overview' | 'analytics' | 'tracker' | 'simulator'
 
 function formatCacheAge(ms: number): string {
   const minutes = Math.floor(ms / 60000)
@@ -120,6 +124,7 @@ export default function Dashboard() {
   const [scores, setScores] = useState<ScoreEvent[]>([])
   const [discrepancies, setDiscrepancies] = useState<LineDiscrepancy[]>([])
   const [evBets, setEvBets] = useState<EVBet[]>([])
+  const [arbs, setArbs] = useState<ArbitrageOpportunity[]>([])
   const [playerProps] = useState<PlayerProp[]>(MOCK_PLAYER_PROPS)
   const [selectedSport, setSelectedSport] = useState<SportKey>('baseball_mlb')
   const [isLive, setIsLive] = useState(false)
@@ -174,6 +179,7 @@ export default function Dashboard() {
       const eventData = result.data || MOCK_EVENTS
       setDiscrepancies(findLineDiscrepancies(eventData))
       setEvBets(findEVBets(eventData))
+      setArbs(findArbitrageOpportunities(eventData))
       setLastUpdated(new Date())
       
       // Record snapshot for line movement tracking
@@ -186,6 +192,7 @@ export default function Dashboard() {
       setScores([])
       setDiscrepancies(findLineDiscrepancies(MOCK_EVENTS))
       setEvBets(findEVBets(MOCK_EVENTS))
+      setArbs(findArbitrageOpportunities(MOCK_EVENTS))
       setIsLive(false)
     } finally {
       setIsLoading(false)
@@ -202,6 +209,7 @@ export default function Dashboard() {
       setScores([])
       setDiscrepancies(findLineDiscrepancies(MOCK_EVENTS))
       setEvBets(findEVBets(MOCK_EVENTS))
+      setArbs(findArbitrageOpportunities(MOCK_EVENTS))
       setIsLoading(false)
       setIsLive(false)
     }
@@ -211,9 +219,11 @@ export default function Dashboard() {
     { id: 'overview', label: 'Overview', icon: Activity },
     { id: 'discrepancies', label: 'Line Shop', icon: TrendingUp },
     { id: 'ev', label: '+EV Finder', icon: Calculator },
+    { id: 'arbitrage', label: 'Arbitrage', icon: Scale },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'props', label: 'Player Props', icon: User },
     { id: 'tracker', label: 'Bet Tracker', icon: History },
+    { id: 'simulator', label: 'Bankroll Sim', icon: Dice5 },
   ] as const
   
   const topEVBets = evBets.slice(0, 3)
@@ -324,7 +334,7 @@ export default function Dashboard() {
                 onRefresh={() => loadData(true)}
                 sport={SPORTS.find(s => s.key === selectedSport)?.title || selectedSport}
               />
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div className="card p-4 card-hover">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-400">Line Edges</span>
@@ -341,6 +351,15 @@ export default function Dashboard() {
                   </div>
                   <p className="text-3xl font-bold mt-2">{evBets.length}</p>
                   <p className="text-xs text-slate-500 mt-1">Positive expected value</p>
+                </div>
+
+                <div className="card p-4 card-hover">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-400">Arbitrage</span>
+                    <Scale className="w-4 h-4 text-green-400" />
+                  </div>
+                  <p className="text-3xl font-bold mt-2">{arbs.length}</p>
+                  <p className="text-xs text-slate-500 mt-1">Guaranteed profit spots</p>
                 </div>
                 
                 <div className="card p-4 card-hover">
@@ -518,6 +537,26 @@ export default function Dashboard() {
               <EVCalculator evBets={evBets} scores={scores} />
             </motion.div>
           )}
+
+          {activeTab === 'arbitrage' && (
+            <motion.div
+              key="arbitrage"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <DataFreshnessStrip
+                isLive={isLive}
+                isCached={isCached}
+                cacheAge={cacheAge}
+                lastUpdated={lastUpdated}
+                isLoading={isLoading}
+                onRefresh={() => loadData(true)}
+                sport={SPORTS.find(s => s.key === selectedSport)?.title || selectedSport}
+              />
+              <ArbitrageFinder arbs={arbs} scores={scores} />
+            </motion.div>
+          )}
           
           {activeTab === 'analytics' && (
             <motion.div
@@ -566,6 +605,17 @@ export default function Dashboard() {
               exit={{ opacity: 0, y: -20 }}
             >
               <BetTracker />
+            </motion.div>
+          )}
+
+          {activeTab === 'simulator' && (
+            <motion.div
+              key="simulator"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <BankrollSimulator />
             </motion.div>
           )}
         </AnimatePresence>

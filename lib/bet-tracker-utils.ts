@@ -1,4 +1,5 @@
 import { HistoricalBet } from './types'
+import { americanToDecimal, decimalToAmerican } from './odds-utils'
 
 export interface BetTrackerSummary {
   totalBets: number
@@ -82,6 +83,15 @@ export function computeSummary(bets: HistoricalBet[]): BetTrackerSummary {
     peakUnits,
     currentDrawdown,
   }
+}
+
+/** Averages in decimal-odds space (statistically sound) then converts back to American for display. */
+export function computeAverageOdds(bets: HistoricalBet[]): number {
+  const decisive = bets.filter(b => b.status === 'W' || b.status === 'L')
+  if (decisive.length === 0) return -110
+  const avgDecimal =
+    decisive.reduce((sum, b) => sum + americanToDecimal(b.odds), 0) / decisive.length
+  return decimalToAmerican(avgDecimal)
 }
 
 export interface SportBreakdown {

@@ -1,4 +1,5 @@
-import { LineDiscrepancy, EVBet, HistoricalBet } from '@/lib/types'
+import { LineDiscrepancy, EVBet, HistoricalBet, ArbitrageOpportunity } from '@/lib/types'
+import { formatOdds } from '@/lib/odds-utils'
 
 function escapeCsvCell(value: string | number): string {
   const s = String(value)
@@ -88,6 +89,32 @@ export function evBetsToCsvRows(rows: EVBet[]): (string | number)[][] {
     b.book,
     b.bookDeepLink ?? '',
     b.commenceTime,
+  ])
+  return [header, ...body]
+}
+
+export function arbitrageToCsvRows(rows: ArbitrageOpportunity[]): (string | number)[][] {
+  const header = [
+    'Away',
+    'Home',
+    'Market',
+    'ProfitPercent',
+    'Confidence',
+    'ImpliedProbSum',
+    'Legs',
+    'CommenceTime',
+  ]
+  const body = rows.map(a => [
+    a.awayTeam,
+    a.homeTeam,
+    a.market,
+    a.profitPercent.toFixed(2),
+    a.confidenceScore,
+    (a.impliedProbabilitySum * 100).toFixed(2),
+    a.legs
+      .map(l => `${l.selection} @ ${formatOdds(l.odds)} (${l.book}, ${l.stakePercent.toFixed(1)}% stake)`)
+      .join(' | '),
+    a.commenceTime,
   ])
   return [header, ...body]
 }
