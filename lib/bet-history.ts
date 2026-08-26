@@ -5,7 +5,7 @@ import { HistoricalBet } from './types'
 // `delta` and `cumulative` are derived from the running-total column (self-consistent
 // with the sheet), not recomputed from odds, since some entries include manual
 // adjustments (partial cash-outs, etc.) that a pure odds formula would miss.
-export const BET_HISTORY_SYNCED_AT = "2026-08-25T21:16:44.525Z"
+export const BET_HISTORY_SYNCED_AT = "2026-08-26T03:43:33.683Z"
 
 export const BET_HISTORY: HistoricalBet[] = [
   {
@@ -187,7 +187,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -1,
     cumulative: 12.091,
-    tailLink: "https://account.sportsbook.fanduel.com/sportsbook/addToBetslip?shareCode=w4JXy59",
   },
   {
     id: 16,
@@ -212,7 +211,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -1,
     cumulative: 10.091,
-    tailLink: "https://account.sportsbook.fanduel.com/sportsbook/addToBetslip?shareCode=fstj47S",
   },
   {
     id: 18,
@@ -225,7 +223,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'W',
     delta: 1.111,
     cumulative: 11.202,
-    tailLink: "https://playmgmsports.onelink.me/TkMx?af_web_dp=https://www.betmgm.com/en/sports/basketball-7/betting/usa-9/nba-6004?options=19216645-1494628515--103387632&type=Single&refbet=682211210%7C20HL8Y6HPU&af_xp=custom&pid=ShareMyBet&c=MyBetsSharing&af_dp=playmgmsportswrp://navigation?scheme=https&url=www.betmgm.com/en/sports/basketball-7/betting/usa-9/nba-6004?options=19216645-1494628515--103387632&type=Single&refbet=682211210%7C20HL8Y6HPU",
   },
   {
     id: 19,
@@ -238,7 +235,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -1.5,
     cumulative: 9.702,
-    tailLink: "https://www.co.betmgm.com/en/sports/share-my-bet/4fe45b9f4a",
   },
   {
     id: 20,
@@ -251,7 +247,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -1,
     cumulative: 8.702,
-    tailLink: "https://account.sportsbook.fanduel.com/sportsbook/addToBetslip?shareCode=avpqpQS",
   },
   {
     id: 21,
@@ -264,7 +259,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -1,
     cumulative: 7.702,
-    tailLink: "https://account.sportsbook.fanduel.com/sportsbook/addToBetslip?shareCode=p8bVAi2",
   },
   {
     id: 22,
@@ -277,7 +271,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -1,
     cumulative: 6.702,
-    tailLink: "https://sportsbook.draftkings.com/social/post/6a75c8f2-8a4a-43d1-8d39-c40be64b80b5?slipAdd",
   },
   {
     id: 23,
@@ -290,7 +283,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -1,
     cumulative: 5.702,
-    tailLink: "https://links.pikkit.com/bets/26bc7db7-fd95-4b3a-830a-f4a3b9111751",
   },
   {
     id: 24,
@@ -303,7 +295,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -1,
     cumulative: 4.702,
-    tailLink: "https://links.pikkit.com/bets/0a55593c-f552-4bd0-a72d-455fdafcee8f",
   },
   {
     id: 25,
@@ -316,7 +307,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -2,
     cumulative: 2.702,
-    tailLink: "https://links.pikkit.com/bets/6d2603d9-a66e-47ad-96c4-2ef505fc6977",
   },
   {
     id: 26,
@@ -329,7 +319,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'W',
     delta: 0.82,
     cumulative: 3.522,
-    tailLink: "https://links.pikkit.com/bets/5771cad9-9240-4d5b-9d62-f05e88db51c8",
   },
   {
     id: 27,
@@ -342,7 +331,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'W',
     delta: 1,
     cumulative: 4.522,
-    tailLink: "https://links.pikkit.com/bets/7b189a9e-7007-4024-9b4c-84412421ab46",
   },
   {
     id: 28,
@@ -355,7 +343,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -1,
     cumulative: 3.522,
-    tailLink: "https://links.pikkit.com/bets/a13dd857-0556-4fe4-9a2d-f6c8a443d881",
   },
   {
     id: 29,
@@ -368,7 +355,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'W',
     delta: 1.913,
     cumulative: 5.435,
-    tailLink: "https://links.pikkit.com/bets/86f69fec-5abe-41b5-90a5-cc405ea259ca",
   },
   {
     id: 30,
@@ -381,7 +367,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -1,
     cumulative: 4.435,
-    tailLink: "https://links.pikkit.com/bets/ecac465a-3550-4883-a49a-16813972fabf",
   },
   {
     id: 31,
@@ -394,7 +379,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'W',
     delta: 0.93,
     cumulative: 5.365,
-    tailLink: "https://links.pikkit.com/bets/65feefdb-1d6d-4b51-b625-1ed308d3fe91",
   },
   {
     id: 32,
@@ -407,7 +391,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -1,
     cumulative: 4.365,
-    tailLink: "https://links.pikkit.com/bets/1fe5f0aa-63a2-427b-b558-e44a10962ce9",
   },
   {
     id: 33,
@@ -420,7 +403,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'W',
     delta: 1.04,
     cumulative: 5.405,
-    tailLink: "https://links.pikkit.com/bets/b2590360-d39a-449a-b6a2-34fea9f83d9c",
   },
   {
     id: 34,
@@ -433,7 +415,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -1,
     cumulative: 4.405,
-    tailLink: "https://links.pikkit.com/bets/73adae23-f391-4691-ab3d-f694623c9219",
   },
   {
     id: 35,
@@ -446,7 +427,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'W',
     delta: 1,
     cumulative: 5.405,
-    tailLink: "https://links.pikkit.com/bets/7bc77ef6-ec09-4cd2-a535-d1855f557c7d",
   },
   {
     id: 36,
@@ -459,7 +439,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'W',
     delta: 0.851,
     cumulative: 6.256,
-    tailLink: "https://links.pikkit.com/bets/3e47d36c-0fae-402c-b2d8-bf82d947ca2f",
   },
   {
     id: 37,
@@ -472,7 +451,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -0.5,
     cumulative: 5.756,
-    tailLink: "https://pick6.draftkings.com?sport=WORLD%20CUP&pickGroup=148684&picks=114755474,113786961,114517309&entrySource=shareLink",
   },
   {
     id: 38,
@@ -485,7 +463,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -1,
     cumulative: 4.756,
-    tailLink: "https://links.pikkit.com/bets/a4c20fdb-7a1d-4c4b-bf69-98da0893c366",
   },
   {
     id: 39,
@@ -498,7 +475,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -1,
     cumulative: 3.756,
-    tailLink: "https://links.pikkit.com/bets/d94dc897-fcf4-4258-ba01-829a9fc9183d",
   },
   {
     id: 40,
@@ -511,7 +487,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'W',
     delta: 2.565,
     cumulative: 6.321,
-    tailLink: "https://playmgmsports.onelink.me/TkMx?af_web_dp=https://www.betmgm.com/en/sports?options=2:7812215-199613370-754438747-2588122889&type=Single&refbet=682211210%7C20LWD0SBF5&af_xp=custom&pid=ShareMyBet&c=MyBetsSharing&af_dp=playmgmsportswrp://navigation?scheme=https&url=www.betmgm.com/en/sports?options=2:7812215-199613370-754438747-2588122889&type=Single&refbet=682211210%7C20LWD0SBF5",
   },
   {
     id: 41,
@@ -524,7 +499,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'W',
     delta: 1.24,
     cumulative: 7.561,
-    tailLink: "https://links.pikkit.com/bets/62529f3a-cdc9-4866-8099-77a6c69449f0",
   },
   {
     id: 42,
@@ -537,7 +511,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'W',
     delta: 1.8,
     cumulative: 9.361,
-    tailLink: "https://links.pikkit.com/bets/412428f3-1220-4db6-8a80-b22c1193d3ff",
   },
   {
     id: 43,
@@ -550,7 +523,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'W',
     delta: 2.85,
     cumulative: 12.211,
-    tailLink: "https://links.pikkit.com/bets/be059710-48e2-41b7-bfe4-afd770dd00cd",
   },
   {
     id: 44,
@@ -563,7 +535,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'W',
     delta: 1.77,
     cumulative: 13.981,
-    tailLink: "https://links.pikkit.com/bets/f323b96d-dc81-4c4b-8eeb-f38b9378fa5e",
   },
   {
     id: 45,
@@ -576,7 +547,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'W',
     delta: 1.53,
     cumulative: 15.511,
-    tailLink: "https://links.pikkit.com/bets/ba08db57-62ea-4f69-a88c-620ee71be264",
   },
   {
     id: 46,
@@ -589,7 +559,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -1,
     cumulative: 14.511,
-    tailLink: "https://links.pikkit.com/bets/afffa215-86cc-4d20-bb28-b4f1fdf83627",
   },
   {
     id: 47,
@@ -602,7 +571,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -1,
     cumulative: 13.511,
-    tailLink: "https://links.pikkit.com/bets/02098858-5401-4700-8b1b-338423057453",
   },
   {
     id: 48,
@@ -615,7 +583,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'W',
     delta: 1.69,
     cumulative: 15.201,
-    tailLink: "https://links.pikkit.com/bets/a6b0f775-7024-4ee2-9929-cf7ae64b3d72",
   },
   {
     id: 49,
@@ -628,7 +595,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -1,
     cumulative: 14.201,
-    tailLink: "https://links.pikkit.com/bets/e9b32d61-38e6-451b-8d70-2e1934b16d90",
   },
   {
     id: 50,
@@ -641,7 +607,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -1,
     cumulative: 13.201,
-    tailLink: "https://links.pikkit.com/bets/45a50716-03f5-4dc2-886d-fa8e7b0cc77d",
   },
   {
     id: 51,
@@ -666,7 +631,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -1,
     cumulative: 11.201,
-    tailLink: "https://links.pikkit.com/bets/b9c9affa-c3ba-46a9-8fa8-839254a63a18",
   },
   {
     id: 53,
@@ -679,7 +643,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -1,
     cumulative: 10.201,
-    tailLink: "https://links.pikkit.com/bets/e94b309e-4dd8-4599-b494-290fc2f04bea",
   },
   {
     id: 54,
@@ -692,7 +655,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'W',
     delta: 1,
     cumulative: 11.201,
-    tailLink: "https://links.pikkit.com/bets/31bb09cc-9e08-4e31-a5dd-9481c1cbbb17",
   },
   {
     id: 55,
@@ -705,7 +667,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -1,
     cumulative: 10.201,
-    tailLink: "https://links.pikkit.com/bets/a380d15a-b6db-499b-b9b6-aa055c27ccfb",
   },
   {
     id: 56,
@@ -718,7 +679,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -2,
     cumulative: 8.201,
-    tailLink: "https://links.pikkit.com/bets/b22cb601-ee31-4ea7-ac40-39b4410e1eed",
   },
   {
     id: 57,
@@ -731,7 +691,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'W',
     delta: 1.11,
     cumulative: 9.311,
-    tailLink: "https://links.pikkit.com/bets/9decba11-eb85-492c-977e-a77fd6eaeda1",
   },
   {
     id: 58,
@@ -744,7 +703,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'W',
     delta: 1.11,
     cumulative: 10.421,
-    tailLink: "https://links.pikkit.com/bets/860829d3-b20a-48b9-8a63-71536c124b20",
   },
   {
     id: 59,
@@ -757,7 +715,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'W',
     delta: 1.57,
     cumulative: 11.991,
-    tailLink: "https://links.pikkit.com/bets/9429f48d-dbf3-4022-9724-db9a2cf1638f",
   },
   {
     id: 60,
@@ -770,7 +727,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -1,
     cumulative: 10.991,
-    tailLink: "https://links.pikkit.com/bets/d8318fe6-c2da-416c-bfdd-66a4a770a230",
   },
   {
     id: 61,
@@ -783,7 +739,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -1,
     cumulative: 9.991,
-    tailLink: "https://links.pikkit.com/bets/35a05311-1539-4172-82d5-066ca485ac90",
   },
   {
     id: 62,
@@ -796,7 +751,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'W',
     delta: 0.921,
     cumulative: 10.912,
-    tailLink: "https://links.pikkit.com/bets/d52dbc87-39fa-43fe-bb6f-a5d0181d49b6",
   },
   {
     id: 63,
@@ -809,7 +763,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'W',
     delta: 1.05,
     cumulative: 11.962,
-    tailLink: "https://links.pikkit.com/bets/435fa7be-f8b0-46b1-9de4-c607ed79eed5",
   },
   {
     id: 64,
@@ -822,7 +775,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'W',
     delta: 1.21,
     cumulative: 13.172,
-    tailLink: "https://links.pikkit.com/bets/b3a6a5d8-df76-4af7-a7b3-34fcf52bed11",
   },
   {
     id: 65,
@@ -835,7 +787,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'W',
     delta: 1.04,
     cumulative: 14.212,
-    tailLink: "https://links.pikkit.com/bets/eb8be38c-99bc-440b-a114-76baea614c29",
   },
   {
     id: 66,
@@ -848,7 +799,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'W',
     delta: 0.752,
     cumulative: 14.96388,
-    tailLink: "https://links.pikkit.com/bets/b52ce7ba-0066-4eb2-b29b-da12e30de8c2",
   },
   {
     id: 67,
@@ -861,7 +811,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'W',
     delta: 1.26,
     cumulative: 16.22388,
-    tailLink: "https://links.pikkit.com/bets/232be923-293b-4b29-b36e-c56decf63da0",
   },
   {
     id: 68,
@@ -874,7 +823,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'L',
     delta: -1,
     cumulative: 15.22388,
-    tailLink: "https://links.pikkit.com/bets/a756f742-a44e-4724-a9a6-6678e2032485",
   },
   {
     id: 69,
@@ -1004,8 +952,8 @@ export const BET_HISTORY: HistoricalBet[] = [
     book: "FanDuel",
     units: 1,
     odds: 114,
-    status: 'Push',
-    delta: null,
-    cumulative: 13.79888,
+    status: 'L',
+    delta: -1,
+    cumulative: 12.79888,
   },
 ]
