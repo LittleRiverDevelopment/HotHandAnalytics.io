@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, Fragment } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { ArrowUpDown, TrendingUp, AlertCircle, ChevronDown, ChevronUp, Download } from 'lucide-react'
 import { LineDiscrepancy as LineDiscrepancyType, ScoreEvent } from '@/lib/types'
 import { formatOdds } from '@/lib/odds-utils'
@@ -183,8 +183,7 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              <AnimatePresence>
-                {filteredDiscrepancies.slice(0, VISIBLE_ROW_CAP).map((disc, index) => {
+                {filteredDiscrepancies.slice(0, VISIBLE_ROW_CAP).map(disc => {
                   const rowKey = `${disc.eventId}-${disc.market}-${disc.betType}`
                   const isExpanded = expandedRow === rowKey
                   const sortedBooks = [...disc.allBookOdds].sort((a, b) => b.odds - a.odds)
@@ -192,11 +191,7 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
                   
                   return (
                     <Fragment key={rowKey}>
-                    <motion.tr
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.12 }}
+                    <tr
                       className={`table-row cursor-pointer hover:bg-slate-800/40 ${isExpanded ? 'bg-slate-800/30' : ''}`}
                       onClick={() => setExpandedRow(isExpanded ? null : rowKey)}
                       aria-expanded={isExpanded}
@@ -286,7 +281,7 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
                           </span>
                         </div>
                       </td>
-                    </motion.tr>
+                    </tr>
                     {isExpanded && (
                       <tr key={`${rowKey}-detail`} className="bg-slate-900/50">
                         <td colSpan={8} className="p-0 border-b border-slate-800">
@@ -343,7 +338,6 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
                     </Fragment>
                   )
                 })}
-              </AnimatePresence>
             </tbody>
           </table>
         </div>

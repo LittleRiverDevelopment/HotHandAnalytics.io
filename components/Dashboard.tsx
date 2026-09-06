@@ -39,6 +39,7 @@ import {
   fetchScoresClient,
   getCacheAge,
   hasCachedData,
+  peekCachedOdds,
   attachAltLines,
   getIncludeAltLines,
   setIncludeAltLines,
@@ -187,6 +188,7 @@ export default function Dashboard() {
   const rawEventsRef = useRef<OddsEvent[]>([])
   const scoresRef = useRef<ScoreEvent[]>([])
   const sportForScoresRef = useRef<SportKey>(selectedSport)
+  const lastBoardIdsRef = useRef('')
 
   const handleToggleAltLines = (on: boolean) => {
     setIncludeAltLines(on)
@@ -201,86 +203,115 @@ export default function Dashboard() {
     setLastUpdated(new Date())
   }
 
-  const publishBoard = (eventData?: OddsEvent[], nextScores?: ScoreEvent[]) => {
+  const publishBoard = (
+    eventData?: OddsEvent[],
+    nextScores?: ScoreEvent[],
+    opts?: { scoresOnly?: boolean }
+  ) => {
+    const sameEvents = eventData !== undefined && eventData === rawEventsRef.current
     if (eventData !== undefined) rawEventsRef.current = eventData
     if (nextScores !== undefined) scoresRef.current = nextScores
-    applyBoard(filterUpcomingOrLiveEvents(rawEventsRef.current, scoresRef.current))
+    const filtered = filterUpcomingOrLiveEvents(rawEventsRef.current, scoresRef.current)
+    const ids = filtered.map(e => e.id).join('\0')
+    if ((opts?.scoresOnly || sameEvents) && ids === lastBoardIdsRef.current) return
+    lastBoardIdsRef.current = ids
+    applyBoard(filtered)
   }
+
+  const prepEvents = (eventData: OddsEvent[]) =>
+    includeAltLines ? eventData : stripAltMarkets(eventData)
   
   const loadData = useCallback(async (forceRefresh: boolean = false) => {
     const loadId = ++loadGenRef.current
     if (sportForScoresRef.current !== selectedSport) {
       sportForScoresRef.current = selectedSport
       scoresRef.current = []
+      lastBoardIdsRef.current = ''
       setScores([])
     }
     setIsLoading(true)
     setAltLoading(false)
     setError(null)
+
+    if (forceRefresh) {
+      const stale = peekCachedOdds(selectedSport)
+      if (stale) {
+        publishBoard(prepEvents(stale))
+        setIsLive(true)
+        setIsCached(true)
+        setCacheAge(getCacheAge(selectedSport))
+      }
+    }
     
     try {
+      const scoresPromise = fetchScoresClient(selectedSport, forceRefresh).then(scoresResult => {
+        if (loadId !== loadGenRef.current) return scoresResult
+        if (scoresResult.data) {
+          scoresRef.current = scoresResult.data
+          setScores(scoresResult.data)
+          if (scoresResult.remainingRequests !== undefined) {
+            setRemainingRequests(scoresResult.remainingRequests)
+          }
+          if (rawEventsRef.current.length > 0) {
+            publishBoard(undefined, scoresResult.data, { scoresOnly: true })
+          }
+        }
+        return scoresResult
+      })
+
       const result = await fetchOddsClient(selectedSport, ['h2h', 'spreads', 'totals'], forceRefresh)
       if (loadId !== loadGenRef.current) return
       
       if (result.error && !result.data) {
+        const cachedOdds = peekCachedOdds(selectedSport)
+        if (cachedOdds) {
+          setError(result.error)
+          setIsLive(true)
+          setIsCached(true)
+          setCacheAge(getCacheAge(selectedSport))
+          publishBoard(prepEvents(cachedOdds))
+          setIsLoading(false)
+          await scoresPromise
+          return
+        }
         setError(result.error)
         setIsLive(false)
         setIsCached(false)
         setCacheAge(null)
         scoresRef.current = []
         setScores([])
-      } else {
-        if (result.error) setError(result.error)
-        setIsLive(!!result.data)
-        setIsCached(result.cached || false)
-        if (result.remainingRequests !== undefined) {
-          setRemainingRequests(result.remainingRequests)
-        }
-        setCacheAge(getCacheAge(selectedSport))
+        publishBoard(prepEvents(MOCK_EVENTS), [])
+        setAltGames(includeAltLines ? MOCK_EVENTS.filter(e =>
+          e.bookmakers.some(b => b.markets.some(m => m.key.startsWith('alternate_')))
+        ).length : 0)
+        setIsLoading(false)
+        return
       }
 
-      let eventData = result.data || MOCK_EVENTS
-      if (!includeAltLines) {
-        eventData = stripAltMarkets(eventData)
+      if (result.error) setError(result.error)
+      setIsLive(!!result.data)
+      setIsCached(result.cached || false)
+      if (result.remainingRequests !== undefined) {
+        setRemainingRequests(result.remainingRequests)
       }
+      setCacheAge(getCacheAge(selectedSport))
+
+      const eventData = prepEvents(result.data || MOCK_EVENTS)
 
       publishBoard(eventData)
-      setAltGames(
-        includeAltLines && !result.data
-          ? eventData.filter(e =>
-              e.bookmakers.some(b => b.markets.some(m => m.key.startsWith('alternate_')))
-            ).length
-          : 0
-      )
-      if (result.data && !result.cached) {
+      setAltGames(0)
+      if (result.data && !result.cached && !result.notModified) {
         recordOddsSnapshot(result.data, { force: forceRefresh })
       }
       setIsLoading(false)
 
       if (!result.data) {
-        publishBoard(undefined, [])
-        setScores([])
+        await scoresPromise
         return
       }
 
-      const scoresPromise = fetchScoresClient(selectedSport, forceRefresh).then(scoresResult => {
-        if (loadId !== loadGenRef.current) return scoresResult
-        if (scoresResult.data) {
-          setScores(scoresResult.data)
-          if (scoresResult.remainingRequests !== undefined) {
-            setRemainingRequests(scoresResult.remainingRequests)
-          }
-          publishBoard(undefined, scoresResult.data)
-        }
-        return scoresResult
-      })
-
       const altsPromise = includeAltLines
-        ? scoresPromise.then(scoresResult => {
-            if (loadId !== loadGenRef.current) return null
-            setAltLoading(true)
-            return attachAltLines(selectedSport, result.data!, forceRefresh, scoresResult.data || [])
-          })
+        ? (setAltLoading(true), attachAltLines(selectedSport, result.data, forceRefresh, scoresRef.current))
         : Promise.resolve(null)
 
       const [, alt] = await Promise.all([scoresPromise, altsPromise])
@@ -296,7 +327,7 @@ export default function Dashboard() {
     } catch (err) {
       if (loadId !== loadGenRef.current) return
       setError('Failed to fetch data')
-      const fallback = includeAltLines ? MOCK_EVENTS : stripAltMarkets(MOCK_EVENTS)
+      const fallback = prepEvents(MOCK_EVENTS)
       publishBoard(fallback, [])
       setScores([])
       setIsLive(false)

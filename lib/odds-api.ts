@@ -37,6 +37,7 @@ interface CacheEntry {
   data: OddsEvent[]
   timestamp: number
   remainingRequests?: number
+  etag?: string
 }
 
 interface CacheStore {
@@ -69,14 +70,23 @@ function getCacheEntry(key: string): CacheEntry | null {
   return cache[key] || null
 }
 
+function oddsCacheKey(sport: string, markets: string[]): string {
+  return `${sport}-${markets.join(',')}-lnk1`
+}
+
 export function getCacheAge(sport: string): number | null {
-  const entry = getCacheEntry(`${sport}-h2h,spreads,totals-lnk1`)
+  const entry = getCacheEntry(oddsCacheKey(sport, ['h2h', 'spreads', 'totals']))
   if (!entry) return null
   return Date.now() - entry.timestamp
 }
 
 export function hasCachedData(sport: string): boolean {
-  return !!getCacheEntry(`${sport}-h2h,spreads,totals-lnk1`)
+  return !!getCacheEntry(oddsCacheKey(sport, ['h2h', 'spreads', 'totals']))
+}
+
+/** Last stored featured-odds payload, if any. Used to paint immediately while a refresh is in flight. */
+export function peekCachedOdds(sport: string): OddsEvent[] | null {
+  return getCacheEntry(oddsCacheKey(sport, ['h2h', 'spreads', 'totals']))?.data ?? null
 }
 
 export interface ApiResponse<T> {
@@ -84,6 +94,58 @@ export interface ApiResponse<T> {
   error: string | null
   remainingRequests?: number
   cached?: boolean
+  /** True when the API returned 304 Not Modified (zero credits, reuse cache). */
+  notModified?: boolean
+}
+
+function headerInt(response: Response, name: string): number | undefined {
+  const raw = response.headers.get(name)
+  if (raw == null || raw === '') return undefined
+  const n = parseInt(raw, 10)
+  return Number.isNaN(n) ? undefined : n
+}
+
+async function fetchJsonWithEtag<T>(
+  url: string,
+  cached: { data: T; etag?: string } | null
+): Promise<{
+  ok: boolean
+  status: number
+  data: T | null
+  etag?: string
+  remainingRequests?: number
+  notModified: boolean
+}> {
+  const headers: Record<string, string> = {}
+  if (cached?.etag) headers['If-None-Match'] = cached.etag
+
+  const response = await fetch(url, { headers })
+  const remainingRequests = headerInt(response, 'x-requests-remaining')
+  const etag = response.headers.get('etag') || undefined
+
+  if (response.status === 304 && cached) {
+    return {
+      ok: true,
+      status: 304,
+      data: cached.data,
+      etag: etag || cached.etag,
+      remainingRequests,
+      notModified: true,
+    }
+  }
+
+  if (!response.ok) {
+    return { ok: false, status: response.status, data: null, remainingRequests, etag, notModified: false }
+  }
+
+  return {
+    ok: true,
+    status: response.status,
+    data: (await response.json()) as T,
+    etag,
+    remainingRequests,
+    notModified: false,
+  }
 }
 
 export async function fetchOddsClient(
@@ -91,11 +153,11 @@ export async function fetchOddsClient(
   markets: string[] = ['h2h', 'spreads', 'totals'],
   forceRefresh: boolean = false
 ): Promise<ApiResponse<OddsEvent[]>> {
-  const cacheKey = `${sport}-${markets.join(',')}-lnk1`
+  const cacheKey = oddsCacheKey(sport, markets)
+  const cached = getCacheEntry(cacheKey)
   
   // Check cache first (unless force refresh)
   if (!forceRefresh) {
-    const cached = getCacheEntry(cacheKey)
     if (cached) {
       return { 
         data: cached.data, 
@@ -117,28 +179,39 @@ export async function fetchOddsClient(
     const bookmakers = ALL_BOOKMAKERS.join(',')
     const url = `${BASE_URL}/sports/${sport}/odds/?apiKey=${apiKey}&regions=us,us2,eu&markets=${marketsParam}&oddsFormat=american&bookmakers=${bookmakers}&includeLinks=true`
     
-    const response = await fetch(url)
+    const result = await fetchJsonWithEtag<OddsEvent[]>(url, cached)
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        return { data: null, error: 'Invalid API key' }
+    if (!result.ok) {
+      if (result.status === 401) {
+        return { data: null, error: 'Invalid API key', remainingRequests: result.remainingRequests }
       }
-      if (response.status === 429) {
-        return { data: null, error: 'API rate limit exceeded' }
+      if (result.status === 429) {
+        return { data: null, error: 'API rate limit exceeded', remainingRequests: result.remainingRequests }
       }
-      if (response.status === 404) {
-        return { data: null, error: 'No events found for this sport' }
+      if (result.status === 404) {
+        return { data: null, error: 'No events found for this sport', remainingRequests: result.remainingRequests }
       }
-      return { data: null, error: `API error: ${response.status}` }
+      return { data: null, error: `API error: ${result.status}`, remainingRequests: result.remainingRequests }
     }
 
-    const remainingRequests = parseInt(response.headers.get('x-requests-remaining') || '0')
-    const data: OddsEvent[] = await response.json()
+    if (!result.data) {
+      return { data: null, error: 'No events found for this sport', remainingRequests: result.remainingRequests }
+    }
 
-    // Update persistent cache
-    setCache(cacheKey, { data, timestamp: Date.now(), remainingRequests })
+    setCache(cacheKey, {
+      data: result.data,
+      timestamp: Date.now(),
+      remainingRequests: result.remainingRequests,
+      etag: result.etag,
+    })
 
-    return { data, error: null, remainingRequests, cached: false }
+    return {
+      data: result.data,
+      error: null,
+      remainingRequests: result.remainingRequests,
+      cached: false,
+      notModified: result.notModified,
+    }
   } catch (error) {
     return { data: null, error: `Network error: ${error}` }
   }
@@ -147,6 +220,7 @@ export async function fetchOddsClient(
 interface ScoresCacheEntry {
   data: ScoreEvent[]
   timestamp: number
+  etag?: string
 }
 
 interface ScoresCacheStore {
@@ -200,18 +274,22 @@ export async function fetchScoresClient(
 
   try {
     const url = `${BASE_URL}/sports/${sport}/scores/?apiKey=${apiKey}&daysFrom=2`
-    const response = await fetch(url)
+    const cached = getScoresCache()[cacheKey] || null
+    const result = await fetchJsonWithEtag<ScoreEvent[]>(url, cached)
 
-    if (!response.ok) {
-      return { data: null, error: `API error: ${response.status}` }
+    if (!result.ok || !result.data) {
+      return { data: null, error: `API error: ${result.status}`, remainingRequests: result.remainingRequests }
     }
 
-    const remainingRequests = parseInt(response.headers.get('x-requests-remaining') || '0')
-    const data: ScoreEvent[] = await response.json()
+    setScoresCache(cacheKey, { data: result.data, timestamp: Date.now(), etag: result.etag })
 
-    setScoresCache(cacheKey, { data, timestamp: Date.now() })
-
-    return { data, error: null, remainingRequests, cached: false }
+    return {
+      data: result.data,
+      error: null,
+      remainingRequests: result.remainingRequests,
+      cached: false,
+      notModified: result.notModified,
+    }
   } catch (error) {
     return { data: null, error: `Network error: ${error}` }
   }
@@ -282,6 +360,7 @@ interface AltCacheEntry {
   data: OddsEvent
   timestamp: number
   remainingRequests?: number
+  etag?: string
 }
 
 function getAltCache(): Record<string, AltCacheEntry> {
@@ -364,16 +443,26 @@ async function fetchEventAltLines(
     const marketsParam = ALT_LINE_MARKETS.join(',')
     const bookmakers = ALL_BOOKMAKERS.join(',')
     const url = `${BASE_URL}/sports/${sport}/events/${eventId}/odds/?apiKey=${apiKey}&regions=us,us2,eu&markets=${marketsParam}&oddsFormat=american&bookmakers=${bookmakers}`
-    const response = await fetch(url)
+    const cached = getAltCache()[key] || null
+    const result = await fetchJsonWithEtag<OddsEvent>(url, cached)
 
-    if (!response.ok) {
-      return { data: null, error: `API error: ${response.status}` }
+    if (!result.ok || !result.data) {
+      return { data: null, error: `API error: ${result.status}`, remainingRequests: result.remainingRequests }
     }
 
-    const remainingRequests = parseInt(response.headers.get('x-requests-remaining') || '0')
-    const data: OddsEvent = await response.json()
-    setAltCacheEntry(key, { data, timestamp: Date.now(), remainingRequests })
-    return { data, error: null, remainingRequests, cached: false }
+    setAltCacheEntry(key, {
+      data: result.data,
+      timestamp: Date.now(),
+      remainingRequests: result.remainingRequests,
+      etag: result.etag,
+    })
+    return {
+      data: result.data,
+      error: null,
+      remainingRequests: result.remainingRequests,
+      cached: false,
+      notModified: result.notModified,
+    }
   } catch (error) {
     return { data: null, error: `Network error: ${error}` }
   }

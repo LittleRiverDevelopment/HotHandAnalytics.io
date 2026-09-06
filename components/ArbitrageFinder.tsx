@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { Scale, TrendingUp, Zap, AlertTriangle, ArrowUpDown, Download } from 'lucide-react'
 import { ArbitrageOpportunity, ScoreEvent } from '@/lib/types'
 import { formatOdds } from '@/lib/odds-utils'
@@ -191,16 +190,11 @@ export default function ArbitrageFinder({ arbs, scores }: Props) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              <AnimatePresence>
-                {sortedArbs.map((arb, index) => {
+                {sortedArbs.map(arb => {
                   const liveScore = findScoreForGame(scores, arb.eventId, arb.homeTeam, arb.awayTeam, arb.commenceTime)
                   return (
-                    <motion.tr
+                    <tr
                       key={`${arb.eventId}-${arb.market}-${arb.legs.map(l => l.selection).join('|')}`}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.12 }}
                       className="table-row align-top"
                     >
                       <td className="py-3 px-4">
@@ -255,10 +249,9 @@ export default function ArbitrageFinder({ arbs, scores }: Props) {
                           </span>
                         </div>
                       </td>
-                    </motion.tr>
+                    </tr>
                   )
                 })}
-              </AnimatePresence>
             </tbody>
           </table>
         </div>

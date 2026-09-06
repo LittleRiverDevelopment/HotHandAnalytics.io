@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { Calculator, TrendingUp, Zap, AlertTriangle, ArrowUpDown, Download } from 'lucide-react'
 import { EVBet, ScoreEvent } from '@/lib/types'
 import { formatOdds } from '@/lib/odds-utils'
@@ -250,17 +249,12 @@ export default function EVCalculator({ evBets, scores }: Props) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              <AnimatePresence>
-                {visibleBets.map((bet, index) => {
+                {visibleBets.map(bet => {
                   const pinnacleAsOf = formatPinnacleAsOf(bet.pinnacleLastUpdate)
                   const liveScore = findScoreForGame(scores, bet.eventId, bet.homeTeam, bet.awayTeam, bet.commenceTime)
                   return (
-                  <motion.tr
+                  <tr
                     key={`${lineFilter}-${bet.eventId}-${bet.selection}-${bet.book}`}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.12 }}
                     className="table-row"
                   >
                     <td className="py-3 px-4">
@@ -344,10 +338,9 @@ export default function EVCalculator({ evBets, scores }: Props) {
                         />
                       </div>
                     </td>
-                  </motion.tr>
+                  </tr>
                   )
                 })}
-              </AnimatePresence>
             </tbody>
           </table>
         </div>
