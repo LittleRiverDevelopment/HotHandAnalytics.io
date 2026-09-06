@@ -72,6 +72,8 @@ export interface LineDiscrepancy {
   /** Deepest API link for best book (outcome → market → event) */
   bestDeepLink?: string
   worstDeepLink?: string
+  /** True when this number only appears on alternate_spreads / alternate_totals, not the main line */
+  isAltLine?: boolean
 }
 
 export interface EVBet {
@@ -93,6 +95,8 @@ export interface EVBet {
   commenceTime: string
   /** The Odds API deep link for this book/selection when `includeLinks=true` */
   bookDeepLink?: string
+  /** True when this number only appears on alternate_spreads / alternate_totals, not the main line */
+  isAltLine?: boolean
 }
 
 export interface ArbitrageLeg {
@@ -119,6 +123,8 @@ export interface ArbitrageOpportunity {
   profitPercent: number
   /** 0–100: stronger with higher profit% and tighter timing between the legs' book updates */
   confidenceScore: number
+  /** True when this number only appears on alternate_spreads / alternate_totals, not the main line */
+  isAltLine?: boolean
 }
 
 export interface PlayerGameLog {

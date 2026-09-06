@@ -8,6 +8,7 @@ import { formatOdds } from '@/lib/odds-utils'
 import { format } from 'date-fns'
 import BookOpenLink from './BookOpenLink'
 import LiveScoreBadge, { findScoreForGame } from './LiveScore'
+import AltLineBadge from './AltLineBadge'
 import { downloadCsv, evBetsToCsvRows } from '@/lib/csv-export'
 
 interface Props {
@@ -21,10 +22,16 @@ export default function EVCalculator({ evBets, scores }: Props) {
   const [sortField, setSortField] = useState<SortField>('ev')
   const [minEV, setMinEV] = useState(0)
   const [bankroll, setBankroll] = useState(1000)
+  const [lineFilter, setLineFilter] = useState<'all' | 'main' | 'alt'>('all')
   
   const sortedBets = useMemo(() => {
     return [...evBets]
       .filter(bet => bet.evPercent >= minEV)
+      .filter(bet => {
+        if (lineFilter === 'alt') return !!bet.isAltLine
+        if (lineFilter === 'main') return !bet.isAltLine
+        return true
+      })
       .sort((a, b) => {
         switch (sortField) {
           case 'ev':
@@ -41,7 +48,7 @@ export default function EVCalculator({ evBets, scores }: Props) {
             return 0
         }
       })
-  }, [evBets, sortField, minEV])
+  }, [evBets, sortField, minEV, lineFilter])
   
   const getEVColor = (ev: number) => {
     if (ev >= 5) return 'text-green-400'
@@ -87,6 +94,15 @@ export default function EVCalculator({ evBets, scores }: Props) {
         </div>
         
         <div className="flex items-center gap-4">
+          <select
+            value={lineFilter}
+            onChange={e => setLineFilter(e.target.value as 'all' | 'main' | 'alt')}
+            className="bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-green-500"
+          >
+            <option value="all">All lines</option>
+            <option value="main">Main lines</option>
+            <option value="alt">Alt lines</option>
+          </select>
           <div className="flex items-center gap-2">
             <label className="text-sm text-slate-400">Min EV%</label>
             <input
@@ -251,7 +267,10 @@ export default function EVCalculator({ evBets, scores }: Props) {
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex flex-col">
-                        <span className="text-sm font-medium">{bet.selection}</span>
+                        <span className="text-sm font-medium inline-flex items-center gap-1.5">
+                          {bet.selection}
+                          {bet.isAltLine && <AltLineBadge />}
+                        </span>
                         <span className="text-xs text-slate-500">{bet.market}</span>
                       </div>
                     </td>
@@ -348,7 +367,7 @@ export default function EVCalculator({ evBets, scores }: Props) {
               optimal bet sizing based on edge. We use quarter-Kelly for conservative bankroll management.
               Confidence (0–100) reflects stronger estimated edge and Kelly-suggested stake versus that fair line.
               The book link opens that selection at the sportsbook when The Odds API provides a deep link; otherwise it opens the book&apos;s home page.
-              Rows are dropped when Pinnacle&apos;s line for that market is more than about 25 minutes older than the local book&apos;s update, or when the fair price cannot be paired to the correct counter-side (common with many alternate lines in one market).
+              Rows are dropped when Pinnacle&apos;s line for that market is more than about 25 minutes older than the local book&apos;s update, or when the fair price cannot be paired to the correct counter-side (common with many alternate lines in one market). Alternate spreads/totals are tagged Alt and compared to Pinnacle&apos;s matching number.
             </p>
           </div>
         </div>

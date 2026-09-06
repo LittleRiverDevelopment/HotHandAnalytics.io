@@ -8,8 +8,9 @@ A sports betting edge finder that helps identify +EV bets and line discrepancies
 
 ## Features
 
-- **+EV Finder** - Identifies positive expected value bets using Pinnacle's sharp lines as the fair odds benchmark
-- **Line Shopping** - Compares odds across multiple sportsbooks to find the best prices
+- **+EV Finder** - Identifies positive expected value bets using Pinnacle's sharp lines as the fair odds benchmark, including **alternate spreads and totals**
+- **Line Shopping** - Compares odds across multiple sportsbooks to find the best prices on main and alt numbers
+- **Arbitrage Finder** - Flags two-way books where combined implied probability is under 100%
 - **Player Prop Analysis** - Visualize player performance trends against prop lines
 - **Real-time Data** - Powered by The Odds API with smart caching to minimize API usage
 
@@ -84,9 +85,9 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ## API Usage
 
 The app implements smart caching to minimize API calls:
-- **5-minute server-side cache** - Repeated requests use cached data
+- **Persistent browser cache** - Repeated visits reuse the last pull until you click Refresh
 - **Manual refresh only** - No automatic polling
-- **Remaining calls display** - Shows your API quota in the header
+- **Alternate lines** - Optional. Alternate spreads/totals are non-featured Odds API markets, so they are fetched **per game** (capped at the next 6 upcoming events) and cost extra credits. Toggle them off in the freshness strip if you need to save quota.
 
 Free tier of The Odds API includes 500 requests/month.
 

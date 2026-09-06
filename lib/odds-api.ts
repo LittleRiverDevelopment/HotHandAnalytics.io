@@ -4,8 +4,14 @@ const BASE_URL = 'https://api.the-odds-api.com/v4'
 const API_KEY_STORAGE_KEY = 'hothand_odds_api_key'
 const CACHE_STORAGE_KEY = 'hothand_odds_cache'
 const SCORES_CACHE_STORAGE_KEY = 'hothand_scores_cache'
+const ALT_CACHE_STORAGE_KEY = 'hothand_alt_odds_cache'
+const INCLUDE_ALT_LINES_KEY = 'hothand_include_alt_lines'
 // Scores change constantly while games are live, so cached scores go stale fast.
 const SCORES_CACHE_TTL_MS = 60 * 1000
+
+/** Alternate lines are non-featured: one event-odds call per game. Cap to protect API quota. */
+export const ALT_EVENT_CAP = 6
+export const ALT_LINE_MARKETS = ['alternate_spreads', 'alternate_totals']
 
 function getApiKey(): string | null {
   if (typeof window === 'undefined') return null
@@ -257,5 +263,194 @@ export async function fetchPlayerProps(
     return { data, error: null }
   } catch (error) {
     return { data: null, error: `Network error: ${error}` }
+  }
+}
+
+export function getIncludeAltLines(): boolean {
+  if (typeof window === 'undefined') return true
+  const stored = localStorage.getItem(INCLUDE_ALT_LINES_KEY)
+  return stored === null ? true : stored === '1'
+}
+
+export function setIncludeAltLines(on: boolean): void {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(INCLUDE_ALT_LINES_KEY, on ? '1' : '0')
+}
+
+interface AltCacheEntry {
+  data: OddsEvent
+  timestamp: number
+  remainingRequests?: number
+}
+
+function getAltCache(): Record<string, AltCacheEntry> {
+  if (typeof window === 'undefined') return {}
+  try {
+    const stored = localStorage.getItem(ALT_CACHE_STORAGE_KEY)
+    return stored ? JSON.parse(stored) : {}
+  } catch {
+    return {}
+  }
+}
+
+function setAltCacheEntry(key: string, entry: AltCacheEntry): void {
+  if (typeof window === 'undefined') return
+  try {
+    const cache = getAltCache()
+    cache[key] = entry
+    localStorage.setItem(ALT_CACHE_STORAGE_KEY, JSON.stringify(cache))
+  } catch {
+    // localStorage full or unavailable
+  }
+}
+
+function altCacheKey(sport: string, eventId: string): string {
+  return `${sport}-${eventId}-alt-lnk1`
+}
+
+export function mergeEventMarkets(base: OddsEvent, extra: OddsEvent): OddsEvent {
+  const books = new Map(
+    base.bookmakers.map(b => [b.key, { ...b, markets: [...b.markets] }])
+  )
+
+  for (const book of extra.bookmakers) {
+    const existing = books.get(book.key)
+    if (!existing) {
+      books.set(book.key, { ...book, markets: [...(book.markets || [])] })
+      continue
+    }
+    for (const market of book.markets || []) {
+      const idx = existing.markets.findIndex(m => m.key === market.key)
+      if (idx >= 0) existing.markets[idx] = market
+      else existing.markets.push(market)
+    }
+  }
+
+  return { ...base, bookmakers: Array.from(books.values()) }
+}
+
+function pickEventsForAltFetch(events: OddsEvent[]): OddsEvent[] {
+  const cutoff = Date.now() - 15 * 60 * 1000
+  return [...events]
+    .filter(e => {
+      const start = new Date(e.commence_time).getTime()
+      return !Number.isNaN(start) && start > cutoff
+    })
+    .sort((a, b) => new Date(a.commence_time).getTime() - new Date(b.commence_time).getTime())
+    .slice(0, ALT_EVENT_CAP)
+}
+
+async function fetchEventAltLines(
+  sport: SportKey,
+  eventId: string,
+  forceRefresh: boolean
+): Promise<ApiResponse<OddsEvent>> {
+  const key = altCacheKey(sport, eventId)
+
+  if (!forceRefresh) {
+    const cached = getAltCache()[key]
+    if (cached) {
+      return {
+        data: cached.data,
+        error: null,
+        remainingRequests: cached.remainingRequests,
+        cached: true,
+      }
+    }
+    // Don't spend credits unless the user explicitly refreshes.
+    return { data: null, error: null }
+  }
+
+  const apiKey = getApiKey()
+  if (!apiKey) {
+    return { data: null, error: 'API key not configured' }
+  }
+
+  try {
+    const marketsParam = ALT_LINE_MARKETS.join(',')
+    const bookmakers = ALL_BOOKMAKERS.join(',')
+    const url = `${BASE_URL}/sports/${sport}/events/${eventId}/odds/?apiKey=${apiKey}&regions=us,us2,eu&markets=${marketsParam}&oddsFormat=american&bookmakers=${bookmakers}&includeLinks=true`
+    const response = await fetch(url)
+
+    if (!response.ok) {
+      return { data: null, error: `API error: ${response.status}` }
+    }
+
+    const remainingRequests = parseInt(response.headers.get('x-requests-remaining') || '0')
+    const data: OddsEvent = await response.json()
+    setAltCacheEntry(key, { data, timestamp: Date.now(), remainingRequests })
+    return { data, error: null, remainingRequests, cached: false }
+  } catch (error) {
+    return { data: null, error: `Network error: ${error}` }
+  }
+}
+
+async function mapPool<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = new Array(items.length)
+  let next = 0
+
+  async function worker() {
+    while (next < items.length) {
+      const i = next++
+      results[i] = await fn(items[i])
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(limit, items.length) }, () => worker())
+  await Promise.all(workers)
+  return results
+}
+
+export interface AltLinesAttachResult {
+  events: OddsEvent[]
+  remainingRequests?: number
+  altGames: number
+  altFetched: number
+  altCached: number
+}
+
+/**
+ * Fetches alternate_spreads / alternate_totals per upcoming event (Odds API non-featured
+ * markets) and merges them onto the featured-odds events. Uses its own localStorage cache.
+ */
+export async function attachAltLines(
+  sport: SportKey,
+  events: OddsEvent[],
+  forceRefresh: boolean = false
+): Promise<AltLinesAttachResult> {
+  const targets = pickEventsForAltFetch(events)
+  if (targets.length === 0) {
+    return { events, altGames: 0, altFetched: 0, altCached: 0 }
+  }
+
+  let remainingRequests: number | undefined
+  let altFetched = 0
+  let altCached = 0
+  const mergedById = new Map(events.map(e => [e.id, e]))
+
+  const results = await mapPool(targets, 3, async event => {
+    const result = await fetchEventAltLines(sport, event.id, forceRefresh)
+    return { event, result }
+  })
+
+  for (const { event, result } of results) {
+    if (result.remainingRequests !== undefined) remainingRequests = result.remainingRequests
+    if (!result.data) continue
+    if (result.cached) altCached++
+    else altFetched++
+    const current = mergedById.get(event.id) || event
+    mergedById.set(event.id, mergeEventMarkets(current, result.data))
+  }
+
+  return {
+    events: events.map(e => mergedById.get(e.id) || e),
+    remainingRequests,
+    altGames: altFetched + altCached,
+    altFetched,
+    altCached,
   }
 }

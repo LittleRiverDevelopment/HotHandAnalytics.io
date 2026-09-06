@@ -8,6 +8,7 @@ import { formatOdds } from '@/lib/odds-utils'
 import { format } from 'date-fns'
 import BookOpenLink from './BookOpenLink'
 import LiveScoreBadge, { findScoreForGame } from './LiveScore'
+import AltLineBadge from './AltLineBadge'
 import { downloadCsv, lineDiscrepanciesToCsvRows } from '@/lib/csv-export'
 
 interface Props {
@@ -50,6 +51,7 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
   
   const filteredDiscrepancies = useMemo(() => {
     if (filterMarket === 'all') return sortedDiscrepancies
+    if (filterMarket === 'alt') return sortedDiscrepancies.filter(d => d.isAltLine)
     return sortedDiscrepancies.filter(d => d.market.toLowerCase() === filterMarket.toLowerCase())
   }, [sortedDiscrepancies, filterMarket])
   
@@ -108,6 +110,7 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
             <option value="moneyline">Moneyline</option>
             <option value="spread">Spread</option>
             <option value="total">Total</option>
+            <option value="alt">Alt lines only</option>
           </select>
         </div>
       </div>
@@ -208,8 +211,9 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        <span className="px-2 py-1 bg-slate-800 rounded text-xs font-medium">
+                        <span className="px-2 py-1 bg-slate-800 rounded text-xs font-medium inline-flex items-center gap-1.5">
                           {disc.market}
+                          {disc.isAltLine && <AltLineBadge />}
                         </span>
                       </td>
                       <td className="py-3 px-4 text-sm">

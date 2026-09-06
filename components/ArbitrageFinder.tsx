@@ -8,6 +8,7 @@ import { formatOdds } from '@/lib/odds-utils'
 import { format } from 'date-fns'
 import BookOpenLink from './BookOpenLink'
 import LiveScoreBadge, { findScoreForGame } from './LiveScore'
+import AltLineBadge from './AltLineBadge'
 import { downloadCsv, arbitrageToCsvRows } from '@/lib/csv-export'
 
 interface Props {
@@ -206,7 +207,10 @@ export default function ArbitrageFinder({ arbs, scores }: Props) {
                         <div className="flex flex-col gap-1">
                           <span className="font-medium text-sm">{arb.awayTeam}</span>
                           <span className="text-slate-400 text-sm">@ {arb.homeTeam}</span>
-                          <span className="text-xs text-slate-500">{arb.market}</span>
+                          <span className="text-xs text-slate-500 inline-flex items-center gap-1.5">
+                            {arb.market}
+                            {arb.isAltLine && <AltLineBadge />}
+                          </span>
                           {liveScore && (
                             <LiveScoreBadge score={liveScore} homeTeam={arb.homeTeam} awayTeam={arb.awayTeam} />
                           )}

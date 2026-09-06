@@ -2,7 +2,15 @@
 
 import { useState, useMemo } from 'react'
 import { OddsEvent } from '@/lib/types'
-import { impliedProbability, americanToDecimal } from '@/lib/odds-utils'
+import {
+  americanToDecimal,
+  collectQuotedLines,
+  getOpposingOutcomeForNoVig,
+  impliedProbability,
+  marketKindLabel,
+  outcomeKey,
+  type MarketKind,
+} from '@/lib/odds-utils'
 import { Grid3X3, Info } from 'lucide-react'
 
 interface EdgeHeatmapProps {
@@ -27,6 +35,7 @@ interface BetTypeData {
   pinnacleNoVigProb: number | null
   bookOdds: { bookKey: string; bookName: string; odds: number; edge: number }[]
   bestOdds: number | null
+  isAlt: boolean
 }
 
 function calculateNoVigProb(odds1: number, odds2: number): [number, number] {
@@ -44,6 +53,7 @@ function calculateEdge(bookOdds: number, fairProb: number): number {
 
 export default function EdgeHeatmap({ events }: EdgeHeatmapProps) {
   const [selectedEventId, setSelectedEventId] = useState<string>(events[0]?.id || '')
+  const [showAllAlts, setShowAllAlts] = useState(false)
 
   const selectedEvent = events.find(e => e.id === selectedEventId)
 
@@ -52,80 +62,66 @@ export default function EdgeHeatmap({ events }: EdgeHeatmapProps) {
 
     const pinnacle = selectedEvent.bookmakers.find(b => b.key === 'pinnacle')
     const otherBooks = selectedEvent.bookmakers.filter(b => b.key !== 'pinnacle')
-    
+    const kinds: MarketKind[] = ['h2h', 'spreads', 'totals']
     const results: BetTypeData[] = []
-    const markets = ['h2h', 'spreads', 'totals']
-    
-    markets.forEach(marketKey => {
-      const pinnacleMarket = pinnacle?.markets.find(m => m.key === marketKey)
-      if (!pinnacleMarket || pinnacleMarket.outcomes.length < 2) return
-      
-      pinnacleMarket.outcomes.forEach((outcome, idx) => {
-        const opposingIdx = idx === 0 ? 1 : 0
-        const opposingOutcome = pinnacleMarket.outcomes[opposingIdx]
-        
-        const [fairProb] = idx === 0 
-          ? calculateNoVigProb(outcome.price, opposingOutcome.price)
-          : calculateNoVigProb(opposingOutcome.price, outcome.price).reverse()
-        
-        const actualFairProb = idx === 0
-          ? calculateNoVigProb(outcome.price, opposingOutcome.price)[0]
-          : calculateNoVigProb(outcome.price, opposingOutcome.price)[1]
 
-        let betTypeLabel = outcome.name
-        if (marketKey === 'spreads' && outcome.point !== undefined) {
-          betTypeLabel = `${outcome.name} ${outcome.point > 0 ? '+' : ''}${outcome.point}`
-        } else if (marketKey === 'totals' && outcome.point !== undefined) {
-          betTypeLabel = `${outcome.name} ${outcome.point}`
+    kinds.forEach(kind => {
+      const pinnacleLines = pinnacle ? collectQuotedLines(pinnacle, kind) : []
+      if (pinnacleLines.length < 2 && kind !== 'h2h') return
+
+      pinnacleLines.forEach(line => {
+        const opposing = getOpposingOutcomeForNoVig(
+          line.sourceMarketKey,
+          pinnacleLines.map(l => ({ name: l.name, price: l.price, point: l.point })),
+          { name: line.name, price: line.price, point: line.point }
+        )
+        if (!opposing) return
+
+        const [fairProb] = calculateNoVigProb(line.price, opposing.price)
+
+        let betTypeLabel = line.name
+        if (kind === 'spreads' && line.point !== undefined) {
+          betTypeLabel = `${line.name} ${line.point > 0 ? '+' : ''}${line.point}`
+        } else if (kind === 'totals' && line.point !== undefined) {
+          betTypeLabel = `${line.name} ${line.point}`
         }
 
-        const marketLabel = marketKey === 'h2h' ? 'ML' : marketKey === 'spreads' ? 'Spread' : 'Total'
-
         const bookOdds: { bookKey: string; bookName: string; odds: number; edge: number }[] = []
-        
+
         otherBooks.forEach(bookmaker => {
-          const market = bookmaker.markets.find(m => m.key === marketKey)
-          if (!market) return
-          
-          let bookOutcome = market.outcomes.find(o => o.name === outcome.name)
-          
-          // For spreads/totals, match by point as well
-          if ((marketKey === 'spreads' || marketKey === 'totals') && outcome.point !== undefined) {
-            bookOutcome = market.outcomes.find(o => 
-              o.name === outcome.name && Math.abs((o.point || 0) - outcome.point!) < 0.1
-            )
-          }
-          
-          if (bookOutcome) {
-            const edge = calculateEdge(bookOutcome.price, actualFairProb)
-            bookOdds.push({
-              bookKey: bookmaker.key,
-              bookName: BOOK_NAMES[bookmaker.key] || bookmaker.title,
-              odds: bookOutcome.price,
-              edge
-            })
-          }
+          const match = collectQuotedLines(bookmaker, kind).find(
+            o => outcomeKey(o.name, o.point) === outcomeKey(line.name, line.point)
+          )
+          if (!match) return
+          bookOdds.push({
+            bookKey: bookmaker.key,
+            bookName: BOOK_NAMES[bookmaker.key] || bookmaker.title,
+            odds: match.price,
+            edge: calculateEdge(match.price, fairProb),
+          })
         })
 
-        // Sort by edge (highest first = best odds)
         bookOdds.sort((a, b) => b.edge - a.edge)
-        
         const bestOdds = bookOdds.length > 0 ? bookOdds[0].odds : null
+        const maxEdge = bookOdds[0]?.edge ?? 0
+
+        if (line.isAlt && !showAllAlts && maxEdge < 1) return
 
         results.push({
           betType: betTypeLabel,
-          market: marketLabel,
-          point: outcome.point,
-          pinnacleOdds: outcome.price,
-          pinnacleNoVigProb: actualFairProb,
+          market: marketKindLabel(kind),
+          point: line.point,
+          pinnacleOdds: line.price,
+          pinnacleNoVigProb: fairProb,
           bookOdds,
-          bestOdds
+          bestOdds,
+          isAlt: line.isAlt,
         })
       })
     })
 
     return results
-  }, [selectedEvent])
+  }, [selectedEvent, showAllAlts])
 
   const formatOdds = (odds: number) => odds > 0 ? `+${odds}` : `${odds}`
 
@@ -138,6 +134,7 @@ export default function EdgeHeatmap({ events }: EdgeHeatmapProps) {
             <h2 className="font-semibold">Edge Heatmap</h2>
           </div>
           
+          <div className="flex items-center gap-3 flex-wrap">
           <select
             value={selectedEventId}
             onChange={(e) => setSelectedEventId(e.target.value)}
@@ -154,6 +151,16 @@ export default function EdgeHeatmap({ events }: EdgeHeatmapProps) {
               )
             })}
           </select>
+          <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={showAllAlts}
+              onChange={e => setShowAllAlts(e.target.checked)}
+              className="rounded border-slate-600 bg-slate-800 text-green-500 focus:ring-green-500/40"
+            />
+            All alt lines
+          </label>
+          </div>
         </div>
       </div>
 
@@ -180,7 +187,12 @@ export default function EdgeHeatmap({ events }: EdgeHeatmapProps) {
               {betTypes.map((bet, idx) => (
                 <tr key={idx} className="border-b border-slate-800/50">
                   <td className="p-3 whitespace-nowrap sticky left-0 bg-[#0f1117] z-10">
-                    <div className="font-medium text-slate-300">{bet.betType}</div>
+                    <div className="font-medium text-slate-300 inline-flex items-center gap-1.5">
+                      {bet.betType}
+                      {bet.isAlt && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-purple-500/15 text-purple-300 border border-purple-500/30">Alt</span>
+                      )}
+                    </div>
                     <div className="text-xs text-slate-500">{bet.market}</div>
                   </td>
                   
@@ -238,7 +250,7 @@ export default function EdgeHeatmap({ events }: EdgeHeatmapProps) {
 
       <div className="p-3 border-t border-slate-800 flex items-center gap-2 text-xs text-slate-500">
         <Info className="w-3.5 h-3.5" />
-        <span>Pinnacle = fair odds baseline. Books sorted left→right by edge. Green highlight = best available odds.</span>
+        <span>Pinnacle = fair odds baseline. Books sorted left→right by edge. Green highlight = best available odds. Alt rows with under 1% edge are hidden unless &quot;All alt lines&quot; is on.</span>
       </div>
     </div>
   )

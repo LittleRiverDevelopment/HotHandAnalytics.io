@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "npx --yes tsx --test lib/odds-utils-alt.test.ts"
   },
   "dependencies": {
     "chart.js": "^4.4.1",

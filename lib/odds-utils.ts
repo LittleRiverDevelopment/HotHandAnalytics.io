@@ -9,19 +9,114 @@ const COLORADO_BOOK_KEYS = [
 /** If the book's market is updated much later than Pinnacle, no-vig fair odds are a stale reference. */
 const STALE_PINNACLE_VS_BOOK_MS = 25 * 60 * 1000
 
+export type MarketKind = 'h2h' | 'spreads' | 'totals'
+
+const MARKET_KINDS: MarketKind[] = ['h2h', 'spreads', 'totals']
+
+export function marketKind(key: string): MarketKind | null {
+  if (key === 'h2h') return 'h2h'
+  if (key === 'spreads' || key === 'alternate_spreads') return 'spreads'
+  if (key === 'totals' || key === 'alternate_totals') return 'totals'
+  return null
+}
+
+export function isAlternateMarket(key: string): boolean {
+  return key === 'alternate_spreads' || key === 'alternate_totals'
+}
+
+/** Drop alternate_spreads / alternate_totals so the rest of the pipeline sees main lines only. */
+export function stripAltMarkets(events: OddsEvent[]): OddsEvent[] {
+  return events.map(event => ({
+    ...event,
+    bookmakers: event.bookmakers.map(book => ({
+      ...book,
+      markets: book.markets.filter(m => !isAlternateMarket(m.key)),
+    })),
+  }))
+}
+
+export function marketKindLabel(kind: MarketKind): string {
+  if (kind === 'h2h') return 'Moneyline'
+  if (kind === 'spreads') return 'Spread'
+  return 'Total'
+}
+
+function formatSelectionLabel(name: string, point: number | undefined, kind: MarketKind): string {
+  if (point === undefined) return name
+  if (kind === 'spreads') return `${name} ${point > 0 ? '+' : ''}${point}`
+  return `${name} ${point}`
+}
+
+export function outcomeKey(name: string, point?: number): string {
+  return point !== undefined ? `${name}|${point}` : name
+}
+
+export interface QuotedLine {
+  name: string
+  price: number
+  point?: number
+  link?: string
+  lastUpdate: string
+  isAlt: boolean
+  sourceMarketKey: string
+}
+
+/**
+ * Flatten a book's featured + alternate markets of the same kind, preferring the main
+ * line when the same number is quoted in both.
+ */
+export function collectQuotedLines(bookmaker: Bookmaker, kind: MarketKind): QuotedLine[] {
+  const byKey = new Map<string, QuotedLine>()
+
+  for (const market of bookmaker.markets) {
+    if (marketKind(market.key) !== kind) continue
+    const isAlt = isAlternateMarket(market.key)
+
+    for (const outcome of market.outcomes) {
+      const key = outcomeKey(outcome.name, outcome.point)
+      const existing = byKey.get(key)
+      if (existing && !existing.isAlt) continue
+      if (existing && isAlt) continue
+
+      byKey.set(key, {
+        name: outcome.name,
+        price: outcome.price,
+        point: outcome.point,
+        link: getDeepestBookmakerLink(outcome, market, bookmaker),
+        lastUpdate: market.last_update || bookmaker.last_update || '',
+        isAlt,
+        sourceMarketKey: market.key,
+      })
+    }
+  }
+
+  return Array.from(byKey.values())
+}
+
+function featuredOutcomeKeys(event: OddsEvent, kind: MarketKind): Set<string> {
+  const keys = new Set<string>()
+  for (const bookmaker of event.bookmakers) {
+    for (const line of collectQuotedLines(bookmaker, kind)) {
+      if (!line.isAlt) keys.add(outcomeKey(line.name, line.point))
+    }
+  }
+  return keys
+}
+
 /**
  * True counterparty for two-way no-vig (not "other index" — alt lines can reorder outcomes).
  */
-function getOpposingOutcomeForNoVig(
+export function getOpposingOutcomeForNoVig(
   marketKey: string,
   outcomes: Outcome[],
   outcome: Outcome
 ): Outcome | undefined {
-  if (marketKey === 'h2h') {
+  const kind = marketKind(marketKey)
+  if (kind === 'h2h') {
     const others = outcomes.filter(o => o.name !== outcome.name)
     return others.length === 1 ? others[0] : undefined
   }
-  if (marketKey === 'totals') {
+  if (kind === 'totals') {
     if (outcome.point === undefined) return undefined
     return outcomes.find(
       o =>
@@ -31,7 +126,7 @@ function getOpposingOutcomeForNoVig(
         (o.name === 'Over' || o.name === 'Under')
     )
   }
-  if (marketKey === 'spreads') {
+  if (kind === 'spreads') {
     if (outcome.point === undefined) return undefined
     const p = outcome.point
     return outcomes.find(
@@ -39,6 +134,39 @@ function getOpposingOutcomeForNoVig(
         o !== outcome &&
         o.point !== undefined &&
         o.name !== outcome.name &&
+        Math.abs(o.point + p) < 0.001
+    )
+  }
+  return undefined
+}
+
+function getOpposingQuotedLine(
+  kind: MarketKind,
+  lines: QuotedLine[],
+  line: QuotedLine
+): QuotedLine | undefined {
+  if (kind === 'h2h') {
+    const others = lines.filter(o => o.name !== line.name)
+    return others.length === 1 ? others[0] : undefined
+  }
+  if (kind === 'totals') {
+    if (line.point === undefined) return undefined
+    return lines.find(
+      o =>
+        o !== line &&
+        o.point === line.point &&
+        o.name !== line.name &&
+        (o.name === 'Over' || o.name === 'Under')
+    )
+  }
+  if (kind === 'spreads') {
+    if (line.point === undefined) return undefined
+    const p = line.point
+    return lines.find(
+      o =>
+        o !== line &&
+        o.point !== undefined &&
+        o.name !== line.name &&
         Math.abs(o.point + p) < 0.001
     )
   }
@@ -130,59 +258,45 @@ export function findLineDiscrepancies(events: OddsEvent[]): LineDiscrepancy[] {
   const discrepancies: LineDiscrepancy[] = []
 
   events.forEach(event => {
-    const marketTypes = ['h2h', 'spreads', 'totals']
-    
-    marketTypes.forEach(marketKey => {
+    MARKET_KINDS.forEach(kind => {
+      const featuredKeys = featuredOutcomeKeys(event, kind)
       const bookOddsMap: Map<
         string,
         { book: string; bookKey: string; odds: number; point?: number; link?: string }[]
       > = new Map()
-      
+
       event.bookmakers.forEach(bookmaker => {
-        // Only include Colorado books for line shopping
         if (!isColoradoBook(bookmaker.key)) return
-        
-        const market = bookmaker.markets.find(m => m.key === marketKey)
-        if (!market) return
-        
-        market.outcomes.forEach(outcome => {
-          const key = outcome.point !== undefined 
-            ? `${outcome.name}|${outcome.point}` 
-            : outcome.name
-          
-          if (!bookOddsMap.has(key)) {
-            bookOddsMap.set(key, [])
-          }
+
+        collectQuotedLines(bookmaker, kind).forEach(line => {
+          const key = outcomeKey(line.name, line.point)
+          if (!bookOddsMap.has(key)) bookOddsMap.set(key, [])
           bookOddsMap.get(key)!.push({
             book: bookmaker.title,
             bookKey: bookmaker.key,
-            odds: outcome.price,
-            point: outcome.point,
-            link: getDeepestBookmakerLink(outcome, market, bookmaker),
+            odds: line.price,
+            point: line.point,
+            link: line.link,
           })
         })
       })
-      
+
       bookOddsMap.forEach((bookOdds, betKey) => {
         if (bookOdds.length < 2) return
-        
+
         const sorted = [...bookOdds].sort((a, b) => b.odds - a.odds)
         const best = sorted[0]
         const worst = sorted[sorted.length - 1]
         const spread = best.odds - worst.odds
-        
+
         if (spread >= 5) {
           const [betType] = betKey.split('|')
-          const marketLabel = marketKey === 'h2h' ? 'Moneyline' 
-            : marketKey === 'spreads' ? 'Spread' 
-            : 'Total'
-          
           discrepancies.push({
             eventId: event.id,
             homeTeam: event.home_team,
             awayTeam: event.away_team,
-            market: marketLabel,
-            betType: best.point !== undefined ? `${betType} ${best.point > 0 ? '+' : ''}${best.point}` : betType,
+            market: marketKindLabel(kind),
+            betType: formatSelectionLabel(betType, best.point, kind),
             bestOdds: best.odds,
             bestBook: best.book,
             worstOdds: worst.odds,
@@ -193,6 +307,7 @@ export function findLineDiscrepancies(events: OddsEvent[]): LineDiscrepancy[] {
             allBookOdds: bookOdds,
             bestDeepLink: best.link,
             worstDeepLink: worst.link,
+            isAltLine: !featuredKeys.has(betKey),
           })
         }
       })
@@ -206,92 +321,64 @@ export function findEVBets(events: OddsEvent[], minEV: number = 0.02): EVBet[] {
   const evBets: EVBet[] = []
 
   events.forEach(event => {
-    const marketTypes = ['h2h', 'spreads', 'totals']
-    
-    // Find Pinnacle bookmaker for fair odds
     const pinnacle = event.bookmakers.find(b => b.key.toLowerCase() === 'pinnacle')
-    
-    marketTypes.forEach(marketKey => {
-      // Get Pinnacle's market for fair odds calculation
-      const pinnacleMarket = pinnacle?.markets.find(m => m.key === marketKey)
-      const pinnacleLineAsOf =
-        pinnacleMarket?.last_update ||
-        pinnacle?.last_update ||
-        ''
-      
-      // Build map of outcomes with their opposing outcome (for no-vig calculation)
-      const pinnacleOddsMap: Map<string, { odds: number; opposingOdds: number }> = new Map()
-      
-      if (pinnacleMarket && pinnacleMarket.outcomes.length >= 2) {
-        for (const outcome of pinnacleMarket.outcomes) {
-          const opposing = getOpposingOutcomeForNoVig(marketKey, pinnacleMarket.outcomes, outcome)
-          if (!opposing) continue
-          const key =
-            outcome.point !== undefined ? `${outcome.name}|${outcome.point}` : outcome.name
-          pinnacleOddsMap.set(key, {
-            odds: outcome.price,
-            opposingOdds: opposing.price
-          })
-        }
+
+    MARKET_KINDS.forEach(kind => {
+      const featuredKeys = featuredOutcomeKeys(event, kind)
+      const pinnacleLines = pinnacle ? collectQuotedLines(pinnacle, kind) : []
+      const pinnacleOddsMap: Map<string, { odds: number; opposingOdds: number; lastUpdate: string }> = new Map()
+
+      for (const line of pinnacleLines) {
+        const opposing = getOpposingQuotedLine(kind, pinnacleLines, line)
+        if (!opposing) continue
+        pinnacleOddsMap.set(outcomeKey(line.name, line.point), {
+          odds: line.price,
+          opposingOdds: opposing.price,
+          lastUpdate: line.lastUpdate,
+        })
       }
-      
-      // Now check Colorado book odds against Pinnacle fair odds
+
       event.bookmakers.forEach(bookmaker => {
-        // Only calculate EV for Colorado books
         if (!isColoradoBook(bookmaker.key)) return
-        
-        const market = bookmaker.markets.find(m => m.key === marketKey)
-        if (!market) return
-        
-        market.outcomes.forEach(outcome => {
-          const key = outcome.point !== undefined 
-            ? `${outcome.name}|${outcome.point}` 
-            : outcome.name
-          
+
+        collectQuotedLines(bookmaker, kind).forEach(line => {
+          const key = outcomeKey(line.name, line.point)
           const pinnacleData = pinnacleOddsMap.get(key)
           if (!pinnacleData) return
 
-          const bookMarketAsOf = market.last_update || ''
           if (
-            pinnacleLineAsOf &&
-            bookMarketAsOf &&
-            isPinnacleStaleVsBook(pinnacleLineAsOf, bookMarketAsOf)
+            pinnacleData.lastUpdate &&
+            line.lastUpdate &&
+            isPinnacleStaleVsBook(pinnacleData.lastUpdate, line.lastUpdate)
           ) {
             return
           }
-          
-          // Calculate no-vig fair probability from Pinnacle
+
           const [fairProb] = calculateNoVigFromPair(pinnacleData.odds, pinnacleData.opposingOdds)
-          
-          const ev = calculateEV(outcome.price, fairProb)
-          
+          const ev = calculateEV(line.price, fairProb)
+
           if (ev >= minEV) {
             const [betType] = key.split('|')
-            const marketLabel = marketKey === 'h2h' ? 'Moneyline' 
-              : marketKey === 'spreads' ? 'Spread' 
-              : 'Total'
-            const kelly = calculateKellyCriterion(outcome.price, fairProb)
+            const kelly = calculateKellyCriterion(line.price, fairProb)
             const evPercent = ev * 100
-            const bookDeepLink = getDeepestBookmakerLink(outcome, market, bookmaker)
 
             evBets.push({
               eventId: event.id,
               homeTeam: event.home_team,
               awayTeam: event.away_team,
-              market: marketLabel,
-              selection: outcome.point !== undefined 
-                ? `${betType} ${outcome.point > 0 ? '+' : ''}${outcome.point}` 
-                : betType,
-              odds: outcome.price,
+              market: marketKindLabel(kind),
+              selection: formatSelectionLabel(betType, line.point, kind),
+              odds: line.price,
               book: bookmaker.title,
               fairOdds: decimalToAmerican(1 / fairProb),
-              pinnacleLastUpdate: pinnacleLineAsOf,
+              pinnacleLastUpdate: pinnacleData.lastUpdate,
               ev,
               evPercent,
               kellyCriterion: kelly,
               confidenceScore: computeEVConfidence(evPercent, kelly),
               commenceTime: event.commence_time,
-              ...(bookDeepLink ? { bookDeepLink } : {}),
+              ...(line.link ? { bookDeepLink: line.link } : {}),
+              isAltLine: !featuredKeys.has(key),
             })
           }
         })
@@ -309,18 +396,18 @@ function pointKey(point: number): string {
 
 /** For a given key (e.g. "Over|1.5" or "Lakers|-4.5"), returns the key of its true counterparty leg. */
 function getOpposingArbKey(
-  marketKey: string,
+  kind: MarketKind,
   key: string,
   homeTeam: string,
   awayTeam: string
 ): string | undefined {
-  if (marketKey === 'totals') {
+  if (kind === 'totals') {
     const [name, pointStr] = key.split('|')
     if (pointStr === undefined) return undefined
     const other = name === 'Over' ? 'Under' : name === 'Under' ? 'Over' : undefined
     return other ? `${other}|${pointStr}` : undefined
   }
-  if (marketKey === 'spreads') {
+  if (kind === 'spreads') {
     const [name, pointStr] = key.split('|')
     if (pointStr === undefined) return undefined
     const point = parseFloat(pointStr)
@@ -380,36 +467,32 @@ export function findArbitrageOpportunities(
   const opportunities: ArbitrageOpportunity[] = []
 
   events.forEach(event => {
-    const marketTypes = ['h2h', 'spreads', 'totals']
-
-    marketTypes.forEach(marketKey => {
+    MARKET_KINDS.forEach(kind => {
       type Entry = { book: string; odds: number; point?: number; link?: string; lastUpdate: string }
       const bestByKey: Map<string, Entry> = new Map()
+      const featuredKeys = featuredOutcomeKeys(event, kind)
 
       event.bookmakers.forEach(bookmaker => {
         if (!isColoradoBook(bookmaker.key)) return
-        const market = bookmaker.markets.find(m => m.key === marketKey)
-        if (!market) return
 
-        market.outcomes.forEach(outcome => {
-          const key = outcome.point !== undefined ? `${outcome.name}|${outcome.point}` : outcome.name
+        collectQuotedLines(bookmaker, kind).forEach(line => {
+          const key = outcomeKey(line.name, line.point)
           const existing = bestByKey.get(key)
-          if (!existing || outcome.price > existing.odds) {
+          if (!existing || line.price > existing.odds) {
             bestByKey.set(key, {
               book: bookmaker.title,
-              odds: outcome.price,
-              point: outcome.point,
-              link: getDeepestBookmakerLink(outcome, market, bookmaker),
-              lastUpdate: market.last_update || bookmaker.last_update || '',
+              odds: line.price,
+              point: line.point,
+              link: line.link,
+              lastUpdate: line.lastUpdate,
             })
           }
         })
       })
 
-      const marketLabel = marketKey === 'h2h' ? 'Moneyline' : marketKey === 'spreads' ? 'Spread' : 'Total'
+      const marketLabel = marketKindLabel(kind)
 
-      if (marketKey === 'h2h') {
-        // The h2h market for one event is already the full outcome set (2-way, or 3-way with a draw).
+      if (kind === 'h2h') {
         if (bestByKey.size < 2) return
         const names = Array.from(bestByKey.keys())
         const entries = names.map(n => bestByKey.get(n)!)
@@ -430,11 +513,10 @@ export function findArbitrageOpportunities(
         return
       }
 
-      // spreads / totals: pair each key with its true counterparty leg, once per pair.
       const processed = new Set<string>()
       bestByKey.forEach((entry, key) => {
         if (processed.has(key)) return
-        const opposingKey = getOpposingArbKey(marketKey, key, event.home_team, event.away_team)
+        const opposingKey = getOpposingArbKey(kind, key, event.home_team, event.away_team)
         if (!opposingKey || opposingKey === key) return
         const opposingEntry = bestByKey.get(opposingKey)
         if (!opposingEntry) return
@@ -444,12 +526,10 @@ export function findArbitrageOpportunities(
 
         const [nameA] = key.split('|')
         const [nameB] = opposingKey.split('|')
-        const label = (name: string, point?: number) =>
-          point !== undefined ? `${name} ${point > 0 ? '+' : ''}${point}` : name
 
         const built = buildArbLegs(
           [entry, opposingEntry],
-          [label(nameA, entry.point), label(nameB, opposingEntry.point)]
+          [formatSelectionLabel(nameA, entry.point, kind), formatSelectionLabel(nameB, opposingEntry.point, kind)]
         )
         if (!built || built.profitPercent < minProfitPercent) return
 
@@ -463,6 +543,7 @@ export function findArbitrageOpportunities(
           impliedProbabilitySum: built.impliedProbabilitySum,
           profitPercent: built.profitPercent,
           confidenceScore: computeArbConfidence(built.profitPercent, built.maxUpdateGapMinutes),
+          isAltLine: !featuredKeys.has(key) && !featuredKeys.has(opposingKey),
         })
       })
     })

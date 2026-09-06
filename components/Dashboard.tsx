@@ -32,9 +32,18 @@ import LiveScoreBadge, { findScoreForGame } from './LiveScore'
 import BetTracker from './BetTracker'
 import BankrollSimulator from './BankrollSimulator'
 import { OddsEvent, ScoreEvent, LineDiscrepancy, EVBet, ArbitrageOpportunity, PlayerProp, SPORTS, SportKey } from '@/lib/types'
-import { findLineDiscrepancies, findEVBets, findArbitrageOpportunities } from '@/lib/odds-utils'
+import { findLineDiscrepancies, findEVBets, findArbitrageOpportunities, stripAltMarkets } from '@/lib/odds-utils'
 import { MOCK_EVENTS, MOCK_PLAYER_PROPS } from '@/lib/mock-data'
-import { fetchOddsClient, fetchScoresClient, getCacheAge, hasCachedData } from '@/lib/odds-api'
+import {
+  fetchOddsClient,
+  fetchScoresClient,
+  getCacheAge,
+  hasCachedData,
+  attachAltLines,
+  getIncludeAltLines,
+  setIncludeAltLines,
+  ALT_EVENT_CAP,
+} from '@/lib/odds-api'
 import Settings from './Settings'
 
 type Tab = 'discrepancies' | 'ev' | 'arbitrage' | 'props' | 'overview' | 'analytics' | 'tracker' | 'simulator'
@@ -60,6 +69,10 @@ interface DataFreshnessStripProps {
   isLoading: boolean
   onRefresh: () => void
   sport: string
+  includeAltLines: boolean
+  onToggleAltLines: (on: boolean) => void
+  altGames: number
+  remainingRequests: number | null
 }
 
 function DataFreshnessStrip({
@@ -70,6 +83,10 @@ function DataFreshnessStrip({
   isLoading,
   onRefresh,
   sport,
+  includeAltLines,
+  onToggleAltLines,
+  altGames,
+  remainingRequests,
 }: DataFreshnessStripProps) {
   const source = !isLive ? 'Demo data' : isCached ? 'Cached odds' : 'Live fetch'
 
@@ -101,16 +118,42 @@ function DataFreshnessStrip({
             <Clock className="w-3.5 h-3.5 shrink-0 text-slate-500" />
             <span>Updated {lastUpdated.toLocaleString()}</span>
           </div>
+          {remainingRequests !== null && isLive && (
+            <span className="text-slate-500">{remainingRequests} API calls left</span>
+          )}
         </div>
-        <button
-          type="button"
-          onClick={onRefresh}
-          disabled={isLoading}
-          className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-green-500/15 hover:bg-green-500/25 border border-green-500/30 text-green-400 rounded-lg transition-colors disabled:opacity-50 shrink-0"
-        >
-          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-          Refresh odds
-        </button>
+        <div className="flex items-center gap-3 shrink-0">
+          <label
+            className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer select-none"
+            title={`Alternate spreads/totals for the next ${ALT_EVENT_CAP} games. Costs extra Odds API credits (one call per game).`}
+          >
+            <input
+              type="checkbox"
+              checked={includeAltLines}
+              onChange={e => onToggleAltLines(e.target.checked)}
+              className="rounded border-slate-600 bg-slate-800 text-green-500 focus:ring-green-500/40"
+            />
+            <span>Alt lines</span>
+            {includeAltLines && (
+              <span className="text-xs text-purple-300">
+                {isLive
+                  ? altGames > 0
+                    ? `${altGames} game${altGames === 1 ? '' : 's'}`
+                    : 'refresh to fetch'
+                  : 'on'}
+              </span>
+            )}
+          </label>
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={isLoading}
+            className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-green-500/15 hover:bg-green-500/25 border border-green-500/30 text-green-400 rounded-lg transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh odds
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -133,6 +176,13 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [cacheAge, setCacheAge] = useState<number | null>(null)
+  const [includeAltLines, setIncludeAltLinesState] = useState(() => getIncludeAltLines())
+  const [altGames, setAltGames] = useState(0)
+
+  const handleToggleAltLines = (on: boolean) => {
+    setIncludeAltLines(on)
+    setIncludeAltLinesState(on)
+  }
   
   const loadData = useCallback(async (forceRefresh: boolean = false) => {
     setIsLoading(true)
@@ -176,7 +226,26 @@ export default function Dashboard() {
         }
       }
       
-      const eventData = result.data || MOCK_EVENTS
+      let eventData = result.data || MOCK_EVENTS
+      let loadedAltGames = 0
+
+      if (!includeAltLines) {
+        eventData = stripAltMarkets(eventData)
+      } else if (result.data) {
+        const alt = await attachAltLines(selectedSport, result.data, forceRefresh)
+        eventData = alt.events
+        loadedAltGames = alt.altGames
+        if (alt.remainingRequests !== undefined) {
+          setRemainingRequests(alt.remainingRequests)
+        }
+      } else {
+        loadedAltGames = eventData.filter(e =>
+          e.bookmakers.some(b => b.markets.some(m => m.key.startsWith('alternate_')))
+        ).length
+      }
+
+      setEvents(eventData)
+      setAltGames(loadedAltGames)
       setDiscrepancies(findLineDiscrepancies(eventData))
       setEvBets(findEVBets(eventData))
       setArbs(findArbitrageOpportunities(eventData))
@@ -188,16 +257,20 @@ export default function Dashboard() {
       }
     } catch (err) {
       setError('Failed to fetch data')
-      setEvents(MOCK_EVENTS)
+      const fallback = includeAltLines ? MOCK_EVENTS : stripAltMarkets(MOCK_EVENTS)
+      setEvents(fallback)
       setScores([])
-      setDiscrepancies(findLineDiscrepancies(MOCK_EVENTS))
-      setEvBets(findEVBets(MOCK_EVENTS))
-      setArbs(findArbitrageOpportunities(MOCK_EVENTS))
+      setDiscrepancies(findLineDiscrepancies(fallback))
+      setEvBets(findEVBets(fallback))
+      setArbs(findArbitrageOpportunities(fallback))
       setIsLive(false)
+      setAltGames(includeAltLines ? fallback.filter(e =>
+        e.bookmakers.some(b => b.markets.some(m => m.key.startsWith('alternate_')))
+      ).length : 0)
     } finally {
       setIsLoading(false)
     }
-  }, [selectedSport])
+  }, [selectedSport, includeAltLines])
   
   // Load cached data on mount (no API call unless user clicks refresh)
   useEffect(() => {
@@ -205,11 +278,15 @@ export default function Dashboard() {
       loadData(false) // Load from cache
     } else {
       // No cache - show mock data, user must click refresh
-      setEvents(MOCK_EVENTS)
+      const fallback = includeAltLines ? MOCK_EVENTS : stripAltMarkets(MOCK_EVENTS)
+      setEvents(fallback)
       setScores([])
-      setDiscrepancies(findLineDiscrepancies(MOCK_EVENTS))
-      setEvBets(findEVBets(MOCK_EVENTS))
-      setArbs(findArbitrageOpportunities(MOCK_EVENTS))
+      setDiscrepancies(findLineDiscrepancies(fallback))
+      setEvBets(findEVBets(fallback))
+      setArbs(findArbitrageOpportunities(fallback))
+      setAltGames(includeAltLines ? fallback.filter(e =>
+        e.bookmakers.some(b => b.markets.some(m => m.key.startsWith('alternate_')))
+      ).length : 0)
       setIsLoading(false)
       setIsLive(false)
     }
@@ -333,6 +410,10 @@ export default function Dashboard() {
                 isLoading={isLoading}
                 onRefresh={() => loadData(true)}
                 sport={SPORTS.find(s => s.key === selectedSport)?.title || selectedSport}
+                includeAltLines={includeAltLines}
+                onToggleAltLines={handleToggleAltLines}
+                altGames={altGames}
+                remainingRequests={remainingRequests}
               />
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div className="card p-4 card-hover">
@@ -405,7 +486,12 @@ export default function Dashboard() {
                       <div key={idx} className="p-4 hover:bg-slate-800/30 transition-colors">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-medium text-sm">{bet.selection}</p>
+                            <p className="font-medium text-sm">
+                              {bet.selection}
+                              {bet.isAltLine && (
+                                <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-purple-500/15 text-purple-300 border border-purple-500/30">Alt</span>
+                              )}
+                            </p>
                             <p className="text-xs text-slate-500">{bet.awayTeam} @ {bet.homeTeam}</p>
                           </div>
                           <div className="text-right">
@@ -513,6 +599,10 @@ export default function Dashboard() {
                 isLoading={isLoading}
                 onRefresh={() => loadData(true)}
                 sport={SPORTS.find(s => s.key === selectedSport)?.title || selectedSport}
+                includeAltLines={includeAltLines}
+                onToggleAltLines={handleToggleAltLines}
+                altGames={altGames}
+                remainingRequests={remainingRequests}
               />
               <LineDiscrepancyTable discrepancies={discrepancies} scores={scores} />
             </motion.div>
@@ -533,6 +623,10 @@ export default function Dashboard() {
                 isLoading={isLoading}
                 onRefresh={() => loadData(true)}
                 sport={SPORTS.find(s => s.key === selectedSport)?.title || selectedSport}
+                includeAltLines={includeAltLines}
+                onToggleAltLines={handleToggleAltLines}
+                altGames={altGames}
+                remainingRequests={remainingRequests}
               />
               <EVCalculator evBets={evBets} scores={scores} />
             </motion.div>
@@ -553,6 +647,10 @@ export default function Dashboard() {
                 isLoading={isLoading}
                 onRefresh={() => loadData(true)}
                 sport={SPORTS.find(s => s.key === selectedSport)?.title || selectedSport}
+                includeAltLines={includeAltLines}
+                onToggleAltLines={handleToggleAltLines}
+                altGames={altGames}
+                remainingRequests={remainingRequests}
               />
               <ArbitrageFinder arbs={arbs} scores={scores} />
             </motion.div>
@@ -574,6 +672,10 @@ export default function Dashboard() {
                 isLoading={isLoading}
                 onRefresh={() => loadData(true)}
                 sport={SPORTS.find(s => s.key === selectedSport)?.title || selectedSport}
+                includeAltLines={includeAltLines}
+                onToggleAltLines={handleToggleAltLines}
+                altGames={altGames}
+                remainingRequests={remainingRequests}
               />
               <EdgeHeatmap events={events} />
               <LineMovement events={events} />

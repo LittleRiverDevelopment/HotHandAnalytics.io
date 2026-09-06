@@ -39,6 +39,7 @@ export function lineDiscrepanciesToCsvRows(rows: LineDiscrepancy[]): (string | n
     'Confidence',
     'BestDeepLink',
     'WorstDeepLink',
+    'AltLine',
     'CommenceTime',
   ]
   const body = rows.map(d => [
@@ -54,6 +55,7 @@ export function lineDiscrepanciesToCsvRows(rows: LineDiscrepancy[]): (string | n
     d.confidenceScore,
     d.bestDeepLink ?? '',
     d.worstDeepLink ?? '',
+    d.isAltLine ? 'Y' : '',
     d.commenceTime,
   ])
   return [header, ...body]
@@ -73,6 +75,7 @@ export function evBetsToCsvRows(rows: EVBet[]): (string | number)[][] {
     'Kelly',
     'Book',
     'BookDeepLink',
+    'AltLine',
     'CommenceTime',
   ]
   const body = rows.map(b => [
@@ -88,6 +91,7 @@ export function evBetsToCsvRows(rows: EVBet[]): (string | number)[][] {
     b.kellyCriterion.toFixed(4),
     b.book,
     b.bookDeepLink ?? '',
+    b.isAltLine ? 'Y' : '',
     b.commenceTime,
   ])
   return [header, ...body]
@@ -102,6 +106,7 @@ export function arbitrageToCsvRows(rows: ArbitrageOpportunity[]): (string | numb
     'Confidence',
     'ImpliedProbSum',
     'Legs',
+    'AltLine',
     'CommenceTime',
   ]
   const body = rows.map(a => [
@@ -114,6 +119,7 @@ export function arbitrageToCsvRows(rows: ArbitrageOpportunity[]): (string | numb
     a.legs
       .map(l => `${l.selection} @ ${formatOdds(l.odds)} (${l.book}, ${l.stakePercent.toFixed(1)}% stake)`)
       .join(' | '),
+    a.isAltLine ? 'Y' : '',
     a.commenceTime,
   ])
   return [header, ...body]
