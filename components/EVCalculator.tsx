@@ -249,7 +249,7 @@ export default function EVCalculator({ evBets, scores }: Props) {
                   const liveScore = findScoreForGame(scores, bet.eventId, bet.homeTeam, bet.awayTeam)
                   return (
                   <motion.tr
-                    key={`${bet.eventId}-${bet.selection}-${bet.book}`}
+                    key={`${lineFilter}-${bet.eventId}-${bet.selection}-${bet.book}`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
