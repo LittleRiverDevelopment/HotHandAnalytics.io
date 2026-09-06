@@ -268,9 +268,9 @@ export async function fetchPlayerProps(
 }
 
 export function getIncludeAltLines(): boolean {
-  if (typeof window === 'undefined') return true
+  if (typeof window === 'undefined') return false
   const stored = localStorage.getItem(INCLUDE_ALT_LINES_KEY)
-  return stored === null ? true : stored === '1'
+  return stored === '1'
 }
 
 export function setIncludeAltLines(on: boolean): void {
