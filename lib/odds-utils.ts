@@ -1,4 +1,4 @@
-import { OddsEvent, LineDiscrepancy, EVBet, ArbitrageOpportunity, ArbitrageLeg, Outcome, Market, Bookmaker } from './types'
+import { OddsEvent, ScoreEvent, LineDiscrepancy, EVBet, ArbitrageOpportunity, ArbitrageLeg, Outcome, Market, Bookmaker } from './types'
 
 // Colorado books only (exclude Pinnacle from betting display)
 const COLORADO_BOOK_KEYS = [
@@ -92,24 +92,90 @@ export function pruneDistantAltOutcomes(events: OddsEvent[]): OddsEvent[] {
 }
 
 /**
+ * If a game has already started and scores have not marked it completed, keep it
+ * this long (covers live games, delayed score feeds, and extra innings).
+ */
+export const STARTED_GAME_GRACE_MS = 8 * 60 * 60 * 1000
+
+/** Team-name fallback only when commence times are this close (avoids yesterday's FINAL). */
+const SCORE_TEAM_FALLBACK_MS = 90 * 60 * 1000
+
+export function findMatchingScore(
+  event: Pick<OddsEvent, 'id' | 'home_team' | 'away_team' | 'commence_time'>,
+  scores: ScoreEvent[] | undefined
+): ScoreEvent | undefined {
+  if (!scores || scores.length === 0) return undefined
+  const byId = scores.find(s => s.id === event.id)
+  if (byId) return byId
+
+  const sameTeams = scores.filter(
+    s => s.home_team === event.home_team && s.away_team === event.away_team
+  )
+  if (sameTeams.length === 0) return undefined
+
+  const eventStart = Date.parse(event.commence_time)
+  if (Number.isNaN(eventStart)) {
+    return sameTeams.length === 1 ? sameTeams[0] : undefined
+  }
+
+  let best: ScoreEvent | undefined
+  let bestDelta = Infinity
+  for (const s of sameTeams) {
+    const start = Date.parse(s.commence_time)
+    if (Number.isNaN(start)) continue
+    const delta = Math.abs(start - eventStart)
+    if (delta < bestDelta) {
+      bestDelta = delta
+      best = s
+    }
+  }
+  return best && bestDelta <= SCORE_TEAM_FALLBACK_MS ? best : undefined
+}
+
+/** Upcoming tip-offs, in-progress games, and recently started games without a FINAL score. */
+export function isUpcomingOrLive(
+  event: Pick<OddsEvent, 'id' | 'home_team' | 'away_team' | 'commence_time'>,
+  scores?: ScoreEvent[],
+  now: number = Date.now()
+): boolean {
+  const score = findMatchingScore(event, scores)
+  if (score?.completed) return false
+
+  const start = Date.parse(event.commence_time)
+  if (Number.isNaN(start)) return true
+  if (start > now) return true
+  if (score && !score.completed) return true
+  return now - start < STARTED_GAME_GRACE_MS
+}
+
+export function filterUpcomingOrLiveEvents(
+  events: OddsEvent[],
+  scores?: ScoreEvent[],
+  now: number = Date.now()
+): OddsEvent[] {
+  return events.filter(event => isUpcomingOrLive(event, scores, now))
+}
+
+/**
  * Prefer games that already show the most +EV on the main line, then sooner tip-off.
  * Used to decide which events get the expensive per-game alt-line fetch.
  */
-export function rankEventsForAltFetch(events: OddsEvent[], cap: number): OddsEvent[] {
-  const cutoff = Date.now() - 15 * 60 * 1000
-  const upcoming = events.filter(e => {
-    const start = new Date(e.commence_time).getTime()
-    return !Number.isNaN(start) && start > cutoff
-  })
-  if (upcoming.length === 0 || cap <= 0) return []
+export function rankEventsForAltFetch(
+  events: OddsEvent[],
+  cap: number,
+  scores?: ScoreEvent[],
+  now: number = Date.now()
+): OddsEvent[] {
+  const pool = filterUpcomingOrLiveEvents(events, scores, now)
+  if (pool.length === 0 || cap <= 0) return []
 
   const bestEv = new Map<string, number>()
-  for (const e of upcoming) bestEv.set(e.id, 0)
-  for (const bet of findEVBets(upcoming, 0)) {
+  for (const e of pool) bestEv.set(e.id, 0)
+  for (const bet of findEVBets(pool, 0)) {
     bestEv.set(bet.eventId, Math.max(bestEv.get(bet.eventId) ?? 0, bet.evPercent))
   }
 
-  return [...upcoming]
+  return [...pool]
     .sort((a, b) => {
       const evDelta = (bestEv.get(b.id) ?? 0) - (bestEv.get(a.id) ?? 0)
       if (evDelta !== 0) return evDelta

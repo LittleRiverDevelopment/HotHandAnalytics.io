@@ -32,7 +32,7 @@ import LiveScoreBadge, { findScoreForGame } from './LiveScore'
 import BetTracker from './BetTracker'
 import BankrollSimulator from './BankrollSimulator'
 import { OddsEvent, ScoreEvent, LineDiscrepancy, EVBet, ArbitrageOpportunity, PlayerProp, SPORTS, SportKey } from '@/lib/types'
-import { findLineDiscrepancies, findEVBets, findArbitrageOpportunities, stripAltMarkets } from '@/lib/odds-utils'
+import { findLineDiscrepancies, findEVBets, findArbitrageOpportunities, stripAltMarkets, filterUpcomingOrLiveEvents } from '@/lib/odds-utils'
 import { MOCK_EVENTS, MOCK_PLAYER_PROPS } from '@/lib/mock-data'
 import {
   fetchOddsClient,
@@ -184,6 +184,9 @@ export default function Dashboard() {
   const [altGames, setAltGames] = useState(0)
   const [altLoading, setAltLoading] = useState(false)
   const loadGenRef = useRef(0)
+  const rawEventsRef = useRef<OddsEvent[]>([])
+  const scoresRef = useRef<ScoreEvent[]>([])
+  const sportForScoresRef = useRef<SportKey>(selectedSport)
 
   const handleToggleAltLines = (on: boolean) => {
     setIncludeAltLines(on)
@@ -197,9 +200,20 @@ export default function Dashboard() {
     setArbs(findArbitrageOpportunities(eventData))
     setLastUpdated(new Date())
   }
+
+  const publishBoard = (eventData?: OddsEvent[], nextScores?: ScoreEvent[]) => {
+    if (eventData !== undefined) rawEventsRef.current = eventData
+    if (nextScores !== undefined) scoresRef.current = nextScores
+    applyBoard(filterUpcomingOrLiveEvents(rawEventsRef.current, scoresRef.current))
+  }
   
   const loadData = useCallback(async (forceRefresh: boolean = false) => {
     const loadId = ++loadGenRef.current
+    if (sportForScoresRef.current !== selectedSport) {
+      sportForScoresRef.current = selectedSport
+      scoresRef.current = []
+      setScores([])
+    }
     setIsLoading(true)
     setAltLoading(false)
     setError(null)
@@ -213,6 +227,7 @@ export default function Dashboard() {
         setIsLive(false)
         setIsCached(false)
         setCacheAge(null)
+        scoresRef.current = []
         setScores([])
       } else {
         if (result.error) setError(result.error)
@@ -229,7 +244,7 @@ export default function Dashboard() {
         eventData = stripAltMarkets(eventData)
       }
 
-      applyBoard(eventData)
+      publishBoard(eventData)
       setAltGames(
         includeAltLines && !result.data
           ? eventData.filter(e =>
@@ -243,27 +258,36 @@ export default function Dashboard() {
       setIsLoading(false)
 
       if (!result.data) {
+        publishBoard(undefined, [])
         setScores([])
         return
       }
 
-      const scoresPromise = fetchScoresClient(selectedSport, forceRefresh)
+      const scoresPromise = fetchScoresClient(selectedSport, forceRefresh).then(scoresResult => {
+        if (loadId !== loadGenRef.current) return scoresResult
+        if (scoresResult.data) {
+          setScores(scoresResult.data)
+          if (scoresResult.remainingRequests !== undefined) {
+            setRemainingRequests(scoresResult.remainingRequests)
+          }
+          publishBoard(undefined, scoresResult.data)
+        }
+        return scoresResult
+      })
+
       const altsPromise = includeAltLines
-        ? (setAltLoading(true), attachAltLines(selectedSport, result.data, forceRefresh))
+        ? scoresPromise.then(scoresResult => {
+            if (loadId !== loadGenRef.current) return null
+            setAltLoading(true)
+            return attachAltLines(selectedSport, result.data!, forceRefresh, scoresResult.data || [])
+          })
         : Promise.resolve(null)
 
-      const [scoresResult, alt] = await Promise.all([scoresPromise, altsPromise])
+      const [, alt] = await Promise.all([scoresPromise, altsPromise])
       if (loadId !== loadGenRef.current) return
 
-      if (scoresResult.data) {
-        setScores(scoresResult.data)
-        if (scoresResult.remainingRequests !== undefined) {
-          setRemainingRequests(scoresResult.remainingRequests)
-        }
-      }
-
       if (alt) {
-        applyBoard(alt.events)
+        publishBoard(alt.events, scoresRef.current)
         setAltGames(alt.altGames)
         if (alt.remainingRequests !== undefined) {
           setRemainingRequests(alt.remainingRequests)
@@ -273,7 +297,7 @@ export default function Dashboard() {
       if (loadId !== loadGenRef.current) return
       setError('Failed to fetch data')
       const fallback = includeAltLines ? MOCK_EVENTS : stripAltMarkets(MOCK_EVENTS)
-      applyBoard(fallback)
+      publishBoard(fallback, [])
       setScores([])
       setIsLive(false)
       setAltGames(includeAltLines ? fallback.filter(e =>
@@ -294,11 +318,9 @@ export default function Dashboard() {
     } else {
       // No cache - show mock data, user must click refresh
       const fallback = includeAltLines ? MOCK_EVENTS : stripAltMarkets(MOCK_EVENTS)
-      setEvents(fallback)
+      scoresRef.current = []
       setScores([])
-      setDiscrepancies(findLineDiscrepancies(fallback))
-      setEvBets(findEVBets(fallback))
-      setArbs(findArbitrageOpportunities(fallback))
+      publishBoard(fallback, [])
       setAltGames(includeAltLines ? fallback.filter(e =>
         e.bookmakers.some(b => b.markets.some(m => m.key.startsWith('alternate_')))
       ).length : 0)
@@ -571,11 +593,11 @@ export default function Dashboard() {
               <div className="card p-4">
                 <div className="flex items-center gap-2 mb-4">
                   <Activity className="w-4 h-4 text-slate-400" />
-                  <span className="font-medium">Games</span>
+                  <span className="font-medium">Upcoming & live</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {events.slice(0, 6).map(event => {
-                    const score = findScoreForGame(scores, event.id, event.home_team, event.away_team)
+                    const score = findScoreForGame(scores, event.id, event.home_team, event.away_team, event.commence_time)
                     return (
                       <div key={event.id} className="p-4 bg-slate-800/30 rounded-lg">
                         <div className="flex items-center justify-between mb-2 gap-2">
@@ -595,6 +617,11 @@ export default function Dashboard() {
                       </div>
                     )
                   })}
+                  {events.length === 0 && (
+                    <div className="p-4 text-sm text-slate-500 md:col-span-3">
+                      No upcoming or live games right now.
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>

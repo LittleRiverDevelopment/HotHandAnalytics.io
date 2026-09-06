@@ -188,7 +188,7 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
                   const rowKey = `${disc.eventId}-${disc.market}-${disc.betType}`
                   const isExpanded = expandedRow === rowKey
                   const sortedBooks = [...disc.allBookOdds].sort((a, b) => b.odds - a.odds)
-                  const liveScore = findScoreForGame(scores, disc.eventId, disc.homeTeam, disc.awayTeam)
+                  const liveScore = findScoreForGame(scores, disc.eventId, disc.homeTeam, disc.awayTeam, disc.commenceTime)
                   
                   return (
                     <Fragment key={rowKey}>

@@ -253,7 +253,7 @@ export default function EVCalculator({ evBets, scores }: Props) {
               <AnimatePresence>
                 {visibleBets.map((bet, index) => {
                   const pinnacleAsOf = formatPinnacleAsOf(bet.pinnacleLastUpdate)
-                  const liveScore = findScoreForGame(scores, bet.eventId, bet.homeTeam, bet.awayTeam)
+                  const liveScore = findScoreForGame(scores, bet.eventId, bet.homeTeam, bet.awayTeam, bet.commenceTime)
                   return (
                   <motion.tr
                     key={`${lineFilter}-${bet.eventId}-${bet.selection}-${bet.book}`}

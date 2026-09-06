@@ -193,7 +193,7 @@ export default function ArbitrageFinder({ arbs, scores }: Props) {
             <tbody className="divide-y divide-slate-800">
               <AnimatePresence>
                 {sortedArbs.map((arb, index) => {
-                  const liveScore = findScoreForGame(scores, arb.eventId, arb.homeTeam, arb.awayTeam)
+                  const liveScore = findScoreForGame(scores, arb.eventId, arb.homeTeam, arb.awayTeam, arb.commenceTime)
                   return (
                     <motion.tr
                       key={`${arb.eventId}-${arb.market}-${arb.legs.map(l => l.selection).join('|')}`}

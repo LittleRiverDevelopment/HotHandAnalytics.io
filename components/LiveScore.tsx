@@ -1,4 +1,5 @@
 import { ScoreEvent } from '@/lib/types'
+import { findMatchingScore } from '@/lib/odds-utils'
 
 interface Props {
   score: ScoreEvent | undefined
@@ -6,17 +7,22 @@ interface Props {
   awayTeam: string
 }
 
-/** Finds the ScoreEvent for a game, matching by id first and falling back to team names. */
+/** Finds the ScoreEvent for a game, matching by id first and falling back to nearby team names. */
 export function findScoreForGame(
   scores: ScoreEvent[] | undefined,
   eventId: string,
   homeTeam: string,
-  awayTeam: string
+  awayTeam: string,
+  commenceTime?: string
 ): ScoreEvent | undefined {
-  if (!scores || scores.length === 0) return undefined
-  return (
-    scores.find(s => s.id === eventId) ||
-    scores.find(s => s.home_team === homeTeam && s.away_team === awayTeam)
+  return findMatchingScore(
+    {
+      id: eventId,
+      home_team: homeTeam,
+      away_team: awayTeam,
+      commence_time: commenceTime ?? '',
+    },
+    scores
   )
 }
 

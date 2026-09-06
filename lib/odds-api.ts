@@ -330,8 +330,8 @@ export function mergeEventMarkets(base: OddsEvent, extra: OddsEvent): OddsEvent 
   return { ...base, bookmakers: Array.from(books.values()) }
 }
 
-function pickEventsForAltFetch(events: OddsEvent[]): OddsEvent[] {
-  return rankEventsForAltFetch(events, ALT_EVENT_CAP)
+function pickEventsForAltFetch(events: OddsEvent[], scores?: ScoreEvent[]): OddsEvent[] {
+  return rankEventsForAltFetch(events, ALT_EVENT_CAP, scores)
 }
 
 async function fetchEventAltLines(
@@ -408,15 +408,17 @@ export interface AltLinesAttachResult {
 }
 
 /**
- * Fetches alternate_spreads / alternate_totals per upcoming event (Odds API non-featured
- * markets) and merges them onto the featured-odds events. Uses its own localStorage cache.
+ * Fetches alternate_spreads / alternate_totals per upcoming or live event (Odds API
+ * non-featured markets) and merges them onto the featured-odds events. Uses its own
+ * localStorage cache.
  */
 export async function attachAltLines(
   sport: SportKey,
   events: OddsEvent[],
-  forceRefresh: boolean = false
+  forceRefresh: boolean = false,
+  scores?: ScoreEvent[]
 ): Promise<AltLinesAttachResult> {
-  const targets = pickEventsForAltFetch(events)
+  const targets = pickEventsForAltFetch(events, scores)
   if (targets.length === 0) {
     return { events, altGames: 0, altFetched: 0, altCached: 0 }
   }
