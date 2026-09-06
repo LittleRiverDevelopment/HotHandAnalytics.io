@@ -118,7 +118,7 @@ export default function Settings({ isOpen, onClose, onApiKeyChange }: SettingsPr
                       the-odds-api.com
                       <ExternalLink className="w-3 h-3" />
                     </a>
-                    . Alternate spreads/totals use extra credits (one call per game, next 6 games).
+                    . Alternate spreads/totals use extra credits (one call per game, the 4 highest-+EV games).
                   </p>
                 </div>
                 

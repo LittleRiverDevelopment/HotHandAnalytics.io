@@ -35,6 +35,89 @@ export function stripAltMarkets(events: OddsEvent[]): OddsEvent[] {
   }))
 }
 
+/** Keep alt spreads/totals within this many points of a featured (main) number. */
+export const ALT_SPREAD_BAND = 5
+export const ALT_TOTAL_BAND = 8
+
+function featuredPoints(event: OddsEvent, kind: MarketKind): number[] {
+  const points: number[] = []
+  for (const book of event.bookmakers) {
+    for (const market of book.markets) {
+      if (marketKind(market.key) !== kind || isAlternateMarket(market.key)) continue
+      for (const outcome of market.outcomes) {
+        if (outcome.point !== undefined) points.push(outcome.point)
+      }
+    }
+  }
+  return points
+}
+
+function nearFeatured(point: number, featured: number[], band: number): boolean {
+  if (featured.length === 0) return true
+  return featured.some(f => Math.abs(point - f) <= band)
+}
+
+/** Drop far-away alt numbers (e.g. +18.5) that explode tables and rarely beat closer +EV. */
+export function pruneDistantAltOutcomes(events: OddsEvent[]): OddsEvent[] {
+  return events.map(event => {
+    const spreadPts = featuredPoints(event, 'spreads')
+    const totalPts = featuredPoints(event, 'totals')
+
+    return {
+      ...event,
+      bookmakers: event.bookmakers.map(book => ({
+        ...book,
+        markets: book.markets.map(market => {
+          if (market.key === 'alternate_spreads') {
+            return {
+              ...market,
+              outcomes: market.outcomes.filter(
+                o => o.point === undefined || nearFeatured(o.point, spreadPts, ALT_SPREAD_BAND)
+              ),
+            }
+          }
+          if (market.key === 'alternate_totals') {
+            return {
+              ...market,
+              outcomes: market.outcomes.filter(
+                o => o.point === undefined || nearFeatured(o.point, totalPts, ALT_TOTAL_BAND)
+              ),
+            }
+          }
+          return market
+        }),
+      })),
+    }
+  })
+}
+
+/**
+ * Prefer games that already show the most +EV on the main line, then sooner tip-off.
+ * Used to decide which events get the expensive per-game alt-line fetch.
+ */
+export function rankEventsForAltFetch(events: OddsEvent[], cap: number): OddsEvent[] {
+  const cutoff = Date.now() - 15 * 60 * 1000
+  const upcoming = events.filter(e => {
+    const start = new Date(e.commence_time).getTime()
+    return !Number.isNaN(start) && start > cutoff
+  })
+  if (upcoming.length === 0 || cap <= 0) return []
+
+  const bestEv = new Map<string, number>()
+  for (const e of upcoming) bestEv.set(e.id, 0)
+  for (const bet of findEVBets(upcoming, 0)) {
+    bestEv.set(bet.eventId, Math.max(bestEv.get(bet.eventId) ?? 0, bet.evPercent))
+  }
+
+  return [...upcoming]
+    .sort((a, b) => {
+      const evDelta = (bestEv.get(b.id) ?? 0) - (bestEv.get(a.id) ?? 0)
+      if (evDelta !== 0) return evDelta
+      return new Date(a.commence_time).getTime() - new Date(b.commence_time).getTime()
+    })
+    .slice(0, cap)
+}
+
 export function marketKindLabel(kind: MarketKind): string {
   if (kind === 'h2h') return 'Moneyline'
   if (kind === 'spreads') return 'Spread'

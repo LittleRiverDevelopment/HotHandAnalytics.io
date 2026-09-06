@@ -1,4 +1,5 @@
 import { OddsEvent, ScoreEvent, SportKey } from './types'
+import { pruneDistantAltOutcomes, rankEventsForAltFetch } from './odds-utils'
 
 const BASE_URL = 'https://api.the-odds-api.com/v4'
 const API_KEY_STORAGE_KEY = 'hothand_odds_api_key'
@@ -10,7 +11,7 @@ const INCLUDE_ALT_LINES_KEY = 'hothand_include_alt_lines'
 const SCORES_CACHE_TTL_MS = 60 * 1000
 
 /** Alternate lines are non-featured: one event-odds call per game. Cap to protect API quota. */
-export const ALT_EVENT_CAP = 6
+export const ALT_EVENT_CAP = 4
 export const ALT_LINE_MARKETS = ['alternate_spreads', 'alternate_totals']
 
 function getApiKey(): string | null {
@@ -330,14 +331,7 @@ export function mergeEventMarkets(base: OddsEvent, extra: OddsEvent): OddsEvent 
 }
 
 function pickEventsForAltFetch(events: OddsEvent[]): OddsEvent[] {
-  const cutoff = Date.now() - 15 * 60 * 1000
-  return [...events]
-    .filter(e => {
-      const start = new Date(e.commence_time).getTime()
-      return !Number.isNaN(start) && start > cutoff
-    })
-    .sort((a, b) => new Date(a.commence_time).getTime() - new Date(b.commence_time).getTime())
-    .slice(0, ALT_EVENT_CAP)
+  return rankEventsForAltFetch(events, ALT_EVENT_CAP)
 }
 
 async function fetchEventAltLines(
@@ -369,7 +363,7 @@ async function fetchEventAltLines(
   try {
     const marketsParam = ALT_LINE_MARKETS.join(',')
     const bookmakers = ALL_BOOKMAKERS.join(',')
-    const url = `${BASE_URL}/sports/${sport}/events/${eventId}/odds/?apiKey=${apiKey}&regions=us,us2,eu&markets=${marketsParam}&oddsFormat=american&bookmakers=${bookmakers}&includeLinks=true`
+    const url = `${BASE_URL}/sports/${sport}/events/${eventId}/odds/?apiKey=${apiKey}&regions=us,us2,eu&markets=${marketsParam}&oddsFormat=american&bookmakers=${bookmakers}`
     const response = await fetch(url)
 
     if (!response.ok) {
@@ -432,7 +426,7 @@ export async function attachAltLines(
   let altCached = 0
   const mergedById = new Map(events.map(e => [e.id, e]))
 
-  const results = await mapPool(targets, 3, async event => {
+  const results = await mapPool(targets, 4, async event => {
     const result = await fetchEventAltLines(sport, event.id, forceRefresh)
     return { event, result }
   })
@@ -446,8 +440,10 @@ export async function attachAltLines(
     mergedById.set(event.id, mergeEventMarkets(current, result.data))
   }
 
+  const merged = pruneDistantAltOutcomes(events.map(e => mergedById.get(e.id) || e))
+
   return {
-    events: events.map(e => mergedById.get(e.id) || e),
+    events: merged,
     remainingRequests,
     altGames: altFetched + altCached,
     altFetched,

@@ -18,6 +18,8 @@ interface Props {
 
 type SortField = 'ev' | 'confidence' | 'kelly' | 'game' | 'time'
 
+const VISIBLE_ROW_CAP = 40
+
 export default function EVCalculator({ evBets, scores }: Props) {
   const [sortField, setSortField] = useState<SortField>('ev')
   const [minEV, setMinEV] = useState(0)
@@ -81,6 +83,8 @@ export default function EVCalculator({ evBets, scores }: Props) {
       return sum + (betAmount * bet.ev)
     }, 0)
   }, [sortedBets, bankroll])
+
+  const visibleBets = sortedBets.slice(0, VISIBLE_ROW_CAP)
   
   return (
     <div className="space-y-4">
@@ -90,6 +94,9 @@ export default function EVCalculator({ evBets, scores }: Props) {
           <h2 className="text-lg font-semibold">+EV Finder</h2>
           <span className="text-sm text-slate-400 ml-2">
             {sortedBets.length} positive EV bets
+            {sortedBets.length > VISIBLE_ROW_CAP && (
+              <span className="text-slate-500"> · top {VISIBLE_ROW_CAP} by EV%</span>
+            )}
           </span>
         </div>
         
@@ -244,7 +251,7 @@ export default function EVCalculator({ evBets, scores }: Props) {
             </thead>
             <tbody className="divide-y divide-slate-800">
               <AnimatePresence>
-                {sortedBets.map((bet, index) => {
+                {visibleBets.map((bet, index) => {
                   const pinnacleAsOf = formatPinnacleAsOf(bet.pinnacleLastUpdate)
                   const liveScore = findScoreForGame(scores, bet.eventId, bet.homeTeam, bet.awayTeam)
                   return (
@@ -253,7 +260,7 @@ export default function EVCalculator({ evBets, scores }: Props) {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    transition={{ delay: index * 0.03 }}
+                    transition={{ duration: 0.12 }}
                     className="table-row"
                   >
                     <td className="py-3 px-4">

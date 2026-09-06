@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   TrendingUp, 
@@ -72,6 +72,7 @@ interface DataFreshnessStripProps {
   includeAltLines: boolean
   onToggleAltLines: (on: boolean) => void
   altGames: number
+  altLoading: boolean
   remainingRequests: number | null
 }
 
@@ -86,6 +87,7 @@ function DataFreshnessStrip({
   includeAltLines,
   onToggleAltLines,
   altGames,
+  altLoading,
   remainingRequests,
 }: DataFreshnessStripProps) {
   const source = !isLive ? 'Demo data' : isCached ? 'Cached odds' : 'Live fetch'
@@ -125,7 +127,7 @@ function DataFreshnessStrip({
         <div className="flex items-center gap-3 shrink-0">
           <label
             className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer select-none"
-            title={`Alternate spreads/totals for the next ${ALT_EVENT_CAP} games. Costs extra Odds API credits (one call per game).`}
+            title={`Fetches alt spreads/totals for the ${ALT_EVENT_CAP} games with the highest main-line +EV. Extra Odds API credits (one call per game).`}
           >
             <input
               type="checkbox"
@@ -136,11 +138,13 @@ function DataFreshnessStrip({
             <span>Alt lines</span>
             {includeAltLines && (
               <span className="text-xs text-purple-300">
-                {isLive
-                  ? altGames > 0
-                    ? `${altGames} game${altGames === 1 ? '' : 's'}`
-                    : 'refresh to fetch'
-                  : 'on'}
+                {altLoading
+                  ? 'loading…'
+                  : isLive
+                    ? altGames > 0
+                      ? `${altGames} game${altGames === 1 ? '' : 's'}`
+                      : 'refresh to fetch'
+                    : 'on'}
               </span>
             )}
           </label>
@@ -178,97 +182,108 @@ export default function Dashboard() {
   const [cacheAge, setCacheAge] = useState<number | null>(null)
   const [includeAltLines, setIncludeAltLinesState] = useState(() => getIncludeAltLines())
   const [altGames, setAltGames] = useState(0)
+  const [altLoading, setAltLoading] = useState(false)
+  const loadGenRef = useRef(0)
 
   const handleToggleAltLines = (on: boolean) => {
     setIncludeAltLines(on)
     setIncludeAltLinesState(on)
   }
+
+  const applyBoard = (eventData: OddsEvent[]) => {
+    setEvents(eventData)
+    setDiscrepancies(findLineDiscrepancies(eventData))
+    setEvBets(findEVBets(eventData))
+    setArbs(findArbitrageOpportunities(eventData))
+    setLastUpdated(new Date())
+  }
   
   const loadData = useCallback(async (forceRefresh: boolean = false) => {
+    const loadId = ++loadGenRef.current
     setIsLoading(true)
+    setAltLoading(false)
     setError(null)
     
     try {
       const result = await fetchOddsClient(selectedSport, ['h2h', 'spreads', 'totals'], forceRefresh)
+      if (loadId !== loadGenRef.current) return
       
       if (result.error && !result.data) {
         setError(result.error)
-        setEvents(MOCK_EVENTS)
-        setScores([])
         setIsLive(false)
         setIsCached(false)
         setCacheAge(null)
+        setScores([])
       } else {
-        if (result.error) {
-          setError(result.error)
-        }
-        setEvents(result.data || MOCK_EVENTS)
+        if (result.error) setError(result.error)
         setIsLive(!!result.data)
         setIsCached(result.cached || false)
         if (result.remainingRequests !== undefined) {
           setRemainingRequests(result.remainingRequests)
         }
-        // Update cache age
-        const age = getCacheAge(selectedSport)
-        setCacheAge(age)
-
-        // Live scores only make sense against real (non-mock) events
-        if (result.data) {
-          const scoresResult = await fetchScoresClient(selectedSport, forceRefresh)
-          if (scoresResult.data) {
-            setScores(scoresResult.data)
-            if (scoresResult.remainingRequests !== undefined) {
-              setRemainingRequests(scoresResult.remainingRequests)
-            }
-          }
-        } else {
-          setScores([])
-        }
+        setCacheAge(getCacheAge(selectedSport))
       }
-      
-      let eventData = result.data || MOCK_EVENTS
-      let loadedAltGames = 0
 
+      let eventData = result.data || MOCK_EVENTS
       if (!includeAltLines) {
         eventData = stripAltMarkets(eventData)
-      } else if (result.data) {
-        const alt = await attachAltLines(selectedSport, result.data, forceRefresh)
-        eventData = alt.events
-        loadedAltGames = alt.altGames
-        if (alt.remainingRequests !== undefined) {
-          setRemainingRequests(alt.remainingRequests)
-        }
-      } else {
-        loadedAltGames = eventData.filter(e =>
-          e.bookmakers.some(b => b.markets.some(m => m.key.startsWith('alternate_')))
-        ).length
       }
 
-      setEvents(eventData)
-      setAltGames(loadedAltGames)
-      setDiscrepancies(findLineDiscrepancies(eventData))
-      setEvBets(findEVBets(eventData))
-      setArbs(findArbitrageOpportunities(eventData))
-      setLastUpdated(new Date())
-      
-      // Record snapshot for line movement tracking
+      applyBoard(eventData)
+      setAltGames(
+        includeAltLines && !result.data
+          ? eventData.filter(e =>
+              e.bookmakers.some(b => b.markets.some(m => m.key.startsWith('alternate_')))
+            ).length
+          : 0
+      )
       if (result.data && !result.cached) {
         recordOddsSnapshot(result.data, { force: forceRefresh })
       }
+      setIsLoading(false)
+
+      if (!result.data) {
+        setScores([])
+        return
+      }
+
+      const scoresPromise = fetchScoresClient(selectedSport, forceRefresh)
+      const altsPromise = includeAltLines
+        ? (setAltLoading(true), attachAltLines(selectedSport, result.data, forceRefresh))
+        : Promise.resolve(null)
+
+      const [scoresResult, alt] = await Promise.all([scoresPromise, altsPromise])
+      if (loadId !== loadGenRef.current) return
+
+      if (scoresResult.data) {
+        setScores(scoresResult.data)
+        if (scoresResult.remainingRequests !== undefined) {
+          setRemainingRequests(scoresResult.remainingRequests)
+        }
+      }
+
+      if (alt) {
+        applyBoard(alt.events)
+        setAltGames(alt.altGames)
+        if (alt.remainingRequests !== undefined) {
+          setRemainingRequests(alt.remainingRequests)
+        }
+      }
     } catch (err) {
+      if (loadId !== loadGenRef.current) return
       setError('Failed to fetch data')
       const fallback = includeAltLines ? MOCK_EVENTS : stripAltMarkets(MOCK_EVENTS)
-      setEvents(fallback)
+      applyBoard(fallback)
       setScores([])
-      setDiscrepancies(findLineDiscrepancies(fallback))
-      setEvBets(findEVBets(fallback))
-      setArbs(findArbitrageOpportunities(fallback))
       setIsLive(false)
       setAltGames(includeAltLines ? fallback.filter(e =>
         e.bookmakers.some(b => b.markets.some(m => m.key.startsWith('alternate_')))
       ).length : 0)
     } finally {
-      setIsLoading(false)
+      if (loadId === loadGenRef.current) {
+        setIsLoading(false)
+        setAltLoading(false)
+      }
     }
   }, [selectedSport, includeAltLines])
   
@@ -413,6 +428,7 @@ export default function Dashboard() {
                 includeAltLines={includeAltLines}
                 onToggleAltLines={handleToggleAltLines}
                 altGames={altGames}
+                altLoading={altLoading}
                 remainingRequests={remainingRequests}
               />
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -602,6 +618,7 @@ export default function Dashboard() {
                 includeAltLines={includeAltLines}
                 onToggleAltLines={handleToggleAltLines}
                 altGames={altGames}
+                altLoading={altLoading}
                 remainingRequests={remainingRequests}
               />
               <LineDiscrepancyTable discrepancies={discrepancies} scores={scores} />
@@ -626,6 +643,7 @@ export default function Dashboard() {
                 includeAltLines={includeAltLines}
                 onToggleAltLines={handleToggleAltLines}
                 altGames={altGames}
+                altLoading={altLoading}
                 remainingRequests={remainingRequests}
               />
               <EVCalculator evBets={evBets} scores={scores} />
@@ -650,6 +668,7 @@ export default function Dashboard() {
                 includeAltLines={includeAltLines}
                 onToggleAltLines={handleToggleAltLines}
                 altGames={altGames}
+                altLoading={altLoading}
                 remainingRequests={remainingRequests}
               />
               <ArbitrageFinder arbs={arbs} scores={scores} />
@@ -675,6 +694,7 @@ export default function Dashboard() {
                 includeAltLines={includeAltLines}
                 onToggleAltLines={handleToggleAltLines}
                 altGames={altGames}
+                altLoading={altLoading}
                 remainingRequests={remainingRequests}
               />
               <EdgeHeatmap events={events} />

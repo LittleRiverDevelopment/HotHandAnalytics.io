@@ -19,6 +19,8 @@ interface Props {
 type SortField = 'spread' | 'confidence' | 'game' | 'market' | 'time'
 type SortDirection = 'asc' | 'desc'
 
+const VISIBLE_ROW_CAP = 40
+
 export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
   const [sortField, setSortField] = useState<SortField>('spread')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
@@ -84,6 +86,9 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
           <h2 className="text-lg font-semibold">Line Discrepancies</h2>
           <span className="text-sm text-slate-400 ml-2">
             {filteredDiscrepancies.length} opportunities
+            {filteredDiscrepancies.length > VISIBLE_ROW_CAP && (
+              <span className="text-slate-500"> · top {VISIBLE_ROW_CAP} by edge</span>
+            )}
           </span>
         </div>
         
@@ -179,7 +184,7 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
             </thead>
             <tbody className="divide-y divide-slate-800">
               <AnimatePresence>
-                {filteredDiscrepancies.map((disc, index) => {
+                {filteredDiscrepancies.slice(0, VISIBLE_ROW_CAP).map((disc, index) => {
                   const rowKey = `${disc.eventId}-${disc.market}-${disc.betType}`
                   const isExpanded = expandedRow === rowKey
                   const sortedBooks = [...disc.allBookOdds].sort((a, b) => b.odds - a.odds)
@@ -191,7 +196,7 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      transition={{ delay: index * 0.03 }}
+                      transition={{ duration: 0.12 }}
                       className={`table-row cursor-pointer hover:bg-slate-800/40 ${isExpanded ? 'bg-slate-800/30' : ''}`}
                       onClick={() => setExpandedRow(isExpanded ? null : rowKey)}
                       aria-expanded={isExpanded}

@@ -200,7 +200,7 @@ export default function ArbitrageFinder({ arbs, scores }: Props) {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      transition={{ delay: index * 0.03 }}
+                      transition={{ duration: 0.12 }}
                       className="table-row align-top"
                     >
                       <td className="py-3 px-4">

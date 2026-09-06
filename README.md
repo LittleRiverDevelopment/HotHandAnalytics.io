@@ -87,7 +87,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 The app implements smart caching to minimize API calls:
 - **Persistent browser cache** - Repeated visits reuse the last pull until you click Refresh
 - **Manual refresh only** - No automatic polling
-- **Alternate lines** - Optional. Alternate spreads/totals are non-featured Odds API markets, so they are fetched **per game** (capped at the next 6 upcoming events) and cost extra credits. Toggle them off in the freshness strip if you need to save quota.
+- **Alternate lines** - Optional. Alternate spreads/totals are fetched **per game** for the **4 games with the highest main-line +EV**, then trimmed to numbers near the main line. The board paints main lines first so Refresh stays snappy. Toggle them off in the freshness strip to skip the extra calls.
 
 Free tier of The Odds API includes 500 requests/month.
 
