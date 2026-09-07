@@ -119,7 +119,7 @@ function DataFreshnessStrip({
           </div>
           <div className="flex items-center gap-1.5 text-slate-400">
             <Clock className="w-3.5 h-3.5 shrink-0 text-slate-500" />
-            <span>Updated {lastUpdated.toLocaleString()}</span>
+            <span>Updated {lastUpdated.toLocaleString(undefined, { timeZoneName: 'short' })}</span>
           </div>
           {remainingRequests !== null && isLive && (
             <span className="text-slate-500">{remainingRequests} API calls left</span>
@@ -811,7 +811,7 @@ export default function Dashboard() {
             <div className="flex items-center gap-4">
               <span>Powered by The Odds API</span>
               <span>•</span>
-              <span>Updated: {lastUpdated.toLocaleTimeString()}</span>
+              <span>Updated: {lastUpdated.toLocaleTimeString(undefined, { timeZoneName: 'short' })}</span>
             </div>
           </div>
         </div>

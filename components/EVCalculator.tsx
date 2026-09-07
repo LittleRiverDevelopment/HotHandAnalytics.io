@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { Calculator, TrendingUp, Zap, AlertTriangle, ArrowUpDown, Download } from 'lucide-react'
 import { EVBet, ScoreEvent } from '@/lib/types'
-import { formatOdds } from '@/lib/odds-utils'
+import { formatOdds, formatOddsTimestamp } from '@/lib/odds-utils'
 import { format } from 'date-fns'
 import BookOpenLink from './BookOpenLink'
 import LiveScoreBadge, { findScoreForGame } from './LiveScore'
@@ -64,12 +64,7 @@ export default function EVCalculator({ evBets, scores }: Props) {
     return 'text-slate-400 bg-slate-800/80 border-slate-600/50'
   }
   
-  const formatPinnacleAsOf = (iso: string) => {
-    if (!iso) return null
-    const d = new Date(iso)
-    if (Number.isNaN(d.getTime())) return null
-    return format(d, 'MMM d, yyyy · h:mm a')
-  }
+  const formatPinnacleAsOf = (iso: string) => formatOddsTimestamp(iso)
 
   const getKellyBet = (kelly: number) => {
     const fractionalKelly = kelly * 0.25

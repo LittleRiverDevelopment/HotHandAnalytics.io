@@ -8,6 +8,7 @@ import {
   findEVBets,
   findLineDiscrepancies,
   isUpcomingOrLive,
+  parseOddsTimestamp,
   pruneDistantAltOutcomes,
   rankEventsForAltFetch,
   stripAltMarkets,
@@ -167,4 +168,40 @@ test('rankEventsForAltFetch skips completed games', () => {
   const done = eventAt('final-ev', now - 2 * HOUR)
   const ranked = rankEventsForAltFetch([done], 1, [scoreFor(done, true)], now)
   assert.equal(ranked.length, 0)
+})
+
+test('parseOddsTimestamp treats timezone-less ISO as UTC', () => {
+  const withZ = parseOddsTimestamp('2026-09-07T02:22:00Z')!.getTime()
+  const noZ = parseOddsTimestamp('2026-09-07T02:22:00')!.getTime()
+  assert.equal(noZ, withZ)
+})
+
+function stampBookmakers(event: OddsEvent, pinnacleIso: string, bookIso: string) {
+  for (const book of event.bookmakers) {
+    const ts = book.key === 'pinnacle' ? pinnacleIso : bookIso
+    book.last_update = ts
+    for (const market of book.markets) market.last_update = ts
+  }
+}
+
+test('findEVBets drops a Pinnacle last_update that is in the future', () => {
+  const now = Date.now()
+  const event = structuredClone(MOCK_EVENTS[0])
+  event.id = 'future-pin'
+  event.commence_time = new Date(now - 20 * 60 * 1000).toISOString()
+  stampBookmakers(event, new Date(now + 50 * 60 * 1000).toISOString(), new Date(now - 60 * 1000).toISOString())
+  assert.equal(findEVBets([event]).length, 0)
+})
+
+test('findEVBets drops in-play books still priced off a pregame Pinnacle line', () => {
+  const now = Date.now()
+  const event = structuredClone(MOCK_EVENTS[0])
+  event.id = 'live-pregame-pin'
+  event.commence_time = new Date(now - 3 * HOUR).toISOString()
+  stampBookmakers(
+    event,
+    new Date(now - 5 * HOUR).toISOString(),
+    new Date(now - 60 * 1000).toISOString()
+  )
+  assert.equal(findEVBets([event]).length, 0)
 })

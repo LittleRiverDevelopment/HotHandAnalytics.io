@@ -8,6 +8,8 @@ const COLORADO_BOOK_KEYS = [
 
 /** If the book's market is updated much later than Pinnacle, no-vig fair odds are a stale reference. */
 const STALE_PINNACLE_VS_BOOK_MS = 25 * 60 * 1000
+/** Pinnacle timestamps this far in the future are treated as unusable clock skew. */
+const FUTURE_PINNACLE_GRACE_MS = 60 * 1000
 
 export type MarketKind = 'h2h' | 'spreads' | 'totals'
 
@@ -322,11 +324,58 @@ function getOpposingQuotedLine(
   return undefined
 }
 
-function isPinnacleStaleVsBook(pinnacleIso: string, bookMarketIso: string): boolean {
-  const pin = new Date(pinnacleIso).getTime()
-  const book = new Date(bookMarketIso).getTime()
-  if (Number.isNaN(pin) || Number.isNaN(book)) return false
-  return book - pin > STALE_PINNACLE_VS_BOOK_MS
+/** Odds API timestamps are UTC. Datetimes with no offset still mean UTC, not the browser's zone. */
+export function parseOddsTimestamp(value: string | number | null | undefined): Date | null {
+  if (value === undefined || value === null || value === '') return null
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const ms = value < 1e12 ? value * 1000 : value
+    const d = new Date(ms)
+    return Number.isNaN(d.getTime()) ? null : d
+  }
+  const raw = String(value).trim()
+  if (/^\d+(\.\d+)?$/.test(raw)) {
+    const n = Number(raw)
+    if (!Number.isFinite(n)) return null
+    const ms = n < 1e12 ? n * 1000 : n
+    const d = new Date(ms)
+    return Number.isNaN(d.getTime()) ? null : d
+  }
+  let iso = raw
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(iso)) {
+    iso = `${iso}Z`
+  }
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+export function formatOddsTimestamp(value: string | number | Date | null | undefined): string | null {
+  const d = value instanceof Date ? value : parseOddsTimestamp(value)
+  if (!d) return null
+  return d.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'short',
+  })
+}
+
+function isUnusablePinnacle(
+  pinnacleIso: string,
+  bookMarketIso: string,
+  commenceTime: string,
+  now: number = Date.now()
+): boolean {
+  const pin = parseOddsTimestamp(pinnacleIso)?.getTime()
+  if (pin == null) return false
+  const book = parseOddsTimestamp(bookMarketIso)?.getTime()
+  const start = parseOddsTimestamp(commenceTime)?.getTime()
+
+  if (pin > now + FUTURE_PINNACLE_GRACE_MS) return true
+  if (book != null && book - pin > STALE_PINNACLE_VS_BOOK_MS) return true
+  if (start != null && start < now - 2 * 60 * 1000 && pin < start) return true
+  return false
 }
 
 /** Odds API: outcome → market → bookmaker event page (see includeLinks). */
@@ -498,7 +547,7 @@ export function findEVBets(events: OddsEvent[], minEV: number = 0.02): EVBet[] {
           if (
             pinnacleData.lastUpdate &&
             line.lastUpdate &&
-            isPinnacleStaleVsBook(pinnacleData.lastUpdate, line.lastUpdate)
+            isUnusablePinnacle(pinnacleData.lastUpdate, line.lastUpdate, event.commence_time)
           ) {
             return
           }
