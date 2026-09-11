@@ -33,17 +33,7 @@ const TRACKER_START_YEAR = 2026
 // If a row is still marked Open after the games have final scores, overlay the
 // graded result here so the site does not stay stale until the next sheet edit.
 // Drop an entry once the sheet itself has Status / Units W/L / Running Total filled in.
-export const SETTLEMENT_OVERRIDES = [
-  {
-    date: '2026-09-06',
-    descriptionIncludes: 'Washington ML',
-    wl: -1,
-    // Washington 24-10 vs WSU (ML W)
-    // Ole Miss 41-38 vs Louisville (ML W)
-    // Wisconsin 13-41 vs Notre Dame (lost by 28 → +27.5 L)
-    // 3-leg parlay loses; 1u at +140 → -1u
-  },
-]
+export const SETTLEMENT_OVERRIDES = []
 
 const MONTHS = {
   Jan: 1, January: 1,
@@ -140,7 +130,7 @@ function cleanDescription(desc) {
     .trim()
 }
 
-export function parseBetSheetCsv(csvText) {
+export function parseBetSheetCsv(csvText, overrides = SETTLEMENT_OVERRIDES) {
   const rows = parseCsv(csvText)
   const dataRows = rows.slice(1).filter(r => r.some(c => c.trim() !== ''))
 
@@ -179,7 +169,7 @@ export function parseBetSheetCsv(csvText) {
     // which parseNum correctly reduces to null rather than a stray "Open" string.
     let isOpen = statusText.toLowerCase() === 'open'
     if (isOpen) {
-      const override = SETTLEMENT_OVERRIDES.find(
+      const override = overrides.find(
         o => o.date === date && description.includes(o.descriptionIncludes)
       )
       if (override) {
