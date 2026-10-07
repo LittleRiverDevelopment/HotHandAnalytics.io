@@ -57,10 +57,10 @@ export default function BookOpenLink({
 
   const isApiDeepLink = !!(trimmedDeep && /^https?:\/\//i.test(trimmedDeep))
   
-  // Improved title/tooltip to clarify what the link does
+  // Tooltip messaging
   const linkTitle = isApiDeepLink
-    ? `Open ${bookTitle} at this event (you'll need to manually add the bet to your slip)`
-    : `Open ${bookTitle}${useMobileLayout ? '' : ' in new tab'} (navigate to the event and add the bet)`
+    ? `Open ${bookTitle} at this event`
+    : `Open ${bookTitle}${useMobileLayout ? '' : ' in new tab'}`
 
   return (
     <a
