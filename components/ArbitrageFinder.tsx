@@ -327,6 +327,7 @@ export default function ArbitrageFinder({ arbs, scores }: Props) {
               confirm both prices are still live before placing either leg, and place the leg with the
               tighter line or lower limits first. Confidence (0–100) is higher with a bigger margin and
               when both books updated their lines close together in time (less risk one side already moved).
+              Book links open the event page — you&apos;ll need to manually find and add each bet to your slip.
             </p>
           </div>
         </div>

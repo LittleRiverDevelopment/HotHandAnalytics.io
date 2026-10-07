@@ -409,7 +409,7 @@ export default function EVCalculator({ evBets, scores }: Props) {
               +EV bets have better odds than Pinnacle's no-vig line. Kelly Criterion suggests 
               optimal bet sizing based on edge. We use quarter-Kelly for conservative bankroll management.
               Confidence (0–100) reflects stronger estimated edge and Kelly-suggested stake versus that fair line.
-              The book link opens that selection at the sportsbook when The Odds API provides a deep link; otherwise it opens the book&apos;s home page.
+              Book links open the event page — you&apos;ll need to manually find and add the bet to your slip.
               Rows are dropped when Pinnacle&apos;s line for that market is more than about 25 minutes older than the local book&apos;s update, or when the fair price cannot be paired to the correct counter-side (common with many alternate lines in one market). Alternate spreads/totals are tagged Alt and compared to Pinnacle&apos;s matching number.
             </p>
           </div>

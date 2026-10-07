@@ -44,15 +44,11 @@ export default function BookOpenLink({
 
   const trimmedDeep = deepLink?.trim()
   const href = useMemo(() => {
-    if (trimmedDeep && /^https?:\/\//i.test(trimmedDeep)) {
-      console.log('[BookOpenLink] Using deep link', { book: bookTitle, link: trimmedDeep })
-      return trimmedDeep
-    }
-    console.log('[BookOpenLink] Falling back to homepage', { book: bookTitle, deepLink, trimmedDeep })
+    if (trimmedDeep && /^https?:\/\//i.test(trimmedDeep)) return trimmedDeep
     return getSportsbookHomeUrlFromTitle(bookTitle, {
       mobile: useMobileLayout,
     })
-  }, [bookTitle, trimmedDeep, useMobileLayout, deepLink])
+  }, [bookTitle, trimmedDeep, useMobileLayout])
 
   if (!href) {
     if (children) return <span className={className}>{children}</span>
@@ -60,18 +56,19 @@ export default function BookOpenLink({
   }
 
   const isApiDeepLink = !!(trimmedDeep && /^https?:\/\//i.test(trimmedDeep))
+  
+  // Improved title/tooltip to clarify what the link does
+  const linkTitle = isApiDeepLink
+    ? `Open ${bookTitle} at this event (you'll need to manually add the bet to your slip)`
+    : `Open ${bookTitle}${useMobileLayout ? '' : ' in new tab'} (navigate to the event and add the bet)`
 
   return (
     <a
       href={href}
       target={useMobileLayout ? undefined : '_blank'}
       rel="noopener noreferrer"
-      title={
-        isApiDeepLink
-          ? `Open at ${bookTitle}`
-          : `Open ${bookTitle}${useMobileLayout ? '' : ' in new tab'}`
-      }
-      aria-label={isApiDeepLink ? `Open this bet at ${bookTitle}` : `Open ${bookTitle} sportsbook`}
+      title={linkTitle}
+      aria-label={isApiDeepLink ? `Open this event at ${bookTitle}` : `Open ${bookTitle} sportsbook`}
       onClick={e => {
         if (stopPropagation) e.stopPropagation()
       }}

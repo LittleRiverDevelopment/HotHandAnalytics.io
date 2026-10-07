@@ -198,27 +198,6 @@ export async function fetchOddsClient(
       return { data: null, error: 'No events found for this sport', remainingRequests: result.remainingRequests }
     }
 
-    // Debug: Check if links are being returned by the API
-    console.log('[Odds API Response] Checking for deep links...')
-    let linksFound = 0
-    let totalOutcomes = 0
-    result.data.forEach(event => {
-      event.bookmakers.forEach(bookmaker => {
-        if (bookmaker.link) console.log(`[API] Bookmaker link found: ${bookmaker.title}`)
-        bookmaker.markets.forEach(market => {
-          if (market.link) console.log(`[API] Market link found: ${bookmaker.title} - ${market.key}`)
-          market.outcomes.forEach(outcome => {
-            totalOutcomes++
-            if (outcome.link) {
-              linksFound++
-              console.log(`[API] Outcome link found: ${bookmaker.title} - ${outcome.name} - ${outcome.link}`)
-            }
-          })
-        })
-      })
-    })
-    console.log(`[Odds API] Links summary: ${linksFound}/${totalOutcomes} outcomes have links`)
-
     setCache(cacheKey, {
       data: result.data,
       timestamp: Date.now(),

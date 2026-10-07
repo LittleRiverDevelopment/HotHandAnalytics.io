@@ -388,27 +388,7 @@ function getDeepestBookmakerLink(
     const t = s?.trim()
     return t && /^https?:\/\//i.test(t) ? t : undefined
   }
-  const result = pick(outcome.link) ?? pick(market.link) ?? pick(bookmaker.link)
-  
-  // Debug logging to track deep links
-  if (result) {
-    console.log('[Deep Link Found]', {
-      book: bookmaker.title,
-      outcome: outcome.name,
-      link: result,
-      source: outcome.link ? 'outcome' : market.link ? 'market' : 'bookmaker'
-    })
-  } else {
-    console.log('[Deep Link Missing]', {
-      book: bookmaker.title,
-      outcome: outcome.name,
-      hasOutcomeLink: !!outcome.link,
-      hasMarketLink: !!market.link,
-      hasBookmakerLink: !!bookmaker.link
-    })
-  }
-  
-  return result
+  return pick(outcome.link) ?? pick(market.link) ?? pick(bookmaker.link)
 }
 
 export function americanToDecimal(american: number): number {
