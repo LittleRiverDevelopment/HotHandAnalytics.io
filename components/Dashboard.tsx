@@ -128,7 +128,11 @@ function DataFreshnessStrip({
             </span>
           </div>
           {remainingRequests !== null && isLive && (
-            <span className="hidden sm:inline text-slate-500">{remainingRequests} API calls left</span>
+            <span className="inline-flex items-center text-slate-500">
+              <span className="tabular-nums text-slate-400">{remainingRequests}</span>
+              <span className="ml-1 sm:hidden">API left</span>
+              <span className="ml-1 hidden sm:inline">API calls left</span>
+            </span>
           )}
         </div>
         <div className="flex items-center gap-3 shrink-0">
