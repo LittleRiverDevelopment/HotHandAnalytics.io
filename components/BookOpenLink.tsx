@@ -74,12 +74,15 @@ export default function BookOpenLink({
       }}
       className={[
         children
-          ? 'inline-flex items-center min-h-[44px] py-1.5 sm:min-h-0 sm:py-0 text-left font-medium text-slate-200 hover:text-green-400 hover:underline decoration-green-400/50 underline-offset-2'
+          ? 'inline-flex items-center gap-1 min-h-[44px] py-1.5 sm:min-h-0 sm:py-0 text-left font-medium text-slate-200 hover:text-green-400 hover:underline decoration-green-400/50 underline-offset-2'
           : 'inline-flex items-center justify-center rounded-md text-slate-500 hover:text-green-400 hover:bg-slate-800/80 active:bg-slate-700/80 transition-colors touch-manipulation select-none min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 p-2 sm:p-1',
         className,
       ].join(' ')}
     >
       {children ?? <ExternalLink className="w-4 h-4 sm:w-3.5 sm:h-3.5" aria-hidden />}
+      {isApiDeepLink && !children && (
+        <span className="sr-only">(Direct link to event)</span>
+      )}
     </a>
   )
 }
