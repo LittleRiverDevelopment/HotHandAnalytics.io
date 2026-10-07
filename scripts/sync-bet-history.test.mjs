@@ -49,6 +49,18 @@ test('sheet Status/W-L wins once the row is actually settled', () => {
   assert.equal(parlay.cumulative, 0.41)
 })
 
+test('strips ordinal suffixes from sheet dates like September 21st', () => {
+  const csv = [
+    HEADER,
+    'September 21st,Jung Hoo Lee Hit,MLB,Caesars,1,110,L,-1,9.8,',
+    'October 3rd,Alabama ML + Florida ML,NCAAF,FanDuel,1,157,L,-1,8.8,',
+  ].join('\n')
+
+  const bets = parseBetSheetCsv(csv)
+  assert.equal(bets[0].date, '2026-09-21')
+  assert.equal(bets[1].date, '2026-10-03')
+})
+
 test('keeps a live Open row (Red Sox -1.5) until the sheet settles it', () => {
   const csv = [
     HEADER,

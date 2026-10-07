@@ -146,7 +146,8 @@ export function parseBetSheetCsv(csvText, overrides = SETTLEMENT_OVERRIDES) {
 
     const [monLabel, dayLabel] = dateLabel.trim().split(/\s+/)
     const month = MONTHS[monLabel]
-    if (!month || !dayLabel) continue
+    const day = parseInt(String(dayLabel || '').replace(/\D/g, ''), 10)
+    if (!month || Number.isNaN(day) || day < 1 || day > 31) continue
 
     const units = parseFloat(unitsRaw)
     const odds = parseInt(oddsRaw, 10)
@@ -155,7 +156,7 @@ export function parseBetSheetCsv(csvText, overrides = SETTLEMENT_OVERRIDES) {
     if (month < lastMonth) year += 1
     lastMonth = month
 
-    const date = `${year}-${String(month).padStart(2, '0')}-${dayLabel.padStart(2, '0')}`
+    const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
     const description = cleanDescription(descRaw || '')
     let sport = (sportRaw || '').trim()
     if (sport === 'ML') sport = 'MLB' // data-entry slip seen in the sheet (e.g. "All-Star NRFI")

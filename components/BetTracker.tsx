@@ -46,6 +46,12 @@ function formatUnits(n: number): string {
   return `${sign}${n.toFixed(2)}`
 }
 
+function formatBetDate(iso: string, pattern: string): string {
+  const parsed = parseISO(iso)
+  if (Number.isNaN(parsed.getTime())) return iso
+  return format(parsed, pattern)
+}
+
 function formatSyncAge(ms: number): string {
   const minutes = Math.floor(ms / 60000)
   const hours = Math.floor(minutes / 60)
@@ -130,7 +136,7 @@ export default function BetTracker() {
   )
 
   const chartData = useMemo(() => {
-    const labels = ['Start', ...settledChrono.map(b => format(parseISO(b.date), 'MMM d'))]
+    const labels = ['Start', ...settledChrono.map(b => formatBetDate(b.date, 'MMM d'))]
     const points = [0, ...settledChrono.map(b => b.cumulative as number)]
     return {
       labels,
@@ -383,7 +389,7 @@ export default function BetTracker() {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs text-slate-500">
-                  {format(parseISO(bet.date), 'MMM d, yyyy')} · {bet.sport}
+                  {formatBetDate(bet.date, 'MMM d, yyyy')} · {bet.sport}
                 </p>
                 <p className="font-medium text-sm mt-0.5 leading-snug">{bet.description}</p>
                 <p className="text-xs text-slate-500 mt-1">
@@ -491,8 +497,8 @@ export default function BetTracker() {
                   >
                     <td className="py-3 px-4">
                       <div className="flex flex-col">
-                        <span className="text-sm">{format(parseISO(bet.date), 'MMM d')}</span>
-                        <span className="text-xs text-slate-500">{format(parseISO(bet.date), 'yyyy')}</span>
+                        <span className="text-sm">{formatBetDate(bet.date, 'MMM d')}</span>
+                        <span className="text-xs text-slate-500">{formatBetDate(bet.date, 'yyyy')}</span>
                       </div>
                     </td>
                     <td className="py-3 px-4 max-w-[320px]">
