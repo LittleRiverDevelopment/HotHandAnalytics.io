@@ -135,31 +135,35 @@ export default function BankrollSimulator() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center gap-2">
-          <Dice5 className="w-5 h-5 text-green-400" />
-          <h2 className="text-lg font-semibold">Bankroll Simulator</h2>
-          <span className="text-sm text-slate-400 ml-2">
-            Monte Carlo projection · {params.numSimulations} simulated paths
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2 min-w-0">
+          <Dice5 className="w-5 h-5 text-green-400 shrink-0" />
+          <div>
+            <h2 className="text-lg font-semibold">Bankroll Sim</h2>
+            <p className="text-xs text-slate-500 sm:hidden">{params.numSimulations} paths</p>
+          </div>
+          <span className="hidden sm:inline text-sm text-slate-400 ml-2">
+            Monte Carlo · {params.numSimulations} paths
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
             type="button"
             onClick={useHistoricalStats}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-slate-600 bg-slate-800/50 text-slate-300 hover:text-cyan-400 hover:border-cyan-500/40 transition-colors"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 min-h-[44px] px-3 py-2 text-sm rounded-lg border border-slate-600 bg-slate-800/50 text-slate-300 hover:text-cyan-400 hover:border-cyan-500/40 transition-colors"
             title="Fill win rate and average odds from your Bet Tracker history"
           >
             <Wand2 className="w-4 h-4" />
-            Use my Bet Tracker stats
+            <span className="sm:hidden">My stats</span>
+            <span className="hidden sm:inline">Use my Bet Tracker stats</span>
           </button>
           <button
             type="button"
             onClick={runSimulation}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-green-500/15 hover:bg-green-500/25 border border-green-500/30 text-green-400 transition-colors"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 min-h-[44px] px-3 py-2 text-sm rounded-lg bg-green-500/15 hover:bg-green-500/25 border border-green-500/30 text-green-400 transition-colors"
           >
             <Play className="w-4 h-4" />
-            Run Simulation
+            Run
           </button>
         </div>
       </div>
@@ -362,7 +366,7 @@ export default function BankrollSimulator() {
             </span>
           </div>
         </div>
-        <div className="h-[320px]">
+        <div className="h-48 md:h-[320px]">
           <Line data={chartData} options={chartOptions} />
         </div>
       </div>

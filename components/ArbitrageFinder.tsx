@@ -60,41 +60,37 @@ export default function ArbitrageFinder({ arbs, scores }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center gap-2">
-          <Scale className="w-5 h-5 text-green-400" />
-          <h2 className="text-lg font-semibold">Arbitrage Finder</h2>
-          <span className="text-sm text-slate-400 ml-2">
-            {sortedArbs.length} locked-in {sortedArbs.length === 1 ? 'opportunity' : 'opportunities'}
-          </span>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2 min-w-0">
+          <Scale className="w-5 h-5 text-green-400 shrink-0" />
+          <h2 className="text-lg font-semibold">Arbitrage</h2>
+          <span className="text-sm text-slate-400">{sortedArbs.length}</span>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-slate-400">Min Profit%</label>
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <label className="flex items-center gap-2 min-h-[44px] text-sm text-slate-400">
+            Min %
             <input
               type="number"
               value={minProfit}
               onChange={(e) => setMinProfit(Number(e.target.value))}
-              className="w-16 bg-slate-800/50 border border-slate-700 rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-green-500 mono"
+              className="w-16 min-h-[44px] bg-slate-800/50 border border-slate-700 rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-green-500 mono"
               min="0"
               max="20"
               step="0.1"
             />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-slate-400">Total Stake</label>
+          </label>
+          <label className="flex items-center gap-2 min-h-[44px] text-sm text-slate-400">
+            Stake
             <input
               type="number"
               value={stakeTotal}
               onChange={(e) => setStakeTotal(Number(e.target.value))}
-              className="w-24 bg-slate-800/50 border border-slate-700 rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-green-500 mono"
+              className="w-24 min-h-[44px] bg-slate-800/50 border border-slate-700 rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-green-500 mono"
               min="10"
               step="10"
             />
-          </div>
-
+          </label>
           <button
             type="button"
             onClick={() =>
@@ -103,10 +99,10 @@ export default function ArbitrageFinder({ arbs, scores }: Props) {
                 arbitrageToCsvRows(sortedArbs)
               )
             }
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-slate-600 bg-slate-800/50 text-slate-300 hover:text-green-400 hover:border-green-500/40 transition-colors"
+            className="flex items-center justify-center gap-1.5 min-h-[44px] px-3 py-2 text-sm rounded-lg border border-slate-600 bg-slate-800/50 text-slate-300 hover:text-green-400 hover:border-green-500/40 transition-colors"
           >
             <Download className="w-4 h-4" />
-            Export CSV
+            <span className="hidden sm:inline">Export CSV</span>
           </button>
         </div>
       </div>
@@ -142,7 +138,59 @@ export default function ArbitrageFinder({ arbs, scores }: Props) {
         </div>
       </div>
 
-      <div className="card overflow-hidden">
+      <div className="md:hidden space-y-2">
+        {sortedArbs.map(arb => {
+          const liveScore = findScoreForGame(scores, arb.eventId, arb.homeTeam, arb.awayTeam, arb.commenceTime)
+          return (
+            <div
+              key={`${arb.eventId}-${arb.market}-${arb.legs.map(l => l.selection).join('|')}`}
+              className="card p-3"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-medium text-sm">{arb.awayTeam} @ {arb.homeTeam}</p>
+                  <p className="text-xs text-slate-400 mt-0.5 inline-flex items-center gap-1.5">
+                    {arb.market}
+                    {arb.isAltLine && <AltLineBadge />}
+                  </p>
+                  {liveScore && (
+                    <div className="mt-1">
+                      <LiveScoreBadge score={liveScore} homeTeam={arb.homeTeam} awayTeam={arb.awayTeam} />
+                    </div>
+                  )}
+                </div>
+                <span className={`font-bold mono shrink-0 ${getProfitColor(arb.profitPercent)}`}>
+                  +{arb.profitPercent.toFixed(2)}%
+                </span>
+              </div>
+              <div className="mt-3 space-y-2">
+                {arb.legs.map((leg, i) => (
+                  <div key={i} className="flex items-center gap-2 rounded-lg bg-slate-800/40 px-2.5 py-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">{leg.selection}</p>
+                      <p className="text-xs text-slate-500">{leg.book}</p>
+                    </div>
+                    <span className="odds-badge text-green-400 font-semibold">{formatOdds(leg.odds)}</span>
+                    <span className="text-cyan-400 mono text-xs shrink-0">
+                      ${((stakeTotal * leg.stakePercent) / 100).toFixed(0)}
+                    </span>
+                    <BookOpenLink bookTitle={leg.book} deepLink={leg.deepLink} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })}
+        {sortedArbs.length === 0 && (
+          <div className="card flex flex-col items-center justify-center py-12 text-slate-400">
+            <AlertTriangle className="w-8 h-8 mb-2" />
+            <p>No arbitrage opportunities right now</p>
+            <p className="text-sm text-slate-500 px-4 text-center">True arbs are rare — try lowering the minimum profit%</p>
+          </div>
+        )}
+      </div>
+
+      <div className="hidden md:block card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>

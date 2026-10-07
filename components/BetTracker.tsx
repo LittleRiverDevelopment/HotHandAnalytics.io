@@ -210,12 +210,12 @@ export default function BetTracker() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center gap-2">
-          <History className="w-5 h-5 text-green-400" />
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2 min-w-0">
+          <History className="w-5 h-5 text-green-400 shrink-0" />
           <h2 className="text-lg font-semibold">Bet Tracker</h2>
-          <span className="text-sm text-slate-400 ml-2">
-            {summary.totalBets} bets logged{summary.openBets > 0 ? ` · ${summary.openBets} open` : ''}
+          <span className="text-sm text-slate-400">
+            {summary.totalBets}{summary.openBets > 0 ? ` · ${summary.openBets} open` : ''}
           </span>
         </div>
 
@@ -227,10 +227,10 @@ export default function BetTracker() {
               betHistoryToCsvRows(sorted)
             )
           }
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-slate-600 bg-slate-800/50 text-slate-300 hover:text-green-400 hover:border-green-500/40 transition-colors"
+          className="flex items-center justify-center gap-1.5 min-h-[44px] px-3 py-2 text-sm rounded-lg border border-slate-600 bg-slate-800/50 text-slate-300 hover:text-green-400 hover:border-green-500/40 transition-colors"
         >
           <Download className="w-4 h-4" />
-          Export CSV
+          <span className="hidden sm:inline">Export CSV</span>
         </button>
       </div>
 
@@ -242,13 +242,13 @@ export default function BetTracker() {
             <span className="text-slate-400">Auto-synced from Google Sheet</span>
           </div>
           <span className="text-xs text-slate-500">Last synced {syncAge}</span>
-          <span className="text-xs text-slate-600">· Runs every 3h via scheduled GitHub Action</span>
+          <span className="hidden sm:inline text-xs text-slate-600">· Runs every 3h via scheduled GitHub Action</span>
         </div>
         <button
           type="button"
           onClick={() => window.location.reload()}
           title="Reload the page to pick up the latest deployed sync"
-          className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm bg-slate-800/60 hover:bg-slate-700/60 border border-slate-600/50 text-slate-300 hover:text-green-400 rounded-lg transition-colors shrink-0"
+          className="flex items-center justify-center gap-1.5 min-h-[44px] px-3 py-2 text-sm bg-slate-800/60 hover:bg-slate-700/60 border border-slate-600/50 text-slate-300 hover:text-green-400 rounded-lg transition-colors shrink-0"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           Refresh
@@ -331,7 +331,7 @@ export default function BetTracker() {
             )}
           </div>
         </div>
-        <div className="h-[300px]">
+        <div className="h-48 md:h-[300px]">
           {settledChrono.length > 0 ? (
             <Line data={chartData} options={chartOptions} />
           ) : (
@@ -349,12 +349,12 @@ export default function BetTracker() {
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search bets…"
-          className="bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-green-500 flex-1 min-w-[180px]"
+          className="bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 min-h-[44px] text-sm focus:outline-none focus:border-green-500 flex-1 min-w-[140px]"
         />
         <select
           value={sportFilter}
           onChange={e => setSportFilter(e.target.value)}
-          className="bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-green-500"
+          className="min-h-[44px] bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500"
         >
           <option value="all">All Sports</option>
           {sports.map(s => (
@@ -366,7 +366,7 @@ export default function BetTracker() {
         <select
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
-          className="bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-green-500"
+          className="min-h-[44px] bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500"
         >
           <option value="all">All Results</option>
           <option value="W">Wins</option>
@@ -377,8 +377,53 @@ export default function BetTracker() {
         <span className="text-xs text-slate-500">{sorted.length} shown</span>
       </div>
 
+      <div className="md:hidden space-y-2">
+        {sorted.map(bet => (
+          <div key={bet.id} className="card p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs text-slate-500">
+                  {format(parseISO(bet.date), 'MMM d, yyyy')} · {bet.sport}
+                </p>
+                <p className="font-medium text-sm mt-0.5 leading-snug">{bet.description}</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  {bet.book} · {formatOdds(bet.odds)} · {bet.units}u
+                </p>
+              </div>
+              <span
+                className={`inline-flex min-w-[3rem] justify-center rounded-md border px-2 py-1 text-xs font-semibold shrink-0 ${getResultClass(bet.status)}`}
+              >
+                {bet.status}
+              </span>
+            </div>
+            <div className="mt-2 flex items-center justify-between text-sm">
+              {bet.delta !== null ? (
+                <span className={`mono ${bet.delta >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {formatUnits(bet.delta)}
+                </span>
+              ) : (
+                <span className="text-slate-500">—</span>
+              )}
+              {bet.cumulative !== null ? (
+                <span className={`mono ${bet.cumulative >= 0 ? 'text-slate-300' : 'text-red-400'}`}>
+                  {bet.cumulative.toFixed(2)}u
+                </span>
+              ) : (
+                <span className="text-slate-500">—</span>
+              )}
+            </div>
+          </div>
+        ))}
+        {sorted.length === 0 && (
+          <div className="card flex flex-col items-center justify-center py-12 text-slate-400">
+            <History className="w-8 h-8 mb-2" />
+            <p>No bets match your filters</p>
+          </div>
+        )}
+      </div>
+
       {/* Table */}
-      <div className="card overflow-hidden">
+      <div className="hidden md:block card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>

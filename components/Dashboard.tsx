@@ -46,6 +46,7 @@ import {
   ALT_EVENT_CAP,
 } from '@/lib/odds-api'
 import Settings from './Settings'
+import MobileBottomNav from './MobileBottomNav'
 
 type Tab = 'discrepancies' | 'ev' | 'arbitrage' | 'props' | 'overview' | 'analytics' | 'tracker' | 'simulator'
 
@@ -107,7 +108,7 @@ function DataFreshnessStrip({
             <span className="text-slate-500">·</span>
             <span className="text-slate-400">{source}</span>
           </div>
-          <div className="flex items-center gap-1.5 text-slate-400">
+          <div className="hidden sm:flex items-center gap-1.5 text-slate-400">
             <Database className="w-3.5 h-3.5 shrink-0 text-slate-500" />
             <span>
               {cacheAge !== null && isLive
@@ -119,22 +120,27 @@ function DataFreshnessStrip({
           </div>
           <div className="flex items-center gap-1.5 text-slate-400">
             <Clock className="w-3.5 h-3.5 shrink-0 text-slate-500" />
-            <span>Updated {lastUpdated.toLocaleString(undefined, { timeZoneName: 'short' })}</span>
+            <span className="sm:hidden">
+              {lastUpdated.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })}
+            </span>
+            <span className="hidden sm:inline">
+              Updated {lastUpdated.toLocaleString(undefined, { timeZoneName: 'short' })}
+            </span>
           </div>
           {remainingRequests !== null && isLive && (
-            <span className="text-slate-500">{remainingRequests} API calls left</span>
+            <span className="hidden sm:inline text-slate-500">{remainingRequests} API calls left</span>
           )}
         </div>
         <div className="flex items-center gap-3 shrink-0">
           <label
-            className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer select-none"
+            className="flex items-center gap-2 min-h-[44px] sm:min-h-0 text-sm text-slate-300 cursor-pointer select-none"
             title={`Fetches alt spreads/totals for the ${ALT_EVENT_CAP} games with the highest main-line +EV. Extra Odds API credits (one call per game).`}
           >
             <input
               type="checkbox"
               checked={includeAltLines}
               onChange={e => onToggleAltLines(e.target.checked)}
-              className="rounded border-slate-600 bg-slate-800 text-green-500 focus:ring-green-500/40"
+              className="rounded border-slate-600 bg-slate-800 text-green-500 focus:ring-green-500/40 w-4 h-4"
             />
             <span>Alt lines</span>
             {includeAltLines && (
@@ -153,10 +159,10 @@ function DataFreshnessStrip({
             type="button"
             onClick={onRefresh}
             disabled={isLoading}
-            className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-green-500/15 hover:bg-green-500/25 border border-green-500/30 text-green-400 rounded-lg transition-colors disabled:opacity-50"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 min-h-[44px] px-4 py-2 text-sm bg-green-500/15 hover:bg-green-500/25 border border-green-500/30 text-green-400 rounded-lg transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh odds
+            Refresh
           </button>
         </div>
       </div>
@@ -180,6 +186,7 @@ export default function Dashboard() {
   const [remainingRequests, setRemainingRequests] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(false)
   const [cacheAge, setCacheAge] = useState<number | null>(null)
   const [includeAltLines, setIncludeAltLinesState] = useState(() => getIncludeAltLines())
   const [altGames, setAltGames] = useState(0)
@@ -376,27 +383,30 @@ export default function Dashboard() {
   
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#0a0b0f]/90 border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-500/10 rounded-lg">
+      <header
+        className="sticky top-0 z-50 backdrop-blur-xl bg-[#0a0b0f]/90 border-b border-slate-800"
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+      >
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between gap-2 h-14 lg:h-16">
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="p-1.5 lg:p-2 bg-green-500/10 rounded-lg">
                 <Zap className="w-5 h-5 text-green-400" />
               </div>
-              <div>
-                <h1 className="font-bold text-xl tracking-tight">
+              <div className="leading-tight">
+                <h1 className="font-bold text-lg lg:text-xl tracking-tight">
                   Hot<span className="text-green-400">Hand</span>
                 </h1>
-                <p className="text-xs text-slate-500">Analytics</p>
+                <p className="hidden sm:block text-xs text-slate-500">Analytics</p>
               </div>
             </div>
             
-            <nav className="hidden md:flex items-center gap-1">
+            <nav className="hidden lg:flex items-center gap-1 min-w-0">
               {tabs.map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`nav-item flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`nav-item flex items-center gap-1.5 px-2.5 xl:px-3 py-2 rounded-lg text-xs xl:text-sm font-medium transition-colors whitespace-nowrap ${
                     activeTab === tab.id 
                       ? 'active text-green-400' 
                       : 'text-slate-400 hover:text-slate-200'
@@ -408,11 +418,12 @@ export default function Dashboard() {
               ))}
             </nav>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 min-w-0">
               <select
                 value={selectedSport}
                 onChange={(e) => setSelectedSport(e.target.value as SportKey)}
-                className="hidden sm:block bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-green-500"
+                aria-label="Sport"
+                className="min-w-0 max-w-[42vw] sm:max-w-none bg-slate-800/50 border border-slate-700 rounded-lg px-2 sm:px-3 py-2 text-sm focus:outline-none focus:border-green-500"
               >
                 {SPORTS.map(sport => (
                   <option key={sport.key} value={sport.key}>{sport.title}</option>
@@ -421,30 +432,17 @@ export default function Dashboard() {
 
               <button
                 type="button"
-                onClick={() => setShowSettings(true)}
+                onClick={() => {
+                  setMoreOpen(false)
+                  setShowSettings(true)
+                }}
                 title="Settings"
-                className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 transition-colors"
+                aria-label="Settings"
+                className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-slate-800/50 hover:bg-slate-700/50 transition-colors"
               >
                 <SettingsIcon className="w-4 h-4" />
               </button>
             </div>
-          </div>
-          
-          <div className="md:hidden flex items-center gap-1 pb-3 overflow-x-auto">
-            {tabs.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                  activeTab === tab.id 
-                    ? 'bg-green-500/10 text-green-400' 
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <tab.icon className="w-4 h-4" />
-                {tab.label}
-              </button>
-            ))}
           </div>
         </div>
       </header>
@@ -460,7 +458,7 @@ export default function Dashboard() {
         </div>
       )}
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 lg:py-6 pb-28 lg:pb-6">
         <AnimatePresence mode="wait">
           {activeTab === 'overview' && (
             <motion.div
@@ -484,13 +482,13 @@ export default function Dashboard() {
                 altLoading={altLoading}
                 remainingRequests={remainingRequests}
               />
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 lg:gap-4">
                 <div className="card p-4 card-hover">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-400">Line Edges</span>
                     <TrendingUp className="w-4 h-4 text-green-400" />
                   </div>
-                  <p className="text-3xl font-bold mt-2">{discrepancies.length}</p>
+                  <p className="text-2xl lg:text-3xl font-bold mt-2">{discrepancies.length}</p>
                   <p className="text-xs text-slate-500 mt-1">Active opportunities</p>
                 </div>
                 
@@ -499,7 +497,7 @@ export default function Dashboard() {
                     <span className="text-sm text-slate-400">+EV Bets</span>
                     <Calculator className="w-4 h-4 text-cyan-400" />
                   </div>
-                  <p className="text-3xl font-bold mt-2">{evBets.length}</p>
+                  <p className="text-2xl lg:text-3xl font-bold mt-2">{evBets.length}</p>
                   <p className="text-xs text-slate-500 mt-1">Positive expected value</p>
                 </div>
 
@@ -508,7 +506,7 @@ export default function Dashboard() {
                     <span className="text-sm text-slate-400">Arbitrage</span>
                     <Scale className="w-4 h-4 text-green-400" />
                   </div>
-                  <p className="text-3xl font-bold mt-2">{arbs.length}</p>
+                  <p className="text-2xl lg:text-3xl font-bold mt-2">{arbs.length}</p>
                   <p className="text-xs text-slate-500 mt-1">Guaranteed profit spots</p>
                 </div>
                 
@@ -517,7 +515,7 @@ export default function Dashboard() {
                     <span className="text-sm text-slate-400">Avg Edge</span>
                     <Target className="w-4 h-4 text-yellow-400" />
                   </div>
-                  <p className="text-3xl font-bold mt-2 text-green-400">
+                  <p className="text-2xl lg:text-3xl font-bold mt-2 text-green-400">
                     {evBets.length > 0 
                       ? `${(evBets.reduce((s, b) => s + b.evPercent, 0) / evBets.length).toFixed(1)}%`
                       : '0%'
@@ -531,7 +529,7 @@ export default function Dashboard() {
                     <span className="text-sm text-slate-400">Games</span>
                     <BarChart3 className="w-4 h-4 text-purple-400" />
                   </div>
-                  <p className="text-3xl font-bold mt-2">{events.length}</p>
+                  <p className="text-2xl lg:text-3xl font-bold mt-2">{events.length}</p>
                   <p className="text-xs text-slate-500 mt-1">With odds data</p>
                 </div>
               </div>
@@ -545,7 +543,7 @@ export default function Dashboard() {
                     </div>
                     <button 
                       onClick={() => setActiveTab('ev')}
-                      className="flex items-center gap-1 text-sm text-slate-400 hover:text-green-400 transition-colors"
+                      className="flex items-center gap-1 min-h-[44px] px-2 text-sm text-slate-400 hover:text-green-400 transition-colors"
                     >
                       View all <ChevronRight className="w-4 h-4" />
                     </button>
@@ -585,7 +583,7 @@ export default function Dashboard() {
                     </div>
                     <button 
                       onClick={() => setActiveTab('discrepancies')}
-                      className="flex items-center gap-1 text-sm text-slate-400 hover:text-green-400 transition-colors"
+                      className="flex items-center gap-1 min-h-[44px] px-2 text-sm text-slate-400 hover:text-green-400 transition-colors"
                     >
                       View all <ChevronRight className="w-4 h-4" />
                     </button>
@@ -801,7 +799,19 @@ export default function Dashboard() {
         </AnimatePresence>
       </main>
       
-      <footer className="border-t border-slate-800 mt-auto">
+      <MobileBottomNav
+        tabs={tabs}
+        activeTab={activeTab}
+        moreOpen={moreOpen}
+        onSelect={tab => {
+          setActiveTab(tab)
+          setMoreOpen(false)
+        }}
+        onToggleMore={() => setMoreOpen(open => !open)}
+        onCloseMore={() => setMoreOpen(false)}
+      />
+
+      <footer className="hidden lg:block border-t border-slate-800 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-slate-500">
             <div className="flex items-center gap-2">

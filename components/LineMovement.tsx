@@ -277,7 +277,7 @@ export default function LineMovement({ events }: LineMovementProps) {
         </div>
 
         {history.length < 2 ? (
-          <div className="h-[300px] flex items-center justify-center text-slate-500 text-sm">
+          <div className="h-48 md:h-[300px] flex items-center justify-center text-slate-500 text-sm">
             <div className="text-center">
               <TrendingUp className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p>Not enough data yet.</p>
@@ -285,7 +285,7 @@ export default function LineMovement({ events }: LineMovementProps) {
             </div>
           </div>
         ) : (
-          <div className="h-[300px]">
+          <div className="h-48 md:h-[300px]">
             <Line data={chartData} options={chartOptions} />
           </div>
         )}

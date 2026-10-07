@@ -138,7 +138,7 @@ export default function EdgeHeatmap({ events }: EdgeHeatmapProps) {
           <select
             value={selectedEventId}
             onChange={(e) => setSelectedEventId(e.target.value)}
-            className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm"
+            className="w-full sm:w-auto min-h-[44px] bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm"
           >
             {events.map(event => {
               const gameDate = new Date(event.commence_time)
@@ -169,6 +169,8 @@ export default function EdgeHeatmap({ events }: EdgeHeatmapProps) {
           <p>No odds data available. Refresh to load odds.</p>
         </div>
       ) : (
+        <>
+        <p className="md:hidden px-3 pt-2 text-xs text-slate-500">Swipe sideways to compare books</p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -246,6 +248,7 @@ export default function EdgeHeatmap({ events }: EdgeHeatmapProps) {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       <div className="p-3 border-t border-slate-800 flex items-center gap-2 text-xs text-slate-500">

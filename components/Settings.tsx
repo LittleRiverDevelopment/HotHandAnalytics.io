@@ -62,16 +62,16 @@ export default function Settings({ isOpen, onClose, onApiKeyChange }: SettingsPr
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70]"
             onClick={onClose}
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed inset-4 z-50 flex items-center justify-center pointer-events-none"
+            className="fixed inset-3 sm:inset-4 z-[70] flex items-center justify-center pointer-events-none"
           >
-            <div className="card p-6 w-full max-w-md pointer-events-auto">
+            <div className="card p-5 sm:p-6 w-full max-w-md pointer-events-auto max-h-[min(90dvh,40rem)] overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-green-500/10 rounded-lg">
@@ -81,7 +81,7 @@ export default function Settings({ isOpen, onClose, onApiKeyChange }: SettingsPr
                 </div>
                 <button
                   onClick={onClose}
-                  className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+                  className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-slate-800 rounded-lg transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -125,14 +125,14 @@ export default function Settings({ isOpen, onClose, onApiKeyChange }: SettingsPr
                 <div className="flex gap-3 pt-2">
                   <button
                     onClick={handleClear}
-                    className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors"
+                    className="flex-1 min-h-[44px] px-4 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors"
                   >
                     Clear
                   </button>
                   <button
                     onClick={handleSave}
                     disabled={saved}
-                    className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-500 disabled:bg-green-600/50 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                    className="flex-1 min-h-[44px] px-4 py-2.5 bg-green-600 hover:bg-green-500 disabled:bg-green-600/50 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                   >
                     {saved ? (
                       <>

@@ -80,19 +80,30 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
   
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-green-400" />
-          <h2 className="text-lg font-semibold">Line Discrepancies</h2>
-          <span className="text-sm text-slate-400 ml-2">
-            {filteredDiscrepancies.length} opportunities
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2 min-w-0">
+          <TrendingUp className="w-5 h-5 text-green-400 shrink-0" />
+          <h2 className="text-lg font-semibold">Line Shop</h2>
+          <span className="text-sm text-slate-400">
+            {filteredDiscrepancies.length}
             {filteredDiscrepancies.length > VISIBLE_ROW_CAP && (
-              <span className="text-slate-500"> · top {VISIBLE_ROW_CAP} by edge</span>
+              <span className="text-slate-500"> · top {VISIBLE_ROW_CAP}</span>
             )}
           </span>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <select
+            value={filterMarket}
+            onChange={(e) => setFilterMarket(e.target.value)}
+            className="flex-1 sm:flex-none min-h-[44px] bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500"
+          >
+            <option value="all">All Markets</option>
+            <option value="moneyline">Moneyline</option>
+            <option value="spread">Spread</option>
+            <option value="total">Total</option>
+            <option value="alt">Alt lines only</option>
+          </select>
           <button
             type="button"
             onClick={() =>
@@ -101,26 +112,99 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
                 lineDiscrepanciesToCsvRows(filteredDiscrepancies)
               )
             }
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-slate-600 bg-slate-800/50 text-slate-300 hover:text-green-400 hover:border-green-500/40 transition-colors"
+            className="flex items-center justify-center gap-1.5 min-h-[44px] px-3 py-2 text-sm rounded-lg border border-slate-600 bg-slate-800/50 text-slate-300 hover:text-green-400 hover:border-green-500/40 transition-colors"
           >
             <Download className="w-4 h-4" />
-            Export CSV
+            <span className="hidden sm:inline">Export CSV</span>
           </button>
-          <select
-            value={filterMarket}
-            onChange={(e) => setFilterMarket(e.target.value)}
-            className="bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-green-500"
-          >
-            <option value="all">All Markets</option>
-            <option value="moneyline">Moneyline</option>
-            <option value="spread">Spread</option>
-            <option value="total">Total</option>
-            <option value="alt">Alt lines only</option>
-          </select>
         </div>
       </div>
+
+      <div className="md:hidden space-y-2">
+        {filteredDiscrepancies.slice(0, VISIBLE_ROW_CAP).map(disc => {
+          const rowKey = `${disc.eventId}-${disc.market}-${disc.betType}`
+          const isExpanded = expandedRow === rowKey
+          const sortedBooks = [...disc.allBookOdds].sort((a, b) => b.odds - a.odds)
+          const liveScore = findScoreForGame(scores, disc.eventId, disc.homeTeam, disc.awayTeam, disc.commenceTime)
+          return (
+            <div
+              key={rowKey}
+              role="button"
+              tabIndex={0}
+              onClick={() => setExpandedRow(isExpanded ? null : rowKey)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  setExpandedRow(isExpanded ? null : rowKey)
+                }
+              }}
+              className="card w-full text-left p-3 cursor-pointer"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-medium text-sm truncate">{disc.awayTeam} @ {disc.homeTeam}</p>
+                  <p className="text-xs text-slate-400 mt-0.5 inline-flex items-center gap-1.5 flex-wrap">
+                    <span>{disc.betType}</span>
+                    <span className="text-slate-600">·</span>
+                    <span>{disc.market}</span>
+                    {disc.isAltLine && <AltLineBadge />}
+                  </p>
+                  {liveScore && (
+                    <div className="mt-1">
+                      <LiveScoreBadge score={liveScore} homeTeam={disc.homeTeam} awayTeam={disc.awayTeam} />
+                    </div>
+                  )}
+                </div>
+                <span className={`edge-tag shrink-0 ${getEdgeClass(disc.spread)}`}>+{disc.spread}</span>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                <div className="rounded-lg bg-green-500/10 border border-green-500/20 px-2.5 py-2">
+                  <p className="text-[10px] uppercase tracking-wide text-green-400/80">Best</p>
+                  <p className="odds-badge text-green-400 font-semibold">{formatOdds(disc.bestOdds)}</p>
+                  <p className="text-xs text-slate-400 truncate">{disc.bestBook}</p>
+                </div>
+                <div className="rounded-lg bg-slate-800/50 border border-slate-700/50 px-2.5 py-2">
+                  <p className="text-[10px] uppercase tracking-wide text-slate-500">Worst</p>
+                  <p className="odds-badge text-slate-300">{formatOdds(disc.worstOdds)}</p>
+                  <p className="text-xs text-slate-500 truncate">{disc.worstBook}</p>
+                </div>
+              </div>
+              {isExpanded && (
+                <div className="mt-3 grid grid-cols-2 gap-2" onClick={e => e.stopPropagation()}>
+                  {sortedBooks.map((row, i) => {
+                    const isBest = row.odds === disc.bestOdds
+                    return (
+                      <div
+                        key={`${row.book}-${i}`}
+                        className={`rounded-lg border px-2.5 py-2 ${
+                          isBest ? 'border-green-500/50 bg-green-500/10' : 'border-slate-700/50 bg-slate-800/30'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-1 text-xs text-slate-400">
+                          <span className="truncate">{row.book}</span>
+                          <BookOpenLink bookTitle={row.book} deepLink={row.link} />
+                        </div>
+                        <p className={`odds-badge text-sm ${isBest ? 'text-green-400' : 'text-slate-200'}`}>
+                          {formatOdds(row.odds)}
+                        </p>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )
+        })}
+        {filteredDiscrepancies.length === 0 && (
+          <div className="card flex flex-col items-center justify-center py-12 text-slate-400">
+            <AlertCircle className="w-8 h-8 mb-2" />
+            <p>No line discrepancies found</p>
+            <p className="text-sm text-slate-500">Check back closer to game time</p>
+          </div>
+        )}
+      </div>
       
-      <div className="card overflow-hidden">
+      <div className="hidden md:block card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>

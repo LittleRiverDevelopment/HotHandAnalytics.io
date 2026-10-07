@@ -288,7 +288,7 @@ export default function PlayerPropAnalyzer({ playerProps }: Props) {
             </div>
           </div>
           
-          <div className="h-[300px]">
+          <div className="h-48 md:h-[300px]">
             <Bar data={chartData} options={chartOptions} />
           </div>
         </div>
