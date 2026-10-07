@@ -44,11 +44,15 @@ export default function BookOpenLink({
 
   const trimmedDeep = deepLink?.trim()
   const href = useMemo(() => {
-    if (trimmedDeep && /^https?:\/\//i.test(trimmedDeep)) return trimmedDeep
+    if (trimmedDeep && /^https?:\/\//i.test(trimmedDeep)) {
+      console.log('[BookOpenLink] Using deep link', { book: bookTitle, link: trimmedDeep })
+      return trimmedDeep
+    }
+    console.log('[BookOpenLink] Falling back to homepage', { book: bookTitle, deepLink, trimmedDeep })
     return getSportsbookHomeUrlFromTitle(bookTitle, {
       mobile: useMobileLayout,
     })
-  }, [bookTitle, trimmedDeep, useMobileLayout])
+  }, [bookTitle, trimmedDeep, useMobileLayout, deepLink])
 
   if (!href) {
     if (children) return <span className={className}>{children}</span>
