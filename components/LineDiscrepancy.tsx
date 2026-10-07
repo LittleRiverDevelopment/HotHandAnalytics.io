@@ -447,7 +447,12 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
               A higher edge means a bigger price difference. Always bet the best available line.
               Confidence (0–100) rises when more books quote that outcome and the best-to-worst gap is wider.
               Click any row to expand and see every book&apos;s line side by side.
-              When The Odds API returns deep links, the bet label and link icons open that game or selection at the book; otherwise they open the book&apos;s home page.
+            </p>
+            <p className="text-sm text-slate-400 mt-2">
+              <strong className="text-slate-300">About betting links:</strong> We use The Odds API&apos;s deep links which typically open
+              the event page at the sportsbook. Most books don&apos;t support automatic bet slip population via URL parameters.
+              You&apos;ll need to manually find and add the bet after clicking. If you previously experienced automatic bet slip
+              population, please let us know which sportsbook(s) supported this - it may help us restore that functionality.
             </p>
           </div>
         </div>

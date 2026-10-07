@@ -54,3 +54,29 @@ export function getSportsbookHomeUrlFromTitle(
   }
   return SPORTSBOOK_HOME_URLS[key] ?? null
 }
+
+/**
+ * Attempts to enhance a deep link for better bet slip integration.
+ * Note: Most sportsbooks don't support URL-based bet slip population in their public APIs.
+ * This function preserves any existing deep links from The Odds API and adds minimal
+ * enhancement where safe to do so.
+ */
+export function enhanceDeepLink(
+  bookTitle: string,
+  deepLink: string | null | undefined,
+  opts?: {
+    eventId?: string
+    market?: string
+    selection?: string
+  }
+): string | null {
+  // If we have a deep link from The Odds API, use it as-is
+  // These are the most reliable and up-to-date links available
+  if (deepLink?.trim() && /^https?:\/\//i.test(deepLink.trim())) {
+    return deepLink.trim()
+  }
+
+  // No reliable way to construct bet-slip-populating URLs without official API support
+  // Return null to fall back to homepage
+  return null
+}

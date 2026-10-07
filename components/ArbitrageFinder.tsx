@@ -328,6 +328,11 @@ export default function ArbitrageFinder({ arbs, scores }: Props) {
               tighter line or lower limits first. Confidence (0–100) is higher with a bigger margin and
               when both books updated their lines close together in time (less risk one side already moved).
             </p>
+            <p className="text-sm text-slate-400 mt-2">
+              <strong className="text-slate-300">Note:</strong> Book links use The Odds API deep links when available,
+              but most sportsbooks require manual bet slip entry. If you experienced automatic bet slip population
+              in the past, please let us know which book(s) - we&apos;re working to restore that where possible.
+            </p>
           </div>
         </div>
       </div>

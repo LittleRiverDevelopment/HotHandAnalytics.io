@@ -198,6 +198,23 @@ export async function fetchOddsClient(
       return { data: null, error: 'No events found for this sport', remainingRequests: result.remainingRequests }
     }
 
+    // Sample a few links to see what The Odds API is actually returning
+    if (result.data.length > 0) {
+      const firstEvent = result.data[0]
+      if (firstEvent.bookmakers.length > 0) {
+        const firstBook = firstEvent.bookmakers[0]
+        console.log('[Odds API Links Sample]', {
+          event: `${firstEvent.away_team} @ ${firstEvent.home_team}`,
+          bookmaker: firstBook.title,
+          bookmakerLink: firstBook.link,
+          sampleMarket: firstBook.markets[0]?.key,
+          marketLink: firstBook.markets[0]?.link,
+          sampleOutcome: firstBook.markets[0]?.outcomes[0]?.name,
+          outcomeLink: firstBook.markets[0]?.outcomes[0]?.link,
+        })
+      }
+    }
+
     setCache(cacheKey, {
       data: result.data,
       timestamp: Date.now(),
