@@ -61,18 +61,18 @@ test('strips ordinal suffixes from sheet dates like September 21st', () => {
   assert.equal(bets[1].date, '2026-10-03')
 })
 
-test('overlays DAL -8.5 once the TNF game is final and the sheet still says Open', () => {
+test('reads the sheet-settled DAL -8.5 loss including the ordinal date', () => {
   const csv = [
     HEADER,
     'January 26,Earlier bet,NBA,FanDuel,1,-110,W,0.91,0.91,',
-    'October 8th,DAL -8.5,NFL,Hard Rock,1,-110,Open,Open,Open,',
+    'October 8th,DAL -8.5,NFL,Hard Rock,1,-110,L,-1,-0.09,',
   ].join('\n')
 
   const bets = parseBetSheetCsv(csv)
+  assert.equal(bets[1].date, '2026-10-08')
   assert.equal(bets[1].status, 'L')
   assert.equal(bets[1].delta, -1)
   assert.equal(bets[1].cumulative, -0.09)
-  assert.equal(bets[1].date, '2026-10-08')
 })
 
 test('keeps a live Open row (Red Sox -1.5) until the sheet settles it', () => {
