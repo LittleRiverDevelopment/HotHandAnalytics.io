@@ -32,8 +32,13 @@ const TRACKER_START_YEAR = 2026
 // The published Bets tab is the source of truth, but it is updated by hand.
 // If a row is still marked Open after the games have final scores, overlay the
 // graded result here so the site does not stay stale until the next sheet edit.
-// Drop an entry once the sheet itself has Status / Units W/L / Running Total filled in.
-export const SETTLEMENT_OVERRIDES = []
+// `freeBet: true` recasts a settled loss as a Push (delta 0) when the stake was
+// a free bet — same as a sheet W/L cell of "Free Bet". Drop an entry once the
+// sheet itself has Status / Units W/L / Running Total filled in correctly.
+export const SETTLEMENT_OVERRIDES = [
+  // Hard Rock DAL -8.5 (TNF 2026-10-08) was a free bet; sheet still has L / -1.
+  { date: '2026-10-08', descriptionIncludes: 'DAL -8.5', freeBet: true },
+]
 
 const MONTHS = {
   Jan: 1, January: 1,
@@ -165,24 +170,29 @@ export function parseBetSheetCsv(csvText, overrides = SETTLEMENT_OVERRIDES) {
     let wl = parseNum(wlRaw)
     const running = parseNum(runningRaw)
     const tailLink = (tailLinkRaw || '').trim() || undefined
+    const override = overrides.find(
+      o => o.date === date && description.includes(o.descriptionIncludes)
+    )
     // Trust the Status column as the source of truth for "still live" — the sheet
     // also writes the literal text "Open" into the W/L and Running Total cells,
     // which parseNum correctly reduces to null rather than a stray "Open" string.
     let isOpen = statusText.toLowerCase() === 'open'
-    if (isOpen) {
-      const override = overrides.find(
-        o => o.date === date && description.includes(o.descriptionIncludes)
-      )
-      if (override) {
-        isOpen = false
-        if (wl === null) wl = override.wl
-      }
+    if (isOpen && override && !override.freeBet) {
+      isOpen = false
+      if (wl === null) wl = override.wl
     }
+    // A lost free bet does not change bankroll (see Aug 6 Panthers/Chargers).
+    const isFreeBet =
+      (wlRaw || '').trim().toLowerCase() === 'free bet' || override?.freeBet === true
 
     let delta = null
     let cumulativeAfter = cumulative
 
-    if (isOpen) {
+    if (isFreeBet) {
+      isOpen = false
+      delta = 0
+      cumulativeAfter = cumulative
+    } else if (isOpen) {
       delta = null
       cumulativeAfter = cumulative
     } else if (running !== null) {

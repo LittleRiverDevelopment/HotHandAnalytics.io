@@ -61,7 +61,20 @@ test('strips ordinal suffixes from sheet dates like September 21st', () => {
   assert.equal(bets[1].date, '2026-10-03')
 })
 
-test('reads the sheet-settled DAL -8.5 loss including the ordinal date', () => {
+test('sheet Free Bet in W/L is a Push and does not move the running total', () => {
+  const csv = [
+    HEADER,
+    'January 26,Earlier bet,NBA,FanDuel,1,-110,W,0.91,0.91,',
+    'August 6,Under 34.5 Panthers Chargers,NFL,BetMGM,2.5,-110,L,Free Bet,0.91,',
+  ].join('\n')
+
+  const bets = parseBetSheetCsv(csv)
+  assert.equal(bets[1].status, 'Push')
+  assert.equal(bets[1].delta, 0)
+  assert.equal(bets[1].cumulative, 0.91)
+})
+
+test('DAL -8.5 free-bet overlay is a Push even if the sheet recorded a loss', () => {
   const csv = [
     HEADER,
     'January 26,Earlier bet,NBA,FanDuel,1,-110,W,0.91,0.91,',
@@ -70,9 +83,9 @@ test('reads the sheet-settled DAL -8.5 loss including the ordinal date', () => {
 
   const bets = parseBetSheetCsv(csv)
   assert.equal(bets[1].date, '2026-10-08')
-  assert.equal(bets[1].status, 'L')
-  assert.equal(bets[1].delta, -1)
-  assert.equal(bets[1].cumulative, -0.09)
+  assert.equal(bets[1].status, 'Push')
+  assert.equal(bets[1].delta, 0)
+  assert.equal(bets[1].cumulative, 0.91)
 })
 
 test('keeps a live Open row (Red Sox -1.5) until the sheet settles it', () => {
