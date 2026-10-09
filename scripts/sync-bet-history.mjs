@@ -33,7 +33,10 @@ const TRACKER_START_YEAR = 2026
 // If a row is still marked Open after the games have final scores, overlay the
 // graded result here so the site does not stay stale until the next sheet edit.
 // Drop an entry once the sheet itself has Status / Units W/L / Running Total filled in.
-export const SETTLEMENT_OVERRIDES = []
+export const SETTLEMENT_OVERRIDES = [
+  // TNF 2026-10-08: Buccaneers 24, Cowboys 16 (final). DAL -8.5 does not cover.
+  { date: '2026-10-08', descriptionIncludes: 'DAL -8.5', wl: -1 },
+]
 
 const MONTHS = {
   Jan: 1, January: 1,
