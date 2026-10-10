@@ -88,6 +88,23 @@ test('DAL -8.5 free-bet overlay is a Push even if the sheet recorded a loss', ()
   assert.equal(bets[1].cumulative, 0.91)
 })
 
+test('after a free-bet overlay, the next row uses W/L instead of the offset running total', () => {
+  const csv = [
+    HEADER,
+    'January 26,Earlier bet,NBA,FanDuel,1,-110,W,0.91,0.91,',
+    'October 8th,DAL -8.5,NFL,Hard Rock,1,-110,L,-1,-0.09,',
+    'October 9th,Louisville Cardinals,NCAAF,FanDuel,1,-186,W,0.532,0.442,',
+  ].join('\n')
+
+  const bets = parseBetSheetCsv(csv)
+  assert.equal(bets[1].status, 'Push')
+  assert.equal(bets[1].cumulative, 0.91)
+  assert.equal(bets[2].description, 'Louisville Cardinals')
+  assert.equal(bets[2].status, 'W')
+  assert.equal(bets[2].delta, 0.532)
+  assert.equal(bets[2].cumulative, 1.442)
+})
+
 test('keeps a live Open row (Red Sox -1.5) until the sheet settles it', () => {
   const csv = [
     HEADER,

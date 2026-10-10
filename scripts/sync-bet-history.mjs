@@ -142,6 +142,9 @@ export function parseBetSheetCsv(csvText, overrides = SETTLEMENT_OVERRIDES) {
   let year = TRACKER_START_YEAR
   let lastMonth = 0
   let cumulative = 0
+  // After a free-bet overlay ignores a sheet -1 running total, later rows' running
+  // column is still offset. Prefer the W/L cell until the sheet catches up.
+  let runningDiverged = false
 
   const bets = []
 
@@ -192,17 +195,23 @@ export function parseBetSheetCsv(csvText, overrides = SETTLEMENT_OVERRIDES) {
       isOpen = false
       delta = 0
       cumulativeAfter = cumulative
+      if (running !== null && Math.abs(running - cumulative) > 0.0005) {
+        runningDiverged = true
+      }
     } else if (isOpen) {
       delta = null
       cumulativeAfter = cumulative
-    } else if (running !== null) {
+    } else if (running !== null && !runningDiverged) {
       delta = Math.round((running - cumulative) * 1000) / 1000
       cumulativeAfter = running
       cumulative = running
     } else if (wl !== null) {
       delta = wl
-      cumulativeAfter = Math.round((cumulative + wl) * 1000) / 1000
+      cumulativeAfter = Math.round((cumulative + wl) * 1e5) / 1e5
       cumulative = cumulativeAfter
+      if (running !== null && Math.abs(running - cumulativeAfter) < 0.0005) {
+        runningDiverged = false
+      }
     }
 
     let status
