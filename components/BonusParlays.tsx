@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Gift, TrendingUp, Layers, AlertTriangle } from 'lucide-react'
 import { OddsEvent, ScoreEvent } from '@/lib/types'
-import { findEVBets, formatOdds } from '@/lib/odds-utils'
-import { bestLegsByBook, buildParlay, buildParlays, maxParlayLegs, BuiltParlay } from '@/lib/parlay'
+import { formatOdds } from '@/lib/odds-utils'
+import { findAttractiveLines, bestLegsByBook, buildParlay, buildParlays, maxParlayLegs, BuiltParlay } from '@/lib/parlay'
 import { format } from 'date-fns'
 import BookOpenLink from './BookOpenLink'
 import LiveScoreBadge, { findScoreForGame } from './LiveScore'
@@ -27,9 +27,13 @@ function money(amount: number): string {
 
 function evClass(evPercent: number): string {
   if (evPercent >= 5) return 'text-green-400'
-  if (evPercent >= 3) return 'text-emerald-400'
-  if (evPercent >= 1) return 'text-yellow-400'
-  return 'text-orange-400'
+  if (evPercent >= 1) return 'text-emerald-400'
+  if (evPercent >= 0) return 'text-yellow-400'
+  return 'text-slate-400'
+}
+
+function signedPercent(evPercent: number): string {
+  return `${evPercent >= 0 ? '+' : ''}${evPercent.toFixed(1)}%`
 }
 
 export default function BonusParlays({ events, scores }: Props) {
@@ -38,12 +42,12 @@ export default function BonusParlays({ events, scores }: Props) {
   const [book, setBook] = useState<string>('best')
   const [swappedIn, setSwappedIn] = useState<string | null>(null)
 
-  const evBets = useMemo(() => findEVBets(events ?? [], 0), [events])
-  const longest = maxParlayLegs(evBets)
+  const attractive = useMemo(() => findAttractiveLines(events ?? []), [events])
+  const longest = maxParlayLegs(attractive)
   const activeLegs = longest < 2 ? 2 : Math.min(legCount, longest)
 
-  const legsByBook = useMemo(() => bestLegsByBook(evBets), [evBets])
-  const tickets = useMemo(() => buildParlays(evBets, activeLegs), [evBets, activeLegs])
+  const legsByBook = useMemo(() => bestLegsByBook(attractive), [attractive])
+  const tickets = useMemo(() => buildParlays(attractive, activeLegs), [attractive, activeLegs])
 
   useEffect(() => {
     setSwappedIn(null)
@@ -65,7 +69,7 @@ export default function BonusParlays({ events, scores }: Props) {
     if (!incoming || base.legs.some(leg => leg.eventId === incoming.eventId)) return base
 
     const kept = base.legs.slice(0, -1)
-    return buildParlay(base.book, [...kept, incoming].sort((a, b) => b.ev - a.ev))
+    return buildParlay(base.book, [...kept, incoming].sort((a, b) => b.edge - a.edge || b.odds - a.odds))
   }, [tickets, book, swappedIn, legsByBook])
 
   const alternates = useMemo(() => {
@@ -78,7 +82,7 @@ export default function BonusParlays({ events, scores }: Props) {
   const otherBooks = tickets.filter(t => t.book !== featured?.book)
   const stakeAmount = Number.isFinite(stake) && stake > 0 ? stake : 0
   const toWin = featured ? stakeAmount * (featured.decimalOdds - 1) : 0
-  const expectedProfit = featured ? stakeAmount * featured.ev : 0
+  const expectedProfit = featured && featured.evPercent !== null ? stakeAmount * (featured.evPercent / 100) : null
 
   return (
     <div className="space-y-4">
@@ -111,7 +115,7 @@ export default function BonusParlays({ events, scores }: Props) {
           <div>
             <p className="text-sm font-medium text-slate-200">Parlay legs</p>
             <p className="text-xs text-slate-500 mt-0.5">
-              Highest +EV price at one book, one game each
+              Best price at one book, one game each
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -153,15 +157,11 @@ export default function BonusParlays({ events, scores }: Props) {
             </div>
             <div className="card p-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-400">Parlay EV</span>
+                <span className="text-sm text-slate-400">Price edge</span>
                 <TrendingUp className="w-4 h-4 text-green-400" />
               </div>
-              <p className={`text-2xl font-bold mt-1 ${evClass(featured.evPercent)}`}>
-                +{featured.evPercent.toFixed(1)}%
-              </p>
-              <p className="text-xs text-slate-500 mt-1">
-                {(featured.fairProbability * 100).toFixed(1)}% fair hit rate
-              </p>
+              <p className="text-2xl font-bold mt-1 text-green-400">+{featured.priceEdge.toFixed(1)}%</p>
+              <p className="text-xs text-slate-500 mt-1">better than the next book</p>
             </div>
             <div className="card p-4">
               <div className="flex items-center justify-between">
@@ -173,13 +173,15 @@ export default function BonusParlays({ events, scores }: Props) {
             </div>
             <div className="card p-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-400">Expected profit</span>
+                <span className="text-sm text-slate-400">Fair EV</span>
                 <TrendingUp className="w-4 h-4 text-yellow-400" />
               </div>
-              <p className={`text-2xl font-bold mt-1 ${expectedProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                {money(expectedProfit)}
+              <p className={`text-2xl font-bold mt-1 ${featured.evPercent === null ? 'text-slate-400' : evClass(featured.evPercent)}`}>
+                {featured.evPercent === null ? '—' : signedPercent(featured.evPercent)}
               </p>
-              <p className="text-xs text-slate-500 mt-1">{featured.book}</p>
+              <p className="text-xs text-slate-500 mt-1">
+                {expectedProfit === null ? featured.book : `${money(expectedProfit)} expected`}
+              </p>
             </div>
           </div>
 
@@ -195,7 +197,7 @@ export default function BonusParlays({ events, scores }: Props) {
                     : 'border-slate-700 text-slate-400 hover:text-slate-200'
                 }`}
               >
-                Best EV
+                Best price
               </button>
               {tickets.map(ticket => (
                 <button
@@ -208,7 +210,7 @@ export default function BonusParlays({ events, scores }: Props) {
                       : 'border-slate-700 text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  {ticket.book} · +{ticket.evPercent.toFixed(1)}%
+                  {ticket.book} · +{ticket.priceEdge.toFixed(1)}%
                 </button>
               ))}
             </div>
@@ -219,7 +221,7 @@ export default function BonusParlays({ events, scores }: Props) {
               <h3 className="text-sm font-medium">
                 {featured.legs.length}-leg {featured.book} parlay
               </h3>
-              <span className="text-xs text-slate-500">Sorted by leg EV</span>
+              <span className="text-xs text-slate-500">Sorted by price edge</span>
             </div>
             <div className="divide-y divide-slate-800">
               {featured.legs.map((leg, index) => {
@@ -250,8 +252,10 @@ export default function BonusParlays({ events, scores }: Props) {
                         <div className="text-[10px] uppercase tracking-wider text-slate-500">Odds</div>
                       </div>
                       <div className="text-right">
-                        <div className={`text-sm font-semibold ${evClass(leg.evPercent)}`}>+{leg.evPercent.toFixed(1)}%</div>
-                        <div className="text-[10px] uppercase tracking-wider text-slate-500">EV</div>
+                        <div className="text-sm font-semibold text-green-400">+{leg.edge.toFixed(1)}%</div>
+                        <div className="text-[10px] uppercase tracking-wider text-slate-500">
+                          {leg.evPercent === null ? 'vs next' : `vs next · ${signedPercent(leg.evPercent)} EV`}
+                        </div>
                       </div>
                       <BookOpenLink bookTitle={leg.book} deepLink={leg.bookDeepLink} />
                     </div>
@@ -265,7 +269,7 @@ export default function BonusParlays({ events, scores }: Props) {
             <div className="card p-4">
               <h3 className="text-sm font-medium">Swap a leg</h3>
               <p className="text-xs text-slate-500 mt-1">
-                Replaces the lowest-EV leg and keeps this a {featured.legs.length}-leg ticket.
+                Replaces the smallest price edge and keeps this a {featured.legs.length}-leg ticket.
               </p>
               <div className="mt-3 flex flex-col gap-2">
                 {alternates.map(leg => (
@@ -283,7 +287,7 @@ export default function BonusParlays({ events, scores }: Props) {
                     </span>
                     <span className="shrink-0 text-right">
                       <span className="block text-sm text-green-400">{formatOdds(leg.odds)}</span>
-                      <span className={`block text-xs ${evClass(leg.evPercent)}`}>+{leg.evPercent.toFixed(1)}% EV</span>
+                      <span className="block text-xs text-green-400/80">+{leg.edge.toFixed(1)}% vs next</span>
                     </span>
                   </button>
                 ))}
@@ -302,8 +306,8 @@ export default function BonusParlays({ events, scores }: Props) {
                 >
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-sm font-medium">{ticket.book}</span>
-                    <span className={`text-sm font-semibold ${evClass(ticket.evPercent)}`}>
-                      +{ticket.evPercent.toFixed(1)}% EV
+                    <span className="text-sm font-semibold text-green-400">
+                      +{ticket.priceEdge.toFixed(1)}%
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-1">
@@ -321,7 +325,7 @@ export default function BonusParlays({ events, scores }: Props) {
           <AlertTriangle className="w-8 h-8 mb-2" />
           <p>No parlay available yet</p>
           <p className="text-sm text-slate-500 text-center max-w-md mt-1">
-            A ticket needs at least two positive-EV bets on different games at the same book.
+            A ticket needs at least two games where the same book has the best price.
             Refresh the odds, or check another sport.
           </p>
         </div>
@@ -335,11 +339,10 @@ export default function BonusParlays({ events, scores }: Props) {
           <div>
             <h3 className="font-medium text-sm">How this parlay is built</h3>
             <p className="text-sm text-slate-400 mt-1">
-              Each leg is the highest +EV price that book has on a game, measured against Pinnacle
-              no-vig odds. Legs stay on one book so the ticket can be placed as a single parlay, and
-              only one leg is taken from each game. Combined EV multiplies the edges, which holds
-              when the games are independent — same-game parlays are left out. Confirm the price is
-              still up before you place it.
+              Each leg is a price that book has to itself: better than the next book on that same
+              side, one game per leg, all on one ticket. The line does not have to be positive EV.
+              Fair EV shows up when Pinnacle has a matching number. Confirm the price is still up
+              before you place it.
             </p>
           </div>
         </div>
