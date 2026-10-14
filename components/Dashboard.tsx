@@ -21,6 +21,7 @@ import {
   History,
   Scale,
   Dice5,
+  Gift,
 } from 'lucide-react'
 import LineDiscrepancyTable from './LineDiscrepancy'
 import EVCalculator from './EVCalculator'
@@ -31,6 +32,7 @@ import LineMovement, { recordOddsSnapshot } from './LineMovement'
 import LiveScoreBadge, { findScoreForGame } from './LiveScore'
 import BetTracker from './BetTracker'
 import BankrollSimulator from './BankrollSimulator'
+import BonusParlays from './BonusParlays'
 import { OddsEvent, ScoreEvent, LineDiscrepancy, EVBet, ArbitrageOpportunity, PlayerProp, SPORTS, SportKey } from '@/lib/types'
 import { findLineDiscrepancies, findEVBets, findArbitrageOpportunities, stripAltMarkets, filterUpcomingOrLiveEvents } from '@/lib/odds-utils'
 import { MOCK_EVENTS, MOCK_PLAYER_PROPS } from '@/lib/mock-data'
@@ -48,7 +50,7 @@ import {
 import Settings from './Settings'
 import MobileBottomNav from './MobileBottomNav'
 
-type Tab = 'discrepancies' | 'ev' | 'arbitrage' | 'props' | 'overview' | 'analytics' | 'tracker' | 'simulator'
+type Tab = 'discrepancies' | 'ev' | 'arbitrage' | 'bonus' | 'props' | 'overview' | 'analytics' | 'tracker' | 'simulator'
 
 function formatCacheAge(ms: number): string {
   const minutes = Math.floor(ms / 60000)
@@ -375,6 +377,7 @@ export default function Dashboard() {
     { id: 'overview', label: 'Overview', icon: Activity },
     { id: 'discrepancies', label: 'Line Shop', icon: TrendingUp },
     { id: 'ev', label: '+EV Finder', icon: Calculator },
+    { id: 'bonus', label: 'Bonus', icon: Gift },
     { id: 'arbitrage', label: 'Arbitrage', icon: Scale },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'props', label: 'Player Props', icon: User },
@@ -707,6 +710,31 @@ export default function Dashboard() {
                 remainingRequests={remainingRequests}
               />
               <EVCalculator evBets={evBets} scores={scores} />
+            </motion.div>
+          )}
+
+          {activeTab === 'bonus' && (
+            <motion.div
+              key="bonus"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <DataFreshnessStrip
+                isLive={isLive}
+                isCached={isCached}
+                cacheAge={cacheAge}
+                lastUpdated={lastUpdated}
+                isLoading={isLoading}
+                onRefresh={() => loadData(true)}
+                sport={SPORTS.find(s => s.key === selectedSport)?.title || selectedSport}
+                includeAltLines={includeAltLines}
+                onToggleAltLines={handleToggleAltLines}
+                altGames={altGames}
+                altLoading={altLoading}
+                remainingRequests={remainingRequests}
+              />
+              <BonusParlays events={events} scores={scores} />
             </motion.div>
           )}
 

@@ -7,6 +7,7 @@ export type AppTab =
   | 'discrepancies'
   | 'ev'
   | 'arbitrage'
+  | 'bonus'
   | 'props'
   | 'overview'
   | 'analytics'
@@ -27,7 +28,7 @@ const PRIMARY: { id: AppTab | 'more'; label: string; icon: ComponentType<{ class
   { id: 'more', label: 'More', icon: Menu },
 ]
 
-export const MORE_TABS: AppTab[] = ['arbitrage', 'analytics', 'props', 'simulator']
+export const MORE_TABS: AppTab[] = ['bonus', 'arbitrage', 'analytics', 'props', 'simulator']
 
 interface Props {
   tabs: readonly TabDef[]
