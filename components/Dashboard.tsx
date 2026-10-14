@@ -395,7 +395,7 @@ export default function Dashboard() {
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between gap-2 h-14 lg:h-16">
+          <div className="flex items-center justify-between gap-3 h-14 lg:h-16">
             <div className="flex items-center gap-2 shrink-0">
               <div className="p-1.5 lg:p-2 bg-green-500/10 rounded-lg">
                 <Zap className="w-5 h-5 text-green-400" />
@@ -407,30 +407,13 @@ export default function Dashboard() {
                 <p className="hidden sm:block text-xs text-slate-500">Analytics</p>
               </div>
             </div>
-            
-            <nav className="hidden lg:flex items-center gap-1 min-w-0">
-              {tabs.map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`nav-item flex items-center gap-1.5 px-2.5 xl:px-3 py-2 rounded-lg text-xs xl:text-sm font-medium transition-colors whitespace-nowrap ${
-                    activeTab === tab.id 
-                      ? 'active text-green-400' 
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <tab.icon className="w-4 h-4" />
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
-            
-            <div className="flex items-center gap-2 min-w-0">
+
+            <div className="flex items-center gap-2 shrink-0">
               <select
                 value={selectedSport}
                 onChange={(e) => setSelectedSport(e.target.value as SportKey)}
                 aria-label="Sport"
-                className="min-w-0 max-w-[42vw] sm:max-w-none bg-slate-800/50 border border-slate-700 rounded-lg px-2 sm:px-3 py-2 text-sm focus:outline-none focus:border-green-500"
+                className="bg-slate-800/50 border border-slate-700 rounded-lg px-2 sm:px-3 py-2 text-sm focus:outline-none focus:border-green-500"
               >
                 {SPORTS.map(sport => (
                   <option key={sport.key} value={sport.key}>{sport.title}</option>
@@ -451,6 +434,23 @@ export default function Dashboard() {
               </button>
             </div>
           </div>
+
+          <nav className="hidden lg:flex items-center gap-0.5 overflow-x-auto pb-2">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`nav-item shrink-0 flex items-center gap-1.5 px-2 xl:px-2.5 py-2 rounded-lg text-xs xl:text-sm font-medium transition-colors whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? 'active text-green-400'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <tab.icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            ))}
+          </nav>
         </div>
       </header>
       
