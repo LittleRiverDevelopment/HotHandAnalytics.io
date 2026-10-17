@@ -123,10 +123,10 @@ function DataFreshnessStrip({
           <div className="flex items-center gap-1.5 text-slate-400">
             <Clock className="w-3.5 h-3.5 shrink-0 text-slate-500" />
             <span className="sm:hidden">
-              {lastUpdated.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })}
+              {lastUpdated.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit', timeZoneName: 'short' })}
             </span>
             <span className="hidden sm:inline">
-              Updated {lastUpdated.toLocaleString(undefined, { timeZoneName: 'short' })}
+              Updated {lastUpdated.toLocaleString(undefined, { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit', timeZoneName: 'short' })}
             </span>
           </div>
           {remainingRequests !== null && isLive && (
@@ -853,7 +853,7 @@ export default function Dashboard() {
             <div className="flex items-center gap-4">
               <span>Powered by The Odds API</span>
               <span>•</span>
-              <span>Updated: {lastUpdated.toLocaleTimeString(undefined, { timeZoneName: 'short' })}</span>
+              <span>Updated: {lastUpdated.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit', timeZoneName: 'short' })}</span>
             </div>
           </div>
         </div>

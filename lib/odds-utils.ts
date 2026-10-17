@@ -357,6 +357,7 @@ export function formatOddsTimestamp(value: string | number | Date | null | undef
     year: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    second: '2-digit',
     timeZoneName: 'short',
   })
 }
