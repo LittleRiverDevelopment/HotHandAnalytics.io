@@ -159,12 +159,10 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                 <div className="rounded-lg bg-green-500/10 border border-green-500/20 px-2.5 py-2">
-                  <p className="text-[10px] uppercase tracking-wide text-green-400/80">Best</p>
                   <p className="odds-badge text-green-400 font-semibold">{formatOdds(disc.bestOdds)}</p>
                   <p className="text-xs text-slate-400 truncate">{disc.bestBook}</p>
                 </div>
                 <div className="rounded-lg bg-slate-800/50 border border-slate-700/50 px-2.5 py-2">
-                  <p className="text-[10px] uppercase tracking-wide text-slate-500">Worst</p>
                   <p className="odds-badge text-slate-300">{formatOdds(disc.worstOdds)}</p>
                   <p className="text-xs text-slate-500 truncate">{disc.worstBook}</p>
                 </div>
@@ -199,7 +197,6 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
           <div className="card flex flex-col items-center justify-center py-12 text-slate-400">
             <AlertCircle className="w-8 h-8 mb-2" />
             <p>No line discrepancies found</p>
-            <p className="text-sm text-slate-500">Check back closer to game time</p>
           </div>
         )}
       </div>
@@ -375,9 +372,6 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
                             exit={{ opacity: 0, height: 0 }}
                             className="px-4 py-4"
                           >
-                            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-3">
-                              All lines — {disc.betType} ({disc.market})
-                            </p>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
                               {sortedBooks.map((row, i) => {
                                 const isBest = row.odds === disc.bestOdds
@@ -430,33 +424,10 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
           <div className="flex flex-col items-center justify-center py-12 text-slate-400">
             <AlertCircle className="w-8 h-8 mb-2" />
             <p>No line discrepancies found</p>
-            <p className="text-sm text-slate-500">Check back closer to game time</p>
           </div>
         )}
       </div>
       
-      <div className="card p-4">
-        <div className="flex items-start gap-3">
-          <div className="p-2 bg-green-500/10 rounded-lg">
-            <TrendingUp className="w-4 h-4 text-green-400" />
-          </div>
-          <div>
-            <h3 className="font-medium text-sm">How to use Line Discrepancies</h3>
-            <p className="text-sm text-slate-400 mt-1">
-              Line discrepancies show the difference in odds between sportsbooks. 
-              A higher edge means a bigger price difference. Always bet the best available line.
-              Confidence (0–100) rises when more books quote that outcome and the best-to-worst gap is wider.
-              Click any row to expand and see every book&apos;s line side by side.
-            </p>
-            <p className="text-sm text-slate-400 mt-2">
-              <strong className="text-slate-300">About betting links:</strong> We use The Odds API&apos;s deep links which typically open
-              the event page at the sportsbook. Most books don&apos;t support automatic bet slip population via URL parameters.
-              You&apos;ll need to manually find and add the bet after clicking. If you previously experienced automatic bet slip
-              population, please let us know which sportsbook(s) supported this - it may help us restore that functionality.
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

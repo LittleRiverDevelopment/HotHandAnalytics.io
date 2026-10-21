@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { ExternalLink, Gift, AlertTriangle } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 import { OddsEvent, ScoreEvent } from '@/lib/types'
 import { formatOdds } from '@/lib/odds-utils'
 import { bestValueParlay, findAttractiveLines, parlayTapLabel } from '@/lib/parlay'
@@ -36,63 +36,36 @@ export default function BonusParlays({ events, scores }: Props) {
 
   if (!pick || !destination?.href) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Gift className="w-5 h-5 text-green-400" />
-          <h2 className="text-lg font-semibold">Bonus</h2>
-        </div>
-        <div className="card flex flex-col items-center justify-center py-12 text-slate-400">
-          <AlertTriangle className="w-8 h-8 mb-2" />
-          <p>No parlay to open yet</p>
-          <p className="text-sm text-slate-500 text-center max-w-md mt-1">
-            This needs two games where the same book has the best price.
-            Refresh the odds, or check another sport.
-          </p>
-        </div>
+      <div className="card flex items-center justify-center py-12 text-slate-400">
+        <p>No parlay yet</p>
       </div>
     )
   }
 
-  const { parlay, pickedFor } = pick
+  const { parlay } = pick
   const { label } = parlayTapLabel(parlay, destination.prefilled)
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Gift className="w-5 h-5 text-green-400" />
-        <h2 className="text-lg font-semibold">Bonus</h2>
-        <span className="text-sm text-slate-400">One tap opens the best-value parlay</span>
+    <a
+      href={destination.href}
+      target={mobile ? undefined : '_blank'}
+      rel="noopener noreferrer"
+      aria-label={label}
+      className="card block p-4 sm:p-5 transition-colors hover:border-green-500/40 active:border-green-500/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <h3 className="text-xl font-semibold">
+          {parlay.legs.length}-leg {parlay.book}
+        </h3>
+        <div className="text-right shrink-0">
+          <p className="text-2xl font-bold text-green-400">{formatOdds(parlay.americanOdds)}</p>
+          <p className="text-xs text-slate-500 mt-1">
+            {parlay.evPercent === null ? `+${parlay.priceEdge.toFixed(1)}%` : `${signedPercent(parlay.evPercent)} EV`}
+          </p>
+        </div>
       </div>
 
-      <a
-        href={destination.href}
-        target={mobile ? undefined : '_blank'}
-        rel="noopener noreferrer"
-        aria-label={label}
-        className="card block p-4 sm:p-5 transition-colors hover:border-green-500/40 active:border-green-500/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-xs uppercase tracking-wider text-slate-500">
-              {pickedFor === 'price'
-                ? 'Best price'
-                : (parlay.evPercent ?? 0) > 0
-                  ? 'Best fair value'
-                  : 'Closest to fair'}
-            </p>
-            <h3 className="text-xl font-semibold mt-1">
-              {parlay.legs.length}-leg {parlay.book}
-            </h3>
-          </div>
-          <div className="text-right shrink-0">
-            <p className="text-2xl font-bold text-green-400">{formatOdds(parlay.americanOdds)}</p>
-            <p className="text-xs text-slate-500 mt-1">
-              {parlay.evPercent === null ? `+${parlay.priceEdge.toFixed(1)}% vs next` : `${signedPercent(parlay.evPercent)} fair EV`}
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-4 divide-y divide-slate-800 border-y border-slate-800">
+      <div className="mt-4 divide-y divide-slate-800 border-y border-slate-800">
           {parlay.legs.map((leg, index) => {
             const liveScore = findScoreForGame(scores, leg.eventId, leg.homeTeam, leg.awayTeam)
             return (
@@ -117,18 +90,12 @@ export default function BonusParlays({ events, scores }: Props) {
               </div>
             )
           })}
-        </div>
+      </div>
 
-        <span className="mt-4 flex items-center justify-center gap-2 min-h-12 rounded-lg bg-green-500 text-slate-950 font-semibold">
-          <ExternalLink className="w-4 h-4" aria-hidden />
-          {destination.prefilled ? `Open parlay at ${parlay.book}` : `Open ${parlay.book}`}
-        </span>
-        <p className="text-xs text-slate-500 text-center mt-2">
-          {destination.prefilled
-            ? 'Opens this parlay on the bet slip. Confirm the price is still up.'
-            : 'Opens the book. Add these legs, then confirm the price is still up.'}
-        </p>
-      </a>
-    </div>
+      <span className="mt-4 flex items-center justify-center gap-2 min-h-12 rounded-lg bg-green-500 text-slate-950 font-semibold">
+        <ExternalLink className="w-4 h-4" aria-hidden />
+        {parlay.book}
+      </span>
+    </a>
   )
 }
