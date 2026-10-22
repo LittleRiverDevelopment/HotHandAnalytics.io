@@ -11,7 +11,7 @@ import {
   outcomeKey,
   type MarketKind,
 } from '@/lib/odds-utils'
-import { Grid3X3, Info } from 'lucide-react'
+import { Grid3X3 } from 'lucide-react'
 
 interface EdgeHeatmapProps {
   events: OddsEvent[]
@@ -170,18 +170,13 @@ export default function EdgeHeatmap({ events }: EdgeHeatmapProps) {
         </div>
       ) : (
         <>
-        <p className="md:hidden px-3 pt-2 text-xs text-slate-500">Swipe sideways to compare books</p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-800">
                 <th className="text-left p-3 font-medium text-slate-400 sticky left-0 bg-[#0f1117] z-10">Bet Type</th>
                 <th className="p-3 font-medium text-cyan-400 text-center min-w-[90px] bg-cyan-500/5">
-                  <div>Pinnacle</div>
-                  <div className="text-[10px] opacity-70 font-normal">Fair Odds</div>
-                </th>
-                <th colSpan={10} className="p-3 font-medium text-slate-400 text-left text-xs">
-                  Books (sorted by edge, best → worst)
+                  Pinnacle
                 </th>
               </tr>
             </thead>
@@ -251,10 +246,6 @@ export default function EdgeHeatmap({ events }: EdgeHeatmapProps) {
         </>
       )}
 
-      <div className="p-3 border-t border-slate-800 flex items-center gap-2 text-xs text-slate-500">
-        <Info className="w-3.5 h-3.5" />
-        <span>Pinnacle = fair odds baseline. Books sorted left→right by edge. Green highlight = best available odds. Alt rows with under 1% edge are hidden unless &quot;All alt lines&quot; is on.</span>
-      </div>
     </div>
   )
 }

@@ -25,7 +25,6 @@ import {
   ArrowUpDown,
   Download,
   ExternalLink,
-  Info,
   Wifi,
   RefreshCw,
 } from 'lucide-react'
@@ -248,7 +247,6 @@ export default function BetTracker() {
             <span className="text-slate-400">Auto-synced from Google Sheet</span>
           </div>
           <span className="text-xs text-slate-500">Last synced {syncAge}</span>
-          <span className="hidden sm:inline text-xs text-slate-600">· Runs every 3h via scheduled GitHub Action</span>
         </div>
         <button
           type="button"
@@ -565,24 +563,6 @@ export default function BetTracker() {
         )}
       </div>
 
-      <div className="card p-4">
-        <div className="flex items-start gap-3">
-          <div className="p-2 bg-cyan-500/10 rounded-lg">
-            <Info className="w-4 h-4 text-cyan-400" />
-          </div>
-          <div>
-            <h3 className="font-medium text-sm">About this tracker</h3>
-            <p className="text-sm text-slate-400 mt-1">
-              Historical bet log for demonstration purposes — a scheduled GitHub Action pulls this
-              site&apos;s bundled data from a personal Google Sheets bet tracker spanning the NBA/CBB season
-              through the 2026 World Cup and into MLB. Units W/L and running totals come directly from
-              the sheet (not recomputed from odds), so results reflect real settlement including any
-              partial cash-outs. The equity curve plots cumulative units won/lost after each settled bet;
-              any &quot;Open&quot; bet is excluded until it settles.
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

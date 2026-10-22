@@ -19,8 +19,6 @@ import {
   Wand2,
   TrendingUp,
   TrendingDown,
-  AlertTriangle,
-  Info,
   Skull,
 } from 'lucide-react'
 import {
@@ -31,7 +29,6 @@ import {
   type StakeMode,
 } from '@/lib/bankroll-sim'
 import { computeSummary, computeAverageOdds } from '@/lib/bet-tracker-utils'
-import { formatOdds } from '@/lib/odds-utils'
 import { BET_HISTORY } from '@/lib/bet-history'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Title, Tooltip, Legend)
@@ -287,11 +284,6 @@ export default function BankrollSimulator() {
             />
           </div>
         </div>
-        <p className="text-xs text-slate-500 mt-3">
-          Assumes {formatOdds(params.americanOdds)} average odds and independent bets at a fixed{' '}
-          {(params.winProbability * 100).toFixed(1)}% win rate. Click <span className="text-slate-300">Run Simulation</span>{' '}
-          again to see a fresh random draw with the same settings.
-        </p>
       </div>
 
       {/* Summary cards */}
@@ -308,10 +300,6 @@ export default function BankrollSimulator() {
           <p className={`text-2xl font-bold mt-1 mono ${netMedian >= 0 ? 'text-green-400' : 'text-red-400'}`}>
             {formatDollars(result.medianEnding)}
           </p>
-          <p className="text-xs text-slate-500 mt-1">
-            {netMedian >= 0 ? '+' : ''}
-            {formatDollars(netMedian)} vs start
-          </p>
         </div>
 
         <div className="card p-4 card-hover">
@@ -322,7 +310,6 @@ export default function BankrollSimulator() {
           <p className="text-2xl font-bold mt-1 mono text-cyan-400">
             {(result.probabilityOfProfit * 100).toFixed(0)}%
           </p>
-          <p className="text-xs text-slate-500 mt-1">of simulated paths end above start</p>
         </div>
 
         <div className="card p-4 card-hover">
@@ -332,9 +319,6 @@ export default function BankrollSimulator() {
           </div>
           <p className={`text-2xl font-bold mt-1 mono ${result.probabilityOfRuin > 0.15 ? 'text-red-400' : 'text-slate-200'}`}>
             {(result.probabilityOfRuin * 100).toFixed(0)}%
-          </p>
-          <p className="text-xs text-slate-500 mt-1">
-            ever drop to {(params.ruinThreshold * 100).toFixed(0)}% of start
           </p>
         </div>
 
@@ -346,7 +330,6 @@ export default function BankrollSimulator() {
           <p className="text-lg font-bold mt-1 mono">
             {formatDollars(result.p10[result.p10.length - 1])} – {formatDollars(result.p90[result.p90.length - 1])}
           </p>
-          <p className="text-xs text-slate-500 mt-1">10th–90th percentile ending</p>
         </div>
       </div>
 
@@ -371,43 +354,6 @@ export default function BankrollSimulator() {
         </div>
       </div>
 
-      <div className="card p-4">
-        <div className="flex items-start gap-3">
-          <div className="p-2 bg-yellow-500/10 rounded-lg">
-            <AlertTriangle className="w-4 h-4 text-yellow-400" />
-          </div>
-          <div>
-            <h3 className="font-medium text-sm">How to read this</h3>
-            <p className="text-sm text-slate-400 mt-1">
-              Each of the {params.numSimulations} lines is a randomly simulated betting career at your win
-              rate and odds; the chart shows the 10th, 50th (median), and 90th percentile bankroll at
-              each bet number. Percent-of-bankroll staking compounds (grows/shrinks your stake as your
-              bankroll changes) while flat staking keeps the dollar amount constant. This assumes every
-              bet has the same win probability and price, and that outcomes are independent — real
-              betting careers involve varying edges, odds, and streaks, so treat this as a risk/reward
-              sanity check rather than a precise forecast.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="card p-4">
-        <div className="flex items-start gap-3">
-          <div className="p-2 bg-cyan-500/10 rounded-lg">
-            <Info className="w-4 h-4 text-cyan-400" />
-          </div>
-          <div>
-            <h3 className="font-medium text-sm">Why this matters for sizing</h3>
-            <p className="text-sm text-slate-400 mt-1">
-              Betting a large % of bankroll per play grows the median outcome fastest but also sharply
-              raises the risk of ruin — try bumping the stake % up and watch the red &quot;Risk of Ruin&quot;
-              number move. This is the same tension Kelly Criterion sizing (used in the +EV Finder) is
-              built to manage: bet enough to compound growth, not so much that a normal losing streak
-              wipes you out.
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

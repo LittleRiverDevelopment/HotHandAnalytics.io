@@ -221,7 +221,6 @@ export default function EVCalculator({ evBets, scores }: Props) {
           <div className="card flex flex-col items-center justify-center py-12 text-slate-400">
             <AlertTriangle className="w-8 h-8 mb-2" />
             <p>No +EV bets match your criteria</p>
-            <p className="text-sm text-slate-500">Try lowering the minimum EV%</p>
           </div>
         )}
       </div>
@@ -392,33 +391,10 @@ export default function EVCalculator({ evBets, scores }: Props) {
           <div className="flex flex-col items-center justify-center py-12 text-slate-400">
             <AlertTriangle className="w-8 h-8 mb-2" />
             <p>No +EV bets match your criteria</p>
-            <p className="text-sm text-slate-500">Try lowering the minimum EV%</p>
           </div>
         )}
       </div>
       
-      <div className="card p-4">
-        <div className="flex items-start gap-3">
-          <div className="p-2 bg-yellow-500/10 rounded-lg">
-            <AlertTriangle className="w-4 h-4 text-yellow-400" />
-          </div>
-          <div>
-            <h3 className="font-medium text-sm">Understanding +EV Betting</h3>
-            <p className="text-sm text-slate-400 mt-1">
-              Fair odds are calculated from <span className="text-cyan-400 font-medium">Pinnacle</span> (industry's sharpest book) with vig removed.
-              +EV bets have better odds than Pinnacle's no-vig line. Kelly Criterion suggests 
-              optimal bet sizing based on edge. We use quarter-Kelly for conservative bankroll management.
-              Confidence (0–100) reflects stronger estimated edge and Kelly-suggested stake versus that fair line.
-              Rows are dropped when Pinnacle&apos;s line for that market is more than about 25 minutes older than the local book&apos;s update, or when the fair price cannot be paired to the correct counter-side (common with many alternate lines in one market). Alternate spreads/totals are tagged Alt and compared to Pinnacle&apos;s matching number.
-            </p>
-            <p className="text-sm text-slate-400 mt-2">
-              <strong className="text-slate-300">About bet links:</strong> We use deep links from The Odds API when available.
-              If automatic bet slip population isn&apos;t working, see BETTING_LINKS_STATUS.md for details and please report
-              which sportsbook(s) previously worked for you.
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
