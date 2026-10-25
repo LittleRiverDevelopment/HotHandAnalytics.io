@@ -3,6 +3,7 @@
 import { useState, useEffect, FormEvent } from 'react'
 import { X, Key, Lock, Check, AlertCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { oddsKeyState } from '@/lib/odds-api'
 
 interface SettingsProps {
   isOpen: boolean
@@ -11,6 +12,7 @@ interface SettingsProps {
 }
 
 const API_KEY_STORAGE_KEY = 'hothand_odds_api_key'
+const API_KEY_2_STORAGE_KEY = 'hothand_odds_api_key_2'
 const ADMIN_UNLOCK_KEY = 'hothand_admin_unlocked'
 
 // Admin password — type it in `.env` on this line's variable, then restart `npm run dev`:
@@ -18,20 +20,6 @@ const ADMIN_UNLOCK_KEY = 'hothand_admin_unlocked'
 // For the live site, set the same value as the GitHub Actions secret
 // NEXT_PUBLIC_ADMIN_PASSWORD and redeploy. Do not put the password in this file.
 const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || ''
-
-export function getStoredApiKey(): string | null {
-  if (typeof window === 'undefined') return null
-  return localStorage.getItem(API_KEY_STORAGE_KEY)
-}
-
-export function setStoredApiKey(key: string): void {
-  if (typeof window === 'undefined') return
-  if (key) {
-    localStorage.setItem(API_KEY_STORAGE_KEY, key)
-  } else {
-    localStorage.removeItem(API_KEY_STORAGE_KEY)
-  }
-}
 
 function readUnlocked(): boolean {
   if (typeof window === 'undefined') return false
@@ -43,19 +31,20 @@ export default function Settings({ isOpen, onClose, onApiKeyChange }: SettingsPr
   const [password, setPassword] = useState('')
   const [passwordError, setPasswordError] = useState('')
   const [apiKey, setApiKey] = useState('')
+  const [apiKey2, setApiKey2] = useState('')
   const [saved, setSaved] = useState(false)
-  const [overrideOn, setOverrideOn] = useState(false)
-
-  const siteKeyOn = Boolean(process.env.NEXT_PUBLIC_ODDS_API_KEY)
+  const [key1State, setKey1State] = useState<'missing' | 'ready' | 'spent'>('missing')
+  const [key2State, setKey2State] = useState<'missing' | 'ready' | 'spent'>('missing')
 
   useEffect(() => {
     if (!isOpen) return
     setUnlocked(readUnlocked())
     setPassword('')
     setPasswordError('')
-    const stored = getStoredApiKey()
-    setApiKey(stored || '')
-    setOverrideOn(Boolean(stored))
+    setApiKey(localStorage.getItem(API_KEY_STORAGE_KEY) || '')
+    setApiKey2(localStorage.getItem(API_KEY_2_STORAGE_KEY) || '')
+    setKey1State(oddsKeyState(1))
+    setKey2State(oddsKeyState(2))
     setSaved(false)
   }, [isOpen])
 
@@ -79,20 +68,39 @@ export default function Settings({ isOpen, onClose, onApiKeyChange }: SettingsPr
     setSaved(false)
   }
 
+  const writeKey = (storageKey: string, value: string) => {
+    const next = value.trim()
+    if (next) localStorage.setItem(storageKey, next)
+    else localStorage.removeItem(storageKey)
+  }
+
+  const refreshKeyState = () => {
+    setKey1State(oddsKeyState(1))
+    setKey2State(oddsKeyState(2))
+  }
+
   const handleSave = () => {
-    const next = apiKey.trim()
-    setStoredApiKey(next)
-    setOverrideOn(Boolean(next))
+    writeKey(API_KEY_STORAGE_KEY, apiKey)
+    writeKey(API_KEY_2_STORAGE_KEY, apiKey2)
+    refreshKeyState()
     setSaved(true)
     onApiKeyChange()
   }
 
   const handleClear = () => {
     setApiKey('')
-    setStoredApiKey('')
-    setOverrideOn(false)
+    setApiKey2('')
+    localStorage.removeItem(API_KEY_STORAGE_KEY)
+    localStorage.removeItem(API_KEY_2_STORAGE_KEY)
+    refreshKeyState()
     setSaved(false)
     onApiKeyChange()
+  }
+
+  const keyLabel = (state: 'missing' | 'ready' | 'spent') => {
+    if (state === 'ready') return 'Ready'
+    if (state === 'spent') return 'Used up'
+    return 'Missing'
   }
 
   return (
@@ -143,15 +151,15 @@ export default function Settings({ isOpen, onClose, onApiKeyChange }: SettingsPr
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="rounded-lg border border-slate-700/60 bg-slate-800/30 px-3 py-2">
-                      <p className="text-slate-500">Site key</p>
-                      <p className={siteKeyOn ? 'text-green-400 mt-0.5' : 'text-amber-400 mt-0.5'}>
-                        {siteKeyOn ? 'Connected' : 'Missing'}
+                      <p className="text-slate-500">Key 1</p>
+                      <p className={key1State === 'ready' ? 'text-green-400 mt-0.5' : key1State === 'spent' ? 'text-amber-400 mt-0.5' : 'text-slate-300 mt-0.5'}>
+                        {keyLabel(key1State)}
                       </p>
                     </div>
                     <div className="rounded-lg border border-slate-700/60 bg-slate-800/30 px-3 py-2">
-                      <p className="text-slate-500">This browser</p>
-                      <p className={overrideOn ? 'text-green-400 mt-0.5' : 'text-slate-300 mt-0.5'}>
-                        {overrideOn ? 'Override' : 'Site key'}
+                      <p className="text-slate-500">Key 2</p>
+                      <p className={key2State === 'ready' ? 'text-green-400 mt-0.5' : key2State === 'spent' ? 'text-amber-400 mt-0.5' : 'text-slate-300 mt-0.5'}>
+                        {keyLabel(key2State)}
                       </p>
                     </div>
                   </div>
@@ -165,7 +173,7 @@ export default function Settings({ isOpen, onClose, onApiKeyChange }: SettingsPr
                   >
                     <div>
                       <label htmlFor="admin-odds-key" className="block text-sm font-medium mb-2">
-                        Odds API key override
+                        Odds API key 1
                       </label>
                       <input
                         id="admin-odds-key"
@@ -175,7 +183,24 @@ export default function Settings({ isOpen, onClose, onApiKeyChange }: SettingsPr
                           setApiKey(e.target.value)
                           setSaved(false)
                         }}
-                        placeholder="Paste a key to override the site key"
+                        placeholder="Leave blank to use the site key"
+                        autoComplete="off"
+                        className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-green-500 transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="admin-odds-key-2" className="block text-sm font-medium mb-2">
+                        Odds API key 2
+                      </label>
+                      <input
+                        id="admin-odds-key-2"
+                        type="password"
+                        value={apiKey2}
+                        onChange={(e) => {
+                          setApiKey2(e.target.value)
+                          setSaved(false)
+                        }}
+                        placeholder="Backup key, used when key 1 is spent"
                         autoComplete="off"
                         className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-green-500 transition-colors"
                       />
@@ -184,8 +209,8 @@ export default function Settings({ isOpen, onClose, onApiKeyChange }: SettingsPr
                     <div className="flex items-start gap-2 p-3 bg-slate-800/30 rounded-lg">
                       <AlertCircle className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
                       <p className="text-xs text-slate-400">
-                        A saved key stays in this browser and replaces the site key here.
-                        Clear it to use the site key again. Alternate spreads and totals spend extra credits, one call for each of the 4 highest-+EV games.
+                        Requests use key 1 until its monthly credits run out, then switch to key 2.
+                        The two plans stay separate, so both quotas are available. A saved key replaces the site key for that slot in this browser.
                       </p>
                     </div>
 

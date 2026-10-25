@@ -3,6 +3,8 @@ import { pruneDistantAltOutcomes, rankEventsForAltFetch } from './odds-utils'
 
 const BASE_URL = 'https://api.the-odds-api.com/v4'
 const API_KEY_STORAGE_KEY = 'hothand_odds_api_key'
+const API_KEY_2_STORAGE_KEY = 'hothand_odds_api_key_2'
+const EXHAUSTED_KEYS_STORAGE_KEY = 'hothand_exhausted_odds_keys'
 const CACHE_STORAGE_KEY = 'hothand_odds_cache'
 const SCORES_CACHE_STORAGE_KEY = 'hothand_scores_cache'
 const ALT_CACHE_STORAGE_KEY = 'hothand_alt_odds_cache'
@@ -14,11 +16,145 @@ const SCORES_CACHE_TTL_MS = 60 * 1000
 export const ALT_EVENT_CAP = 4
 export const ALT_LINE_MARKETS = ['alternate_spreads', 'alternate_totals']
 
-function getApiKey(): string | null {
-  if (typeof window === 'undefined') return null
-  const storedKey = localStorage.getItem(API_KEY_STORAGE_KEY)
-  if (storedKey) return storedKey
-  return process.env.NEXT_PUBLIC_ODDS_API_KEY || null
+function quotaMonth(): string {
+  const now = new Date()
+  return `${now.getUTCFullYear()}-${now.getUTCMonth() + 1}`
+}
+
+function keyTag(key: string): string {
+  return key.slice(-8)
+}
+
+function readExhaustedKeys(): Record<string, string> {
+  if (typeof window === 'undefined') return {}
+  try {
+    const raw = localStorage.getItem(EXHAUSTED_KEYS_STORAGE_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
+function isKeyOutOfCredits(key: string): boolean {
+  return readExhaustedKeys()[keyTag(key)] === quotaMonth()
+}
+
+function markKeyOutOfCredits(key: string): void {
+  if (typeof window === 'undefined') return
+  const map = readExhaustedKeys()
+  map[keyTag(key)] = quotaMonth()
+  localStorage.setItem(EXHAUSTED_KEYS_STORAGE_KEY, JSON.stringify(map))
+}
+
+function markKeyHasCredits(key: string): void {
+  if (typeof window === 'undefined') return
+  const map = readExhaustedKeys()
+  if (!map[keyTag(key)]) return
+  delete map[keyTag(key)]
+  localStorage.setItem(EXHAUSTED_KEYS_STORAGE_KEY, JSON.stringify(map))
+}
+
+function readStoredKey(storageKey: string): string {
+  if (typeof window === 'undefined') return ''
+  return localStorage.getItem(storageKey)?.trim() || ''
+}
+
+/** Key 1, then key 2. A key saved in this browser replaces the matching site key. */
+export function listOddsApiKeys(): string[] {
+  const primary = readStoredKey(API_KEY_STORAGE_KEY) || process.env.NEXT_PUBLIC_ODDS_API_KEY || ''
+  const backup = readStoredKey(API_KEY_2_STORAGE_KEY) || process.env.NEXT_PUBLIC_ODDS_API_KEY_2 || ''
+  const keys = [primary.trim(), backup.trim()].filter(Boolean)
+  return keys.filter((key, index) => keys.indexOf(key) === index)
+}
+
+export function oddsKeyState(slot: 1 | 2): 'missing' | 'ready' | 'spent' {
+  const saved = readStoredKey(slot === 1 ? API_KEY_STORAGE_KEY : API_KEY_2_STORAGE_KEY)
+  const site = slot === 1 ? process.env.NEXT_PUBLIC_ODDS_API_KEY : process.env.NEXT_PUBLIC_ODDS_API_KEY_2
+  const key = (saved || site || '').trim()
+  if (!key) return 'missing'
+  return isKeyOutOfCredits(key) ? 'spent' : 'ready'
+}
+
+function keysToTry(): string[] {
+  const keys = listOddsApiKeys()
+  const fresh = keys.filter(key => !isKeyOutOfCredits(key))
+  return fresh.length > 0 ? fresh : keys
+}
+
+function withApiKey(pathAndQuery: string, apiKey: string): string {
+  const join = pathAndQuery.includes('?') ? '&' : '?'
+  return `${BASE_URL}${pathAndQuery}${join}apiKey=${encodeURIComponent(apiKey)}`
+}
+
+async function fetchWithApiKeys<T>(
+  pathAndQuery: string,
+  cached: { data: T; etag?: string } | null
+): Promise<{
+  ok: boolean
+  status: number
+  data: T | null
+  etag?: string
+  remainingRequests?: number
+  notModified: boolean
+  error: string | null
+}> {
+  const keys = keysToTry()
+  if (keys.length === 0) {
+    return { ok: false, status: 0, data: null, notModified: false, error: 'Odds are unavailable right now.' }
+  }
+
+  let lastStatus = 0
+  let lastRemaining: number | undefined
+
+  for (let i = 0; i < keys.length; i++) {
+    const apiKey = keys[i]
+    const result = await fetchJsonWithEtag<T>(withApiKey(pathAndQuery, apiKey), cached)
+    lastStatus = result.status
+    lastRemaining = result.remainingRequests
+
+    if (result.status === 401) continue
+
+    const outOfCredits = result.status === 429 || result.remainingRequests === 0
+    if (outOfCredits) markKeyOutOfCredits(apiKey)
+    else if (result.ok && (result.remainingRequests ?? 1) > 0) markKeyHasCredits(apiKey)
+
+    if (result.ok && result.data) {
+      return { ...result, error: null }
+    }
+
+    const anotherKey = i < keys.length - 1
+    if (result.status === 429 && anotherKey) continue
+
+    if (result.status === 429) {
+      return { ...result, error: 'API rate limit exceeded' }
+    }
+    if (result.status === 404) {
+      return { ...result, error: 'No events found for this sport' }
+    }
+    if (!result.ok) {
+      return { ...result, error: `API error: ${result.status}` }
+    }
+    return { ...result, error: 'No events found for this sport' }
+  }
+
+  if (lastStatus === 401) {
+    return {
+      ok: false,
+      status: 401,
+      data: null,
+      remainingRequests: lastRemaining,
+      notModified: false,
+      error: 'Invalid API key',
+    }
+  }
+  return {
+    ok: false,
+    status: lastStatus,
+    data: null,
+    remainingRequests: lastRemaining,
+    notModified: false,
+    error: 'API rate limit exceeded',
+  }
 }
 
 // Colorado-legal sportsbooks + Pinnacle for fair odds
@@ -168,34 +304,14 @@ export async function fetchOddsClient(
     }
   }
 
-  const apiKey = getApiKey()
-  
-  if (!apiKey) {
-    return { data: null, error: 'Odds are unavailable right now.' }
-  }
-
   try {
     const marketsParam = markets.join(',')
     const bookmakers = ALL_BOOKMAKERS.join(',')
-    const url = `${BASE_URL}/sports/${sport}/odds/?apiKey=${apiKey}&regions=us,us2,eu&markets=${marketsParam}&oddsFormat=american&bookmakers=${bookmakers}&includeLinks=true`
-    
-    const result = await fetchJsonWithEtag<OddsEvent[]>(url, cached)
+    const path = `/sports/${sport}/odds/?regions=us,us2,eu&markets=${marketsParam}&oddsFormat=american&bookmakers=${bookmakers}&includeLinks=true`
+    const result = await fetchWithApiKeys<OddsEvent[]>(path, cached)
 
-    if (!result.ok) {
-      if (result.status === 401) {
-        return { data: null, error: 'Invalid API key', remainingRequests: result.remainingRequests }
-      }
-      if (result.status === 429) {
-        return { data: null, error: 'API rate limit exceeded', remainingRequests: result.remainingRequests }
-      }
-      if (result.status === 404) {
-        return { data: null, error: 'No events found for this sport', remainingRequests: result.remainingRequests }
-      }
-      return { data: null, error: `API error: ${result.status}`, remainingRequests: result.remainingRequests }
-    }
-
-    if (!result.data) {
-      return { data: null, error: 'No events found for this sport', remainingRequests: result.remainingRequests }
+    if (!result.ok || !result.data) {
+      return { data: null, error: result.error, remainingRequests: result.remainingRequests }
     }
 
     // Sample a few links to see what The Odds API is actually returning
@@ -283,19 +399,12 @@ export async function fetchScoresClient(
     }
   }
 
-  const apiKey = getApiKey()
-
-  if (!apiKey) {
-    return { data: null, error: 'Odds are unavailable right now.' }
-  }
-
   try {
-    const url = `${BASE_URL}/sports/${sport}/scores/?apiKey=${apiKey}&daysFrom=2`
     const cached = getScoresCache()[cacheKey] || null
-    const result = await fetchJsonWithEtag<ScoreEvent[]>(url, cached)
+    const result = await fetchWithApiKeys<ScoreEvent[]>(`/sports/${sport}/scores/?daysFrom=2`, cached)
 
     if (!result.ok || !result.data) {
-      return { data: null, error: `API error: ${result.status}`, remainingRequests: result.remainingRequests }
+      return { data: null, error: result.error, remainingRequests: result.remainingRequests }
     }
 
     setScoresCache(cacheKey, { data: result.data, timestamp: Date.now(), etag: result.etag })
@@ -313,22 +422,12 @@ export async function fetchScoresClient(
 }
 
 export async function fetchSports(): Promise<ApiResponse<{ key: string; title: string; active: boolean }[]>> {
-  const apiKey = getApiKey()
-  
-  if (!apiKey) {
-    return { data: null, error: 'Odds are unavailable right now.' }
-  }
-
   try {
-    const url = `${BASE_URL}/sports/?apiKey=${apiKey}`
-    const response = await fetch(url)
-
-    if (!response.ok) {
-      return { data: null, error: `API error: ${response.status}` }
+    const result = await fetchWithApiKeys<{ key: string; title: string; active: boolean }[]>('/sports/', null)
+    if (!result.ok || !result.data) {
+      return { data: null, error: result.error, remainingRequests: result.remainingRequests }
     }
-
-    const data = await response.json()
-    return { data, error: null }
+    return { data: result.data, error: null, remainingRequests: result.remainingRequests }
   } catch (error) {
     return { data: null, error: `Network error: ${error}` }
   }
@@ -339,24 +438,14 @@ export async function fetchPlayerProps(
   eventId: string,
   markets: string[] = ['player_points', 'player_rebounds', 'player_assists']
 ): Promise<ApiResponse<OddsEvent>> {
-  const apiKey = getApiKey()
-  
-  if (!apiKey) {
-    return { data: null, error: 'Odds are unavailable right now.' }
-  }
-
   try {
     const marketsParam = markets.join(',')
-    const url = `${BASE_URL}/sports/${sport}/events/${eventId}/odds/?apiKey=${apiKey}&regions=us&markets=${marketsParam}&oddsFormat=american`
-    
-    const response = await fetch(url)
-
-    if (!response.ok) {
-      return { data: null, error: `API error: ${response.status}` }
+    const path = `/sports/${sport}/events/${eventId}/odds/?regions=us&markets=${marketsParam}&oddsFormat=american`
+    const result = await fetchWithApiKeys<OddsEvent>(path, null)
+    if (!result.ok || !result.data) {
+      return { data: null, error: result.error, remainingRequests: result.remainingRequests }
     }
-
-    const data: OddsEvent = await response.json()
-    return { data, error: null }
+    return { data: result.data, error: null, remainingRequests: result.remainingRequests }
   } catch (error) {
     return { data: null, error: `Network error: ${error}` }
   }
@@ -451,20 +540,15 @@ async function fetchEventAltLines(
     return { data: null, error: null }
   }
 
-  const apiKey = getApiKey()
-  if (!apiKey) {
-    return { data: null, error: 'Odds are unavailable right now.' }
-  }
-
   try {
     const marketsParam = ALT_LINE_MARKETS.join(',')
     const bookmakers = ALL_BOOKMAKERS.join(',')
-    const url = `${BASE_URL}/sports/${sport}/events/${eventId}/odds/?apiKey=${apiKey}&regions=us,us2,eu&markets=${marketsParam}&oddsFormat=american&bookmakers=${bookmakers}`
+    const path = `/sports/${sport}/events/${eventId}/odds/?regions=us,us2,eu&markets=${marketsParam}&oddsFormat=american&bookmakers=${bookmakers}`
     const cached = getAltCache()[key] || null
-    const result = await fetchJsonWithEtag<OddsEvent>(url, cached)
+    const result = await fetchWithApiKeys<OddsEvent>(path, cached)
 
     if (!result.ok || !result.data) {
-      return { data: null, error: `API error: ${result.status}`, remainingRequests: result.remainingRequests }
+      return { data: null, error: result.error, remainingRequests: result.remainingRequests }
     }
 
     setAltCacheEntry(key, {

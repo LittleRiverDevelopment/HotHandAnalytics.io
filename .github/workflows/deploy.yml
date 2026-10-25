@@ -34,6 +34,7 @@ jobs:
         run: npm run build
         env:
           NEXT_PUBLIC_ODDS_API_KEY: ${{ secrets.NEXT_PUBLIC_ODDS_API_KEY }}
+          NEXT_PUBLIC_ODDS_API_KEY_2: ${{ secrets.NEXT_PUBLIC_ODDS_API_KEY_2 }}
           NEXT_PUBLIC_ADMIN_PASSWORD: ${{ secrets.NEXT_PUBLIC_ADMIN_PASSWORD }}
 
       - name: Upload artifact
