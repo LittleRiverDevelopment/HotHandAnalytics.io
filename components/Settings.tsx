@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { X, Key, ExternalLink, Check, AlertCircle } from 'lucide-react'
+import { useState, useEffect, FormEvent } from 'react'
+import { X, Key, Lock, Check, AlertCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface SettingsProps {
@@ -11,6 +11,13 @@ interface SettingsProps {
 }
 
 const API_KEY_STORAGE_KEY = 'hothand_odds_api_key'
+const ADMIN_UNLOCK_KEY = 'hothand_admin_unlocked'
+
+// Admin password — type it in `.env` on this line's variable, then restart `npm run dev`:
+//   NEXT_PUBLIC_ADMIN_PASSWORD=your-password
+// For the live site, set the same value as the GitHub Actions secret
+// NEXT_PUBLIC_ADMIN_PASSWORD and redeploy. Do not put the password in this file.
+const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || ''
 
 export function getStoredApiKey(): string | null {
   if (typeof window === 'undefined') return null
@@ -26,34 +33,68 @@ export function setStoredApiKey(key: string): void {
   }
 }
 
+function readUnlocked(): boolean {
+  if (typeof window === 'undefined') return false
+  return sessionStorage.getItem(ADMIN_UNLOCK_KEY) === '1'
+}
+
 export default function Settings({ isOpen, onClose, onApiKeyChange }: SettingsProps) {
+  const [unlocked, setUnlocked] = useState(false)
+  const [password, setPassword] = useState('')
+  const [passwordError, setPasswordError] = useState('')
   const [apiKey, setApiKey] = useState('')
   const [saved, setSaved] = useState(false)
-  
+  const [overrideOn, setOverrideOn] = useState(false)
+
+  const siteKeyOn = Boolean(process.env.NEXT_PUBLIC_ODDS_API_KEY)
+
   useEffect(() => {
-    if (isOpen) {
-      const stored = getStoredApiKey()
-      setApiKey(stored || '')
-      setSaved(false)
-    }
+    if (!isOpen) return
+    setUnlocked(readUnlocked())
+    setPassword('')
+    setPasswordError('')
+    const stored = getStoredApiKey()
+    setApiKey(stored || '')
+    setOverrideOn(Boolean(stored))
+    setSaved(false)
   }, [isOpen])
-  
+
+  const handleUnlock = (event: FormEvent) => {
+    event.preventDefault()
+    if (!ADMIN_PASSWORD || password !== ADMIN_PASSWORD) {
+      setPasswordError('Wrong password.')
+      return
+    }
+    sessionStorage.setItem(ADMIN_UNLOCK_KEY, '1')
+    setUnlocked(true)
+    setPassword('')
+    setPasswordError('')
+  }
+
+  const handleLock = () => {
+    sessionStorage.removeItem(ADMIN_UNLOCK_KEY)
+    setUnlocked(false)
+    setPassword('')
+    setPasswordError('')
+    setSaved(false)
+  }
+
   const handleSave = () => {
-    setStoredApiKey(apiKey.trim())
+    const next = apiKey.trim()
+    setStoredApiKey(next)
+    setOverrideOn(Boolean(next))
     setSaved(true)
     onApiKeyChange()
-    setTimeout(() => {
-      onClose()
-    }, 1000)
   }
-  
+
   const handleClear = () => {
     setApiKey('')
     setStoredApiKey('')
+    setOverrideOn(false)
     setSaved(false)
     onApiKeyChange()
   }
-  
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -75,76 +116,145 @@ export default function Settings({ isOpen, onClose, onApiKeyChange }: SettingsPr
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-green-500/10 rounded-lg">
-                    <Key className="w-5 h-5 text-green-400" />
+                    {unlocked ? (
+                      <Key className="w-5 h-5 text-green-400" />
+                    ) : (
+                      <Lock className="w-5 h-5 text-green-400" />
+                    )}
                   </div>
-                  <h2 className="text-lg font-semibold">Settings</h2>
+                  <div>
+                    <h2 className="text-lg font-semibold leading-tight">Admin</h2>
+                    <p className="text-xs text-slate-500">
+                      {unlocked ? 'Odds key for this browser' : 'Password required'}
+                    </p>
+                  </div>
                 </div>
                 <button
+                  type="button"
                   onClick={onClose}
+                  aria-label="Close admin"
                   className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-slate-800 rounded-lg transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    The Odds API Key
-                  </label>
-                  <input
-                    type="password"
-                    value={apiKey}
-                    onChange={(e) => {
-                      setApiKey(e.target.value)
-                      setSaved(false)
+
+              {unlocked ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="rounded-lg border border-slate-700/60 bg-slate-800/30 px-3 py-2">
+                      <p className="text-slate-500">Site key</p>
+                      <p className={siteKeyOn ? 'text-green-400 mt-0.5' : 'text-amber-400 mt-0.5'}>
+                        {siteKeyOn ? 'Connected' : 'Missing'}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-slate-700/60 bg-slate-800/30 px-3 py-2">
+                      <p className="text-slate-500">This browser</p>
+                      <p className={overrideOn ? 'text-green-400 mt-0.5' : 'text-slate-300 mt-0.5'}>
+                        {overrideOn ? 'Override' : 'Site key'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <form
+                    onSubmit={(event) => {
+                      event.preventDefault()
+                      handleSave()
                     }}
-                    placeholder="Enter your API key..."
-                    className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-green-500 transition-colors"
-                  />
-                </div>
-                
-                <div className="flex items-start gap-2 p-3 bg-slate-800/30 rounded-lg">
-                  <AlertCircle className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-slate-400">
-                    Your API key is stored locally in your browser and never sent to our servers.
-                    Get a free key at{' '}
-                    <a
-                      href="https://the-odds-api.com"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-green-400 hover:underline inline-flex items-center gap-1"
-                    >
-                      the-odds-api.com
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                    . Alternate spreads/totals use extra credits (one call per game, the 4 highest-+EV games).
-                  </p>
-                </div>
-                
-                <div className="flex gap-3 pt-2">
-                  <button
-                    onClick={handleClear}
-                    className="flex-1 min-h-[44px] px-4 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors"
+                    className="space-y-4"
                   >
-                    Clear
-                  </button>
+                    <div>
+                      <label htmlFor="admin-odds-key" className="block text-sm font-medium mb-2">
+                        Odds API key override
+                      </label>
+                      <input
+                        id="admin-odds-key"
+                        type="password"
+                        value={apiKey}
+                        onChange={(e) => {
+                          setApiKey(e.target.value)
+                          setSaved(false)
+                        }}
+                        placeholder="Paste a key to override the site key"
+                        autoComplete="off"
+                        className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-green-500 transition-colors"
+                      />
+                    </div>
+
+                    <div className="flex items-start gap-2 p-3 bg-slate-800/30 rounded-lg">
+                      <AlertCircle className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                      <p className="text-xs text-slate-400">
+                        A saved key stays in this browser and replaces the site key here.
+                        Clear it to use the site key again. Alternate spreads and totals spend extra credits, one call for each of the 4 highest-+EV games.
+                      </p>
+                    </div>
+
+                    <div className="flex gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={handleClear}
+                        className="flex-1 min-h-[44px] px-4 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        Clear
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={saved}
+                        className="flex-1 min-h-[44px] px-4 py-2.5 bg-green-600 hover:bg-green-500 disabled:bg-green-600/50 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                      >
+                        {saved ? (
+                          <>
+                            <Check className="w-4 h-4" />
+                            Saved
+                          </>
+                        ) : (
+                          'Save'
+                        )}
+                      </button>
+                    </div>
+                  </form>
+
                   <button
-                    onClick={handleSave}
-                    disabled={saved}
-                    className="flex-1 min-h-[44px] px-4 py-2.5 bg-green-600 hover:bg-green-500 disabled:bg-green-600/50 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                    type="button"
+                    onClick={handleLock}
+                    className="w-full min-h-[44px] px-4 py-2.5 border border-slate-700 hover:bg-slate-800 rounded-lg text-sm text-slate-300 transition-colors"
                   >
-                    {saved ? (
-                      <>
-                        <Check className="w-4 h-4" />
-                        Saved!
-                      </>
-                    ) : (
-                      'Save'
-                    )}
+                    Lock admin
                   </button>
                 </div>
-              </div>
+              ) : (
+                <form onSubmit={handleUnlock} className="space-y-4">
+                  <div>
+                    <label htmlFor="admin-password" className="block text-sm font-medium mb-2">
+                      Admin password
+                    </label>
+                    <input
+                      id="admin-password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value)
+                        setPasswordError('')
+                      }}
+                      placeholder="Enter the admin password"
+                      autoFocus
+                      autoComplete="current-password"
+                      className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-green-500 transition-colors"
+                    />
+                  </div>
+                  {passwordError && (
+                    <p className="text-sm text-red-400" role="alert">
+                      {passwordError}
+                    </p>
+                  )}
+                  <button
+                    type="submit"
+                    className="w-full min-h-[44px] px-4 py-2.5 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Unlock
+                  </button>
+                </form>
+              )}
             </div>
           </motion.div>
         </>

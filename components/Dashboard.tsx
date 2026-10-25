@@ -426,8 +426,8 @@ export default function Dashboard() {
                   setMoreOpen(false)
                   setShowSettings(true)
                 }}
-                title="Settings"
-                aria-label="Settings"
+                title="Admin"
+                aria-label="Admin"
                 className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-slate-800/50 hover:bg-slate-700/50 transition-colors"
               >
                 <SettingsIcon className="w-4 h-4" />

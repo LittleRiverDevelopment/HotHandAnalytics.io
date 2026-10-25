@@ -171,7 +171,7 @@ export async function fetchOddsClient(
   const apiKey = getApiKey()
   
   if (!apiKey) {
-    return { data: null, error: 'API key not configured. Add your key in Settings.' }
+    return { data: null, error: 'Odds are unavailable right now.' }
   }
 
   try {
@@ -286,7 +286,7 @@ export async function fetchScoresClient(
   const apiKey = getApiKey()
 
   if (!apiKey) {
-    return { data: null, error: 'API key not configured' }
+    return { data: null, error: 'Odds are unavailable right now.' }
   }
 
   try {
@@ -316,7 +316,7 @@ export async function fetchSports(): Promise<ApiResponse<{ key: string; title: s
   const apiKey = getApiKey()
   
   if (!apiKey) {
-    return { data: null, error: 'API key not configured' }
+    return { data: null, error: 'Odds are unavailable right now.' }
   }
 
   try {
@@ -342,7 +342,7 @@ export async function fetchPlayerProps(
   const apiKey = getApiKey()
   
   if (!apiKey) {
-    return { data: null, error: 'API key not configured' }
+    return { data: null, error: 'Odds are unavailable right now.' }
   }
 
   try {
@@ -453,7 +453,7 @@ async function fetchEventAltLines(
 
   const apiKey = getApiKey()
   if (!apiKey) {
-    return { data: null, error: 'API key not configured' }
+    return { data: null, error: 'Odds are unavailable right now.' }
   }
 
   try {
