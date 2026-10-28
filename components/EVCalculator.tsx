@@ -9,13 +9,14 @@ import BookOpenLink from './BookOpenLink'
 import LiveScoreBadge, { findScoreForGame } from './LiveScore'
 import AltLineBadge from './AltLineBadge'
 import { downloadCsv, evBetsToCsvRows } from '@/lib/csv-export'
+import BookFilter, { bookOptions } from './BookFilter'
 
 interface Props {
   evBets: EVBet[]
   scores?: ScoreEvent[]
 }
 
-type SortField = 'ev' | 'confidence' | 'kelly' | 'game' | 'time'
+type SortField = 'ev' | 'confidence' | 'kelly' | 'game' | 'time' | 'book'
 
 const VISIBLE_ROW_CAP = 40
 
@@ -24,7 +25,9 @@ export default function EVCalculator({ evBets, scores }: Props) {
   const [minEV, setMinEV] = useState(0)
   const [bankroll, setBankroll] = useState(1000)
   const [lineFilter, setLineFilter] = useState<'all' | 'main' | 'alt'>('all')
-  
+  const [bookFilter, setBookFilter] = useState('all')
+  const books = useMemo(() => bookOptions(evBets.map(bet => bet.book)), [evBets])
+
   const sortedBets = useMemo(() => {
     return [...evBets]
       .filter(bet => bet.evPercent >= minEV)
@@ -33,6 +36,7 @@ export default function EVCalculator({ evBets, scores }: Props) {
         if (lineFilter === 'main') return !bet.isAltLine
         return true
       })
+      .filter(bet => bookFilter === 'all' || bet.book === bookFilter)
       .sort((a, b) => {
         switch (sortField) {
           case 'ev':
@@ -45,11 +49,13 @@ export default function EVCalculator({ evBets, scores }: Props) {
             return `${a.homeTeam} vs ${a.awayTeam}`.localeCompare(`${b.homeTeam} vs ${b.awayTeam}`)
           case 'time':
             return new Date(a.commenceTime).getTime() - new Date(b.commenceTime).getTime()
+          case 'book':
+            return a.book.localeCompare(b.book)
           default:
             return 0
         }
       })
-  }, [evBets, sortField, minEV, lineFilter])
+  }, [evBets, sortField, minEV, lineFilter, bookFilter])
   
   const getEVColor = (ev: number) => {
     if (ev >= 5) return 'text-green-400'
@@ -95,6 +101,7 @@ export default function EVCalculator({ evBets, scores }: Props) {
         </div>
         
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <BookFilter value={bookFilter} books={books} onChange={setBookFilter} />
           <select
             value={lineFilter}
             onChange={e => setLineFilter(e.target.value as 'all' | 'main' | 'alt')}
@@ -286,8 +293,14 @@ export default function EVCalculator({ evBets, scores }: Props) {
                     <ArrowUpDown className="w-3 h-3" />
                   </div>
                 </th>
-                <th className="text-center py-3 px-4 text-xs font-medium text-slate-400 uppercase tracking-wider">
-                  Book
+                <th
+                  className="text-center py-3 px-4 text-xs font-medium text-slate-400 uppercase tracking-wider cursor-pointer hover:text-slate-200"
+                  onClick={() => setSortField('book')}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    Book
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
                 </th>
               </tr>
             </thead>

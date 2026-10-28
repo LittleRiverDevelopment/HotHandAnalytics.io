@@ -9,22 +9,29 @@ import BookOpenLink from './BookOpenLink'
 import LiveScoreBadge, { findScoreForGame } from './LiveScore'
 import AltLineBadge from './AltLineBadge'
 import { downloadCsv, arbitrageToCsvRows } from '@/lib/csv-export'
+import BookFilter, { bookOptions } from './BookFilter'
 
 interface Props {
   arbs: ArbitrageOpportunity[]
   scores?: ScoreEvent[]
 }
 
-type SortField = 'profit' | 'confidence' | 'game' | 'time'
+type SortField = 'profit' | 'confidence' | 'game' | 'time' | 'book'
 
 export default function ArbitrageFinder({ arbs, scores }: Props) {
   const [sortField, setSortField] = useState<SortField>('profit')
   const [minProfit, setMinProfit] = useState(0)
   const [stakeTotal, setStakeTotal] = useState(1000)
+  const [bookFilter, setBookFilter] = useState('all')
+  const books = useMemo(
+    () => bookOptions(arbs.flatMap(arb => arb.legs.map(leg => leg.book))),
+    [arbs]
+  )
 
   const sortedArbs = useMemo(() => {
     return [...arbs]
       .filter(a => a.profitPercent >= minProfit)
+      .filter(a => bookFilter === 'all' || a.legs.some(leg => leg.book === bookFilter))
       .sort((a, b) => {
         switch (sortField) {
           case 'profit':
@@ -35,11 +42,15 @@ export default function ArbitrageFinder({ arbs, scores }: Props) {
             return `${a.homeTeam} vs ${a.awayTeam}`.localeCompare(`${b.homeTeam} vs ${b.awayTeam}`)
           case 'time':
             return new Date(a.commenceTime).getTime() - new Date(b.commenceTime).getTime()
+          case 'book':
+            return a.legs.map(leg => leg.book).sort().join(', ').localeCompare(
+              b.legs.map(leg => leg.book).sort().join(', ')
+            )
           default:
             return 0
         }
       })
-  }, [arbs, sortField, minProfit])
+  }, [arbs, sortField, minProfit, bookFilter])
 
   const getProfitColor = (p: number) => {
     if (p >= 3) return 'text-green-400'
@@ -68,6 +79,7 @@ export default function ArbitrageFinder({ arbs, scores }: Props) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <BookFilter value={bookFilter} books={books} onChange={setBookFilter} />
           <label className="flex items-center gap-2 min-h-[44px] text-sm text-slate-400">
             Min %
             <input
@@ -204,8 +216,15 @@ export default function ArbitrageFinder({ arbs, scores }: Props) {
                     <ArrowUpDown className="w-3 h-3" />
                   </div>
                 </th>
-                <th className="text-left py-3 px-4 text-xs font-medium text-slate-400 uppercase tracking-wider">
-                  Legs (stake split for ${stakeTotal})
+                <th
+                  className="text-left py-3 px-4 text-xs font-medium text-slate-400 uppercase tracking-wider cursor-pointer hover:text-slate-200"
+                  onClick={() => setSortField('book')}
+                  title="Sort by book"
+                >
+                  <div className="flex items-center gap-1">
+                    Legs (stake split for ${stakeTotal})
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
                 </th>
                 <th
                   className="text-center py-3 px-4 text-xs font-medium text-slate-400 uppercase tracking-wider cursor-pointer hover:text-slate-200"

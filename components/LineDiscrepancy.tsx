@@ -10,13 +10,14 @@ import BookOpenLink from './BookOpenLink'
 import LiveScoreBadge, { findScoreForGame } from './LiveScore'
 import AltLineBadge from './AltLineBadge'
 import { downloadCsv, lineDiscrepanciesToCsvRows } from '@/lib/csv-export'
+import BookFilter, { bookOptions } from './BookFilter'
 
 interface Props {
   discrepancies: LineDiscrepancyType[]
   scores?: ScoreEvent[]
 }
 
-type SortField = 'spread' | 'confidence' | 'game' | 'market' | 'time'
+type SortField = 'spread' | 'confidence' | 'game' | 'market' | 'time' | 'book'
 type SortDirection = 'asc' | 'desc'
 
 const VISIBLE_ROW_CAP = 40
@@ -26,7 +27,12 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
   const [filterMarket, setFilterMarket] = useState<string>('all')
-  
+  const [bookFilter, setBookFilter] = useState('all')
+  const books = useMemo(
+    () => bookOptions(discrepancies.map(d => d.bestBook)),
+    [discrepancies]
+  )
+
   const sortedDiscrepancies = useMemo(() => {
     return [...discrepancies].sort((a, b) => {
       let comparison = 0
@@ -46,16 +52,22 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
         case 'time':
           comparison = new Date(a.commenceTime).getTime() - new Date(b.commenceTime).getTime()
           break
+        case 'book':
+          comparison = a.bestBook.localeCompare(b.bestBook)
+          break
       }
       return sortDirection === 'desc' ? -comparison : comparison
     })
   }, [discrepancies, sortField, sortDirection])
-  
+
   const filteredDiscrepancies = useMemo(() => {
-    if (filterMarket === 'all') return sortedDiscrepancies
-    if (filterMarket === 'alt') return sortedDiscrepancies.filter(d => d.isAltLine)
-    return sortedDiscrepancies.filter(d => d.market.toLowerCase() === filterMarket.toLowerCase())
-  }, [sortedDiscrepancies, filterMarket])
+    return sortedDiscrepancies.filter(d => {
+      if (bookFilter !== 'all' && d.bestBook !== bookFilter) return false
+      if (filterMarket === 'all') return true
+      if (filterMarket === 'alt') return !!d.isAltLine
+      return d.market.toLowerCase() === filterMarket.toLowerCase()
+    })
+  }, [sortedDiscrepancies, filterMarket, bookFilter])
   
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -93,6 +105,7 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
         </div>
         
         <div className="flex items-center gap-2 w-full sm:w-auto">
+          <BookFilter value={bookFilter} books={books} onChange={setBookFilter} />
           <select
             value={filterMarket}
             onChange={(e) => setFilterMarket(e.target.value)}
@@ -230,8 +243,15 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
                 <th className="text-left py-3 px-4 text-xs font-medium text-slate-400 uppercase tracking-wider">
                   Bet
                 </th>
-                <th className="text-center py-3 px-4 text-xs font-medium text-slate-400 uppercase tracking-wider">
-                  Best Odds
+                <th
+                  className="text-center py-3 px-4 text-xs font-medium text-slate-400 uppercase tracking-wider cursor-pointer hover:text-slate-200"
+                  onClick={() => handleSort('book')}
+                  title="Sort by the book with the best price"
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    Best Odds
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
                 </th>
                 <th className="text-center py-3 px-4 text-xs font-medium text-slate-400 uppercase tracking-wider">
                   Worst Odds
