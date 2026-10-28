@@ -76,6 +76,21 @@ Open [http://localhost:3000](http://localhost:3000) in your browser. The first v
 
 Note: this is a fully static site (static export, no server), so `NEXT_PUBLIC_*` values are visible in the browser bundle. Treat any key you embed as public.
 
+### Personal Admin settings
+
+Admin manages two optional key overrides for this browser, not site-wide configuration.
+Inputs stay masked; each key shows whether its source is a site default or a browser
+override. “Configured” does not mean the API has validated the key.
+
+Save settings does not fetch odds. Use the separate Refresh odds action when you
+want a new pull, which may consume API credits. Use site defaults asks for confirmation
+before removing both browser overrides; it does not remove site keys, clear cached
+odds, or make an API request. Storage errors are shown rather than reported as saves.
+
+The password prompt remains a convenience guard, not secure authentication. Closing
+Admin keeps it unlocked in the same tab; Lock admin ends that unlock. This release
+does not add accounts, a paywall, or server-side credential protection.
+
 ## Tech Stack
 
 - **Framework**: Next.js 14 (App Router)

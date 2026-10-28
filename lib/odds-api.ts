@@ -1,9 +1,8 @@
 import { OddsEvent, ScoreEvent, SportKey } from './types'
 import { pruneDistantAltOutcomes, rankEventsForAltFetch } from './odds-utils'
+import { readKeyOverrides } from './admin-settings'
 
 const BASE_URL = 'https://api.the-odds-api.com/v4'
-const API_KEY_STORAGE_KEY = 'hothand_odds_api_key'
-const API_KEY_2_STORAGE_KEY = 'hothand_odds_api_key_2'
 const EXHAUSTED_KEYS_STORAGE_KEY = 'hothand_exhausted_odds_keys'
 const CACHE_STORAGE_KEY = 'hothand_odds_cache'
 const SCORES_CACHE_STORAGE_KEY = 'hothand_scores_cache'
@@ -43,7 +42,11 @@ function markKeyOutOfCredits(key: string): void {
   if (typeof window === 'undefined') return
   const map = readExhaustedKeys()
   map[keyTag(key)] = quotaMonth()
-  localStorage.setItem(EXHAUSTED_KEYS_STORAGE_KEY, JSON.stringify(map))
+  try {
+    localStorage.setItem(EXHAUSTED_KEYS_STORAGE_KEY, JSON.stringify(map))
+  } catch {
+    // Quota bookkeeping must not prevent trying the backup key.
+  }
 }
 
 function markKeyHasCredits(key: string): void {
@@ -51,28 +54,42 @@ function markKeyHasCredits(key: string): void {
   const map = readExhaustedKeys()
   if (!map[keyTag(key)]) return
   delete map[keyTag(key)]
-  localStorage.setItem(EXHAUSTED_KEYS_STORAGE_KEY, JSON.stringify(map))
-}
-
-function readStoredKey(storageKey: string): string {
-  if (typeof window === 'undefined') return ''
-  return localStorage.getItem(storageKey)?.trim() || ''
+  try {
+    localStorage.setItem(EXHAUSTED_KEYS_STORAGE_KEY, JSON.stringify(map))
+  } catch {
+    // A successful API response remains usable even if storage is blocked.
+  }
 }
 
 /** Key 1, then key 2. A key saved in this browser replaces the matching site key. */
 export function listOddsApiKeys(): string[] {
-  const primary = readStoredKey(API_KEY_STORAGE_KEY) || process.env.NEXT_PUBLIC_ODDS_API_KEY || ''
-  const backup = readStoredKey(API_KEY_2_STORAGE_KEY) || process.env.NEXT_PUBLIC_ODDS_API_KEY_2 || ''
+  const { keys: overrides } = readKeyOverrides()
+  const primary = overrides[0] || process.env.NEXT_PUBLIC_ODDS_API_KEY || ''
+  const backup = overrides[1] || process.env.NEXT_PUBLIC_ODDS_API_KEY_2 || ''
   const keys = [primary.trim(), backup.trim()].filter(Boolean)
   return keys.filter((key, index) => keys.indexOf(key) === index)
 }
 
 export function oddsKeyState(slot: 1 | 2): 'missing' | 'ready' | 'spent' {
-  const saved = readStoredKey(slot === 1 ? API_KEY_STORAGE_KEY : API_KEY_2_STORAGE_KEY)
+  const saved = readKeyOverrides().keys[slot - 1]
   const site = slot === 1 ? process.env.NEXT_PUBLIC_ODDS_API_KEY : process.env.NEXT_PUBLIC_ODDS_API_KEY_2
   const key = (saved || site || '').trim()
   if (!key) return 'missing'
   return isKeyOutOfCredits(key) ? 'spent' : 'ready'
+}
+
+/** Configuration and last recorded quota flag, not a live validity check. */
+export function oddsKeyDetails(slot: 1 | 2): {
+  source: 'browser' | 'site' | 'none' | 'unavailable'
+  state: 'missing' | 'ready' | 'spent'
+} {
+  const overrides = readKeyOverrides()
+  const site = slot === 1 ? process.env.NEXT_PUBLIC_ODDS_API_KEY : process.env.NEXT_PUBLIC_ODDS_API_KEY_2
+  return {
+    source: !overrides.ok ? 'unavailable' : overrides.keys[slot - 1]
+      ? 'browser' : site?.trim() ? 'site' : 'none',
+    state: oddsKeyState(slot),
+  }
 }
 
 function keysToTry(): string[] {
@@ -346,7 +363,7 @@ export async function fetchOddsClient(
       notModified: result.notModified,
     }
   } catch (error) {
-    return { data: null, error: `Network error: ${error}` }
+    return { data: null, error: 'Network request failed. Check your connection and try again.' }
   }
 }
 
@@ -417,7 +434,7 @@ export async function fetchScoresClient(
       notModified: result.notModified,
     }
   } catch (error) {
-    return { data: null, error: `Network error: ${error}` }
+    return { data: null, error: 'Network request failed. Check your connection and try again.' }
   }
 }
 
@@ -429,7 +446,7 @@ export async function fetchSports(): Promise<ApiResponse<{ key: string; title: s
     }
     return { data: result.data, error: null, remainingRequests: result.remainingRequests }
   } catch (error) {
-    return { data: null, error: `Network error: ${error}` }
+    return { data: null, error: 'Network request failed. Check your connection and try again.' }
   }
 }
 
@@ -447,19 +464,26 @@ export async function fetchPlayerProps(
     }
     return { data: result.data, error: null, remainingRequests: result.remainingRequests }
   } catch (error) {
-    return { data: null, error: `Network error: ${error}` }
+    return { data: null, error: 'Network request failed. Check your connection and try again.' }
   }
 }
 
 export function getIncludeAltLines(): boolean {
   if (typeof window === 'undefined') return false
-  const stored = localStorage.getItem(INCLUDE_ALT_LINES_KEY)
-  return stored === '1'
+  try {
+    return localStorage.getItem(INCLUDE_ALT_LINES_KEY) === '1'
+  } catch {
+    return false
+  }
 }
 
 export function setIncludeAltLines(on: boolean): void {
   if (typeof window === 'undefined') return
-  localStorage.setItem(INCLUDE_ALT_LINES_KEY, on ? '1' : '0')
+  try {
+    localStorage.setItem(INCLUDE_ALT_LINES_KEY, on ? '1' : '0')
+  } catch {
+    // The current page can still use the preference without persisting it.
+  }
 }
 
 interface AltCacheEntry {
@@ -565,7 +589,7 @@ async function fetchEventAltLines(
       notModified: result.notModified,
     }
   } catch (error) {
-    return { data: null, error: `Network error: ${error}` }
+    return { data: null, error: 'Network request failed. Check your connection and try again.' }
   }
 }
 

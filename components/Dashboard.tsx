@@ -192,6 +192,7 @@ export default function Dashboard() {
   const [remainingRequests, setRemainingRequests] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
+  const closeSettings = useCallback(() => setShowSettings(false), [])
   const [moreOpen, setMoreOpen] = useState(false)
   const [cacheAge, setCacheAge] = useState<number | null>(null)
   const [includeAltLines, setIncludeAltLinesState] = useState(() => getIncludeAltLines())
@@ -861,8 +862,10 @@ export default function Dashboard() {
       
       <Settings 
         isOpen={showSettings} 
-        onClose={() => setShowSettings(false)}
-        onApiKeyChange={() => loadData(true)}
+        onClose={closeSettings}
+        onRefresh={() => loadData(true)}
+        isRefreshing={isLoading || altLoading}
+        refreshError={error}
       />
     </div>
   )
