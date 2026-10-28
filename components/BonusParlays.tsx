@@ -233,11 +233,11 @@ export default function BonusParlays({ events, scores }: Props) {
                         {index + 1}
                       </span>
                       <div className="min-w-0">
-                        <div className="text-sm font-medium truncate">
-                          {leg.awayTeam} @ {leg.homeTeam}
+                        <div className="text-sm font-bold truncate">
+                          {leg.selection}
                         </div>
                         <div className="text-xs text-slate-500">
-                          {leg.selection} · {leg.market} · {format(new Date(leg.commenceTime), 'MMM d, h:mm a')}
+                          {leg.awayTeam} @ {leg.homeTeam} · {leg.market} · {format(new Date(leg.commenceTime), 'MMM d, h:mm a')}
                         </div>
                         {liveScore && (
                           <div className="mt-1">
@@ -280,7 +280,7 @@ export default function BonusParlays({ events, scores }: Props) {
                     className="flex items-center justify-between gap-3 rounded-lg border border-slate-800 px-3 py-2 text-left hover:border-green-500/30 hover:bg-green-500/5 transition-colors"
                   >
                     <span className="min-w-0">
-                      <span className="block text-sm truncate">{leg.selection}</span>
+                      <span className="block text-sm font-bold truncate">{leg.selection}</span>
                       <span className="block text-xs text-slate-500 truncate">
                         {leg.awayTeam} @ {leg.homeTeam} · {leg.market}
                       </span>
@@ -311,7 +311,13 @@ export default function BonusParlays({ events, scores }: Props) {
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-1">
-                    {formatOdds(ticket.americanOdds)} · {ticket.legs.map(leg => leg.selection).join(' · ')}
+                    {formatOdds(ticket.americanOdds)}
+                    {ticket.legs.map(leg => (
+                      <span key={`${leg.eventId}-${leg.selection}`}>
+                        {' · '}
+                        <span className="font-bold text-slate-200">{leg.selection}</span>
+                      </span>
+                    ))}
                   </p>
                 </button>
               ))}
