@@ -7,6 +7,9 @@ on:
 
 permissions:
   contents: write
+  # Needed to dispatch the deploy workflow after a data-sync push (GITHUB_TOKEN
+  # pushes don't trigger on:push workflows; workflow_dispatch is the documented exception).
+  actions: write
 
 jobs:
   sync:
@@ -47,3 +50,14 @@ jobs:
           git add lib/bet-history.ts
           git commit -m "Auto-sync bet tracker data"
           git push
+
+      # The bot's GITHUB_TOKEN push does not trigger the deploy workflow's on:push,
+      # so the published tracker would lag the sheet until the next code push.
+      # workflow_dispatch always creates a run even via GITHUB_TOKEN. It checks out
+      # main at dispatch time, which includes the sync commit pushed above (or a
+      # newer commit that also contains it).
+      - name: Publish the updated tracker
+        if: steps.sync.outputs.exit_code == '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml --repo "$GITHUB_REPOSITORY" --ref main
