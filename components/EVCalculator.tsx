@@ -24,7 +24,7 @@ export default function EVCalculator({ evBets, scores }: Props) {
   const [sortField, setSortField] = useState<SortField>('ev')
   const [minEV, setMinEV] = useState(0)
   const [bankroll, setBankroll] = useState(1000)
-  const [lineFilter, setLineFilter] = useState<'all' | 'main' | 'alt'>('all')
+  const [marketFilter, setMarketFilter] = useState('all')
   const [bookFilter, setBookFilter] = useState('all')
   const books = useMemo(() => bookOptions(evBets.map(bet => bet.book)), [evBets])
 
@@ -32,9 +32,9 @@ export default function EVCalculator({ evBets, scores }: Props) {
     return [...evBets]
       .filter(bet => bet.evPercent >= minEV)
       .filter(bet => {
-        if (lineFilter === 'alt') return !!bet.isAltLine
-        if (lineFilter === 'main') return !bet.isAltLine
-        return true
+        if (marketFilter === 'alt') return !!bet.isAltLine
+        if (marketFilter === 'all') return true
+        return bet.market.toLowerCase() === marketFilter.toLowerCase()
       })
       .filter(bet => bookFilter === 'all' || bet.book === bookFilter)
       .sort((a, b) => {
@@ -55,7 +55,7 @@ export default function EVCalculator({ evBets, scores }: Props) {
             return 0
         }
       })
-  }, [evBets, sortField, minEV, lineFilter, bookFilter])
+  }, [evBets, sortField, minEV, marketFilter, bookFilter])
   
   const getEVColor = (ev: number) => {
     if (ev >= 5) return 'text-green-400'
@@ -103,13 +103,16 @@ export default function EVCalculator({ evBets, scores }: Props) {
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <BookFilter value={bookFilter} books={books} onChange={setBookFilter} />
           <select
-            value={lineFilter}
-            onChange={e => setLineFilter(e.target.value as 'all' | 'main' | 'alt')}
+            aria-label="Market"
+            value={marketFilter}
+            onChange={e => setMarketFilter(e.target.value)}
             className="flex-1 sm:flex-none min-h-[44px] bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500"
           >
-            <option value="all">All lines</option>
-            <option value="main">Main lines</option>
-            <option value="alt">Alt lines</option>
+            <option value="all">All Markets</option>
+            <option value="moneyline">Moneyline</option>
+            <option value="spread">Spread</option>
+            <option value="total">Total</option>
+            <option value="alt">Alt lines only</option>
           </select>
           <label className="flex items-center gap-2 min-h-[44px] text-sm text-slate-400">
             Min EV%
@@ -188,7 +191,7 @@ export default function EVCalculator({ evBets, scores }: Props) {
           const liveScore = findScoreForGame(scores, bet.eventId, bet.homeTeam, bet.awayTeam, bet.commenceTime)
           return (
             <div
-              key={`${lineFilter}-${bet.eventId}-${bet.selection}-${bet.book}`}
+              key={`${marketFilter}-${bet.eventId}-${bet.selection}-${bet.book}`}
               className="card p-3"
             >
               <div className="flex items-start justify-between gap-3">
@@ -310,7 +313,7 @@ export default function EVCalculator({ evBets, scores }: Props) {
                   const liveScore = findScoreForGame(scores, bet.eventId, bet.homeTeam, bet.awayTeam, bet.commenceTime)
                   return (
                   <tr
-                    key={`${lineFilter}-${bet.eventId}-${bet.selection}-${bet.book}`}
+                    key={`${marketFilter}-${bet.eventId}-${bet.selection}-${bet.book}`}
                     className="table-row"
                   >
                     <td className="py-3 px-4">
