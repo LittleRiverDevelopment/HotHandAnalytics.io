@@ -53,8 +53,9 @@ jobs:
 
       # The bot's GITHUB_TOKEN push does not trigger the deploy workflow's on:push,
       # so the published tracker would lag the sheet until the next code push.
-      # workflow_dispatch always creates a run even via GITHUB_TOKEN; it checks out
-      # main HEAD, which is the sync commit just pushed above.
+      # workflow_dispatch always creates a run even via GITHUB_TOKEN. It checks out
+      # main at dispatch time, which includes the sync commit pushed above (or a
+      # newer commit that also contains it).
       - name: Publish the updated tracker
         if: steps.sync.outputs.exit_code == '0'
         env:
