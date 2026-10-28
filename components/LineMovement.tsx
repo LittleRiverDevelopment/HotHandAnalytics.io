@@ -13,7 +13,7 @@ import {
   Legend,
 } from 'chart.js'
 import { OddsEvent } from '@/lib/types'
-import { TrendingUp, Trash2, Info } from 'lucide-react'
+import { TrendingUp, Trash2 } from 'lucide-react'
 
 ChartJS.register(
   CategoryScale,
@@ -281,7 +281,6 @@ export default function LineMovement({ events }: LineMovementProps) {
             <div className="text-center">
               <TrendingUp className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p>Not enough data yet.</p>
-              <p className="text-xs mt-1">Refresh odds a few times to track line movement.</p>
             </div>
           </div>
         ) : (
@@ -291,13 +290,6 @@ export default function LineMovement({ events }: LineMovementProps) {
         )}
       </div>
 
-      <div className="p-3 border-t border-slate-800 flex items-center gap-2 text-xs text-slate-500">
-        <Info className="w-3.5 h-3.5" />
-        <span>
-          Tracks home team moneyline across books (toggle lines). Each successful odds refresh adds a
-          point; history is stored locally in your browser.
-        </span>
-      </div>
     </div>
   )
 }

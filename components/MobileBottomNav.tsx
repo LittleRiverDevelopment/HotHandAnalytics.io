@@ -64,8 +64,7 @@ export default function MobileBottomNav({
       {moreOpen && (
         <div className="lg:hidden fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-[60] px-3 pb-2">
           <div className="card p-2 shadow-2xl shadow-black/40">
-            <div className="flex items-center justify-between px-3 py-2">
-              <span className="text-xs font-medium uppercase tracking-wider text-slate-500">More</span>
+            <div className="flex items-center justify-end px-1">
               <button
                 type="button"
                 onClick={onCloseMore}

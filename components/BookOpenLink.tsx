@@ -1,8 +1,9 @@
 'use client'
 
-import { useMemo, useSyncExternalStore, type ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { ExternalLink } from 'lucide-react'
 import { getSportsbookHomeUrlFromTitle } from '@/lib/sportsbook-links'
+import { useMobileBookLayout } from './useMobileBookLayout'
 
 interface Props {
   bookTitle: string
@@ -15,20 +16,6 @@ interface Props {
   children?: ReactNode
 }
 
-function subscribeMobileLayout(cb: () => void) {
-  const mq = window.matchMedia('(max-width: 640px), (pointer: coarse)')
-  mq.addEventListener('change', cb)
-  return () => mq.removeEventListener('change', cb)
-}
-
-function getMobileLayoutSnapshot() {
-  return window.matchMedia('(max-width: 640px), (pointer: coarse)').matches
-}
-
-function getServerMobileLayoutSnapshot() {
-  return false
-}
-
 export default function BookOpenLink({
   bookTitle,
   deepLink,
@@ -36,11 +23,7 @@ export default function BookOpenLink({
   stopPropagation,
   children,
 }: Props) {
-  const useMobileLayout = useSyncExternalStore(
-    subscribeMobileLayout,
-    getMobileLayoutSnapshot,
-    getServerMobileLayoutSnapshot
-  )
+  const useMobileLayout = useMobileBookLayout()
 
   const trimmedDeep = deepLink?.trim()
   const href = useMemo(() => {

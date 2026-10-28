@@ -5,6 +5,7 @@ import {
   impliedProbability,
   findEVBets,
   collectQuotedLines,
+  formatOdds,
   marketKindLabel,
   outcomeKey,
   type MarketKind,
@@ -172,4 +173,78 @@ export function buildParlays(legs: ParlayLeg[], legCount: number): BuiltParlay[]
     tickets.push(buildParlay(book, bookLegs.slice(0, legCount)))
   }
   return tickets.sort((a, b) => b.priceEdge - a.priceEdge || b.decimalOdds - a.decimalOdds)
+}
+
+/** Longest ticket the bonus tab will open. Matches the old leg picker. */
+export const MAX_BONUS_PARLAY_LEGS = 6
+
+export interface BestParlayPick {
+  parlay: BuiltParlay
+  /**
+   * ev: a ticket with positive fair EV exists, and this one has the most.
+   * price: nothing is positive EV, so this is the best price per leg.
+   */
+  pickedFor: 'ev' | 'price'
+}
+
+function averagePriceEdge(ticket: BuiltParlay): number {
+  return ticket.legs.length === 0 ? 0 : ticket.priceEdge / ticket.legs.length
+}
+
+function compareBestValue(a: BuiltParlay, b: BuiltParlay, mode: 'ev' | 'price'): number {
+  if (mode === 'ev') {
+    const evDelta = (b.evPercent ?? Number.NEGATIVE_INFINITY) - (a.evPercent ?? Number.NEGATIVE_INFINITY)
+    if (evDelta !== 0) return evDelta
+  }
+  const edgeDelta = averagePriceEdge(b) - averagePriceEdge(a)
+  if (edgeDelta !== 0) return edgeDelta
+  if (b.priceEdge !== a.priceEdge) return b.priceEdge - a.priceEdge
+  if (b.decimalOdds !== a.decimalOdds) return b.decimalOdds - a.decimalOdds
+  if (b.legs.length !== a.legs.length) return b.legs.length - a.legs.length
+  return a.book.localeCompare(b.book)
+}
+
+function rankTickets(tickets: BuiltParlay[], mode: 'ev' | 'price'): BuiltParlay {
+  return [...tickets].sort((a, b) => compareBestValue(a, b, mode))[0]
+}
+
+/**
+ * The single parlay worth opening: highest positive fair EV across books and
+ * leg counts, otherwise the best price per leg. Known losing tickets are
+ * skipped when any other ticket exists.
+ */
+export function bestValueParlay(
+  legs: ParlayLeg[],
+  maxLegs: number = MAX_BONUS_PARLAY_LEGS
+): BestParlayPick | null {
+  const longest = Math.min(maxLegs, maxParlayLegs(legs))
+  if (longest < 2) return null
+
+  const tickets: BuiltParlay[] = []
+  for (let count = 2; count <= longest; count++) {
+    tickets.push(...buildParlays(legs, count))
+  }
+  if (tickets.length === 0) return null
+
+  const positive = tickets.filter(ticket => (ticket.evPercent ?? 0) > 0)
+  if (positive.length > 0) {
+    return { parlay: rankTickets(positive, 'ev'), pickedFor: 'ev' }
+  }
+
+  const unpriced = tickets.filter(ticket => ticket.evPercent === null)
+  if (unpriced.length > 0) {
+    return { parlay: rankTickets(unpriced, 'price'), pickedFor: 'price' }
+  }
+
+  return { parlay: rankTickets(tickets, 'ev'), pickedFor: 'ev' }
+}
+
+export function parlayTapLabel(parlay: BuiltParlay, prefilled: boolean): { summary: string; label: string } {
+  const odds = formatOdds(parlay.americanOdds)
+  const legs = parlay.legs.map(leg => leg.selection).join(', ')
+  const summary = `${parlay.book} ${odds}`
+  const label = prefilled
+    ? `Open ${parlay.legs.length}-leg ${parlay.book} parlay, ${odds}: ${legs}`
+    : `Open ${parlay.book} for this ${parlay.legs.length}-leg parlay, ${odds}: ${legs}`
+  return { summary, label }
 }

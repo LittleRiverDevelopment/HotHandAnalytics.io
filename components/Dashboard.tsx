@@ -404,7 +404,6 @@ export default function Dashboard() {
                 <h1 className="font-bold text-lg lg:text-xl tracking-tight">
                   Hot<span className="text-green-400">Hand</span>
                 </h1>
-                <p className="hidden sm:block text-xs text-slate-500">Analytics</p>
               </div>
             </div>
 
@@ -496,7 +495,6 @@ export default function Dashboard() {
                     <TrendingUp className="w-4 h-4 text-green-400" />
                   </div>
                   <p className="text-2xl lg:text-3xl font-bold mt-2">{discrepancies.length}</p>
-                  <p className="text-xs text-slate-500 mt-1">Active opportunities</p>
                 </div>
                 
                 <div className="card p-4 card-hover">
@@ -505,7 +503,6 @@ export default function Dashboard() {
                     <Calculator className="w-4 h-4 text-cyan-400" />
                   </div>
                   <p className="text-2xl lg:text-3xl font-bold mt-2">{evBets.length}</p>
-                  <p className="text-xs text-slate-500 mt-1">Positive expected value</p>
                 </div>
 
                 <div className="card p-4 card-hover">
@@ -514,7 +511,6 @@ export default function Dashboard() {
                     <Scale className="w-4 h-4 text-green-400" />
                   </div>
                   <p className="text-2xl lg:text-3xl font-bold mt-2">{arbs.length}</p>
-                  <p className="text-xs text-slate-500 mt-1">Guaranteed profit spots</p>
                 </div>
                 
                 <div className="card p-4 card-hover">
@@ -528,7 +524,6 @@ export default function Dashboard() {
                       : '0%'
                     }
                   </p>
-                  <p className="text-xs text-slate-500 mt-1">Expected value</p>
                 </div>
                 
                 <div className="card p-4 card-hover">
@@ -537,7 +532,6 @@ export default function Dashboard() {
                     <BarChart3 className="w-4 h-4 text-purple-400" />
                   </div>
                   <p className="text-2xl lg:text-3xl font-bold mt-2">{events.length}</p>
-                  <p className="text-xs text-slate-500 mt-1">With odds data</p>
                 </div>
               </div>
               
@@ -636,8 +630,7 @@ export default function Dashboard() {
                     const score = findScoreForGame(scores, event.id, event.home_team, event.away_team, event.commence_time)
                     return (
                       <div key={event.id} className="p-4 bg-slate-800/30 rounded-lg">
-                        <div className="flex items-center justify-between mb-2 gap-2">
-                          <span className="text-xs text-slate-500">{event.sport_title}</span>
+                        <div className="flex items-center justify-end mb-2 gap-2">
                           {score ? (
                             <LiveScoreBadge score={score} homeTeam={event.home_team} awayTeam={event.away_team} />
                           ) : (
