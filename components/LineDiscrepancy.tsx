@@ -11,6 +11,7 @@ import LiveScoreBadge, { findScoreForGame } from './LiveScore'
 import AltLineBadge from './AltLineBadge'
 import { downloadCsv, lineDiscrepanciesToCsvRows } from '@/lib/csv-export'
 import BookFilter, { bookOptions } from './BookFilter'
+import FairOddsTile from './FairOddsTile'
 
 interface Props {
   discrepancies: LineDiscrepancyType[]
@@ -184,6 +185,9 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
               </div>
               {isExpanded && (
                 <div className="mt-3 grid grid-cols-2 gap-2" onClick={e => e.stopPropagation()}>
+                  {disc.fairOdds !== undefined && (
+                    <FairOddsTile odds={disc.fairOdds} point={sortedBooks[0]?.point} />
+                  )}
                   {sortedBooks.map((row, i) => {
                     const isBest = row.odds === disc.bestOdds
                     return (
@@ -399,6 +403,9 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
                               All lines — {disc.betType} ({disc.market})
                             </p>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                              {disc.fairOdds !== undefined && (
+                                <FairOddsTile odds={disc.fairOdds} point={sortedBooks[0]?.point} />
+                              )}
                               {sortedBooks.map((row, i) => {
                                 const isBest = row.odds === disc.bestOdds
                                 const isWorst = row.odds === disc.worstOdds

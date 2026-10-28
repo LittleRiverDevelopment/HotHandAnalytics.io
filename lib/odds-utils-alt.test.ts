@@ -44,6 +44,7 @@ test('findLineDiscrepancies shops Over 220.5 across books as an alt total', () =
   assert.ok(row, 'expected a line-shop row for Over 220.5')
   assert.equal(row.isAltLine, true)
   assert.ok(row.spread >= 5)
+  assert.equal(typeof row.fairOdds, 'number')
 })
 
 test('stripAltMarkets removes +EV that only exists on alt numbers', () => {

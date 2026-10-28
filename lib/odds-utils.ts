@@ -456,6 +456,8 @@ export function findLineDiscrepancies(events: OddsEvent[]): LineDiscrepancy[] {
   events.forEach(event => {
     MARKET_KINDS.forEach(kind => {
       const featuredKeys = featuredOutcomeKeys(event, kind)
+      const pinnacle = event.bookmakers.find(b => b.key.toLowerCase() === 'pinnacle')
+      const pinnacleLines = pinnacle ? collectQuotedLines(pinnacle, kind) : []
       const bookOddsMap: Map<
         string,
         { book: string; bookKey: string; odds: number; point?: number; link?: string }[]
@@ -487,6 +489,13 @@ export function findLineDiscrepancies(events: OddsEvent[]): LineDiscrepancy[] {
 
         if (spread >= 5) {
           const [betType] = betKey.split('|')
+          const pinnacleLine = pinnacleLines.find(line => outcomeKey(line.name, line.point) === betKey)
+          const opposing = pinnacleLine
+            ? getOpposingQuotedLine(kind, pinnacleLines, pinnacleLine)
+            : undefined
+          const fairOdds = pinnacleLine && opposing
+            ? decimalToAmerican(1 / calculateNoVigFromPair(pinnacleLine.price, opposing.price)[0])
+            : undefined
           discrepancies.push({
             eventId: event.id,
             homeTeam: event.home_team,
@@ -504,6 +513,7 @@ export function findLineDiscrepancies(events: OddsEvent[]): LineDiscrepancy[] {
             bestDeepLink: best.link,
             worstDeepLink: worst.link,
             isAltLine: !featuredKeys.has(betKey),
+            ...(fairOdds !== undefined ? { fairOdds } : {}),
           })
         }
       })

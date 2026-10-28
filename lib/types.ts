@@ -74,6 +74,8 @@ export interface LineDiscrepancy {
   worstDeepLink?: string
   /** True when this number only appears on alternate_spreads / alternate_totals, not the main line */
   isAltLine?: boolean
+  /** Pinnacle no-vig price for this selection, when both sides are quoted */
+  fairOdds?: number
 }
 
 export interface EVBet {

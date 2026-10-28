@@ -11,6 +11,7 @@ import LiveScoreBadge, { findScoreForGame } from './LiveScore'
 import AltLineBadge from './AltLineBadge'
 import { downloadCsv, evBetsToCsvRows } from '@/lib/csv-export'
 import BookFilter, { bookOptions } from './BookFilter'
+import FairOddsTile from './FairOddsTile'
 
 interface Props {
   evBets: EVBet[]
@@ -32,6 +33,7 @@ function LineComparison({ bet }: { bet: EVBet }) {
         All lines — {bet.selection} ({bet.market})
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+        <FairOddsTile odds={bet.fairOdds} point={rows[0]?.point} />
         {rows.map((row, i) => {
           const isBest = row.odds === best
           const isWorst = row.odds === worst
