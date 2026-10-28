@@ -164,19 +164,32 @@ export const STAT_LABELS: Record<StatType, string> = {
   '3PM': '3-Pointers Made'
 }
 
-// Colorado-legal sportsbooks
+/**
+ * Books shown on the board. Caesars is `williamhill_us`. theScore Bet is still `espnbet`.
+ * Polymarket is the one prediction market that fits in the 10-book request.
+ * PointsBet US, SuperBook, and US Betfred are not on the feed.
+ */
 export const SPORTSBOOKS: Sportsbook[] = [
   { key: 'draftkings', name: 'DraftKings' },
   { key: 'fanduel', name: 'FanDuel' },
   { key: 'betmgm', name: 'BetMGM' },
-  { key: 'caesars', name: 'Caesars' },
-  { key: 'pointsbetus', name: 'PointsBet' },
+  { key: 'williamhill_us', name: 'Caesars' },
   { key: 'betrivers', name: 'BetRivers' },
-  { key: 'espnbet', name: 'ESPN BET' },
-  { key: 'superbook', name: 'SuperBook' },
-  { key: 'betfred', name: 'Betfred' },
-  { key: 'fanatics', name: 'Fanatics' }
+  { key: 'fanatics', name: 'Fanatics' },
+  { key: 'espnbet', name: 'theScore Bet' },
+  { key: 'ballybet', name: 'Bally Bet' },
+  { key: 'polymarket', name: 'Polymarket' },
 ]
+
+/**
+ * Books on each odds request. Pinnacle is the fair-odds benchmark, not a bet on the board.
+ * The Odds API bills one region per 10 bookmakers, per market, so this list stays at 10 or fewer.
+ * Hard Rock has no Colorado feed, and bet365's only key is the Australian one.
+ */
+export const ODDS_API_BOOKMAKERS = [
+  ...SPORTSBOOKS.map(book => book.key),
+  'pinnacle',
+] as const
 
 export const SPORTS = [
   { key: 'basketball_nba', title: 'NBA', group: 'Basketball' },

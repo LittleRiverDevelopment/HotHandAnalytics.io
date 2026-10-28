@@ -1,4 +1,4 @@
-import { OddsEvent, ScoreEvent, SportKey } from './types'
+import { OddsEvent, ODDS_API_BOOKMAKERS, ScoreEvent, SportKey } from './types'
 import { pruneDistantAltOutcomes, rankEventsForAltFetch } from './odds-utils'
 import { readKeyOverrides } from './admin-settings'
 
@@ -174,16 +174,19 @@ async function fetchWithApiKeys<T>(
   }
 }
 
-// Colorado-legal sportsbooks + Pinnacle for fair odds
-const ALL_BOOKMAKERS = [
-  'draftkings',
-  'fanduel', 
-  'betmgm',
-  'caesars',
-  'pointsbetus',
-  'betrivers',
-  'pinnacle'
-]
+/**
+ * `bookmakers` selects across regions, so the request does not also send `regions`.
+ * The Odds API bills one region per 10 bookmakers, then one credit per market.
+ */
+export function oddsBooksQuery(markets: string[], options?: { includeLinks?: boolean }): string {
+  const params = [
+    `markets=${markets.join(',')}`,
+    'oddsFormat=american',
+    `bookmakers=${ODDS_API_BOOKMAKERS.join(',')}`,
+  ]
+  if (options?.includeLinks) params.push('includeLinks=true')
+  return params.join('&')
+}
 
 // Persistent cache in localStorage
 interface CacheEntry {
@@ -224,7 +227,7 @@ function getCacheEntry(key: string): CacheEntry | null {
 }
 
 function oddsCacheKey(sport: string, markets: string[]): string {
-  return `${sport}-${markets.join(',')}-lnk1`
+  return `${sport}-${markets.join(',')}-${ODDS_API_BOOKMAKERS.join('+')}`
 }
 
 export function getCacheAge(sport: string): number | null {
@@ -322,9 +325,7 @@ export async function fetchOddsClient(
   }
 
   try {
-    const marketsParam = markets.join(',')
-    const bookmakers = ALL_BOOKMAKERS.join(',')
-    const path = `/sports/${sport}/odds/?regions=us,us2,eu&markets=${marketsParam}&oddsFormat=american&bookmakers=${bookmakers}&includeLinks=true`
+    const path = `/sports/${sport}/odds/?${oddsBooksQuery(markets, { includeLinks: true })}`
     const result = await fetchWithApiKeys<OddsEvent[]>(path, cached)
 
     if (!result.ok || !result.data) {
@@ -456,8 +457,7 @@ export async function fetchPlayerProps(
   markets: string[] = ['player_points', 'player_rebounds', 'player_assists']
 ): Promise<ApiResponse<OddsEvent>> {
   try {
-    const marketsParam = markets.join(',')
-    const path = `/sports/${sport}/events/${eventId}/odds/?regions=us&markets=${marketsParam}&oddsFormat=american`
+    const path = `/sports/${sport}/events/${eventId}/odds/?${oddsBooksQuery(markets)}`
     const result = await fetchWithApiKeys<OddsEvent>(path, null)
     if (!result.ok || !result.data) {
       return { data: null, error: result.error, remainingRequests: result.remainingRequests }
@@ -515,7 +515,7 @@ function setAltCacheEntry(key: string, entry: AltCacheEntry): void {
 }
 
 function altCacheKey(sport: string, eventId: string): string {
-  return `${sport}-${eventId}-alt-lnk1`
+  return `${sport}-${eventId}-alt-${ODDS_API_BOOKMAKERS.join('+')}`
 }
 
 export function mergeEventMarkets(base: OddsEvent, extra: OddsEvent): OddsEvent {
@@ -565,9 +565,7 @@ async function fetchEventAltLines(
   }
 
   try {
-    const marketsParam = ALT_LINE_MARKETS.join(',')
-    const bookmakers = ALL_BOOKMAKERS.join(',')
-    const path = `/sports/${sport}/events/${eventId}/odds/?regions=us,us2,eu&markets=${marketsParam}&oddsFormat=american&bookmakers=${bookmakers}`
+    const path = `/sports/${sport}/events/${eventId}/odds/?${oddsBooksQuery(ALT_LINE_MARKETS)}`
     const cached = getAltCache()[key] || null
     const result = await fetchWithApiKeys<OddsEvent>(path, cached)
 

@@ -74,7 +74,7 @@ export const MOCK_EVENTS: OddsEvent[] = [
         ]
       },
       {
-        key: 'caesars',
+        key: 'williamhill_us',
         title: 'Caesars',
         last_update: new Date().toISOString(),
         markets: [
@@ -86,8 +86,8 @@ export const MOCK_EVENTS: OddsEvent[] = [
         ]
       },
       {
-        key: 'pointsbetus',
-        title: 'PointsBet',
+        key: 'fanatics',
+        title: 'Fanatics',
         last_update: new Date().toISOString(),
         markets: [
           { key: 'h2h', last_update: new Date().toISOString(), outcomes: [{ name: 'Los Angeles Lakers', price: -112 }, { name: 'Boston Celtics', price: -108 }] },
@@ -166,7 +166,7 @@ export const MOCK_EVENTS: OddsEvent[] = [
         ]
       },
       {
-        key: 'caesars',
+        key: 'williamhill_us',
         title: 'Caesars',
         last_update: new Date().toISOString(),
         markets: [
@@ -228,7 +228,7 @@ export const MOCK_EVENTS: OddsEvent[] = [
         ]
       },
       {
-        key: 'caesars',
+        key: 'williamhill_us',
         title: 'Caesars',
         last_update: new Date().toISOString(),
         markets: [
@@ -283,8 +283,8 @@ export const MOCK_PLAYER_PROPS: PlayerProp[] = [
     team: 'DEN',
     stat: 'PTS',
     line: 29.5,
-    overOdds: { draftkings: -115, fanduel: -110, betmgm: -118, caesars: -112, pointsbetus: -110, betrivers: -112 },
-    underOdds: { draftkings: -105, fanduel: -110, betmgm: -102, caesars: -108, pointsbetus: -110, betrivers: -108 },
+    overOdds: { draftkings: -115, fanduel: -110, betmgm: -118, williamhill_us: -112, fanatics: -110, betrivers: -112 },
+    underOdds: { draftkings: -105, fanduel: -110, betmgm: -102, williamhill_us: -108, fanatics: -110, betrivers: -108 },
     historicalHitRate: 0.58,
     last10HitRate: 0.70,
     recentGames: generateGameLogs({ pts: 31, reb: 13, ast: 10, blk: 1, stl: 1 })
@@ -295,8 +295,8 @@ export const MOCK_PLAYER_PROPS: PlayerProp[] = [
     team: 'LAL',
     stat: 'PTS',
     line: 25.5,
-    overOdds: { draftkings: -110, fanduel: -108, betmgm: -115, caesars: -110, pointsbetus: -108, betrivers: -110 },
-    underOdds: { draftkings: -110, fanduel: -112, betmgm: -105, caesars: -110, pointsbetus: -112, betrivers: -110 },
+    overOdds: { draftkings: -110, fanduel: -108, betmgm: -115, williamhill_us: -110, fanatics: -108, betrivers: -110 },
+    underOdds: { draftkings: -110, fanduel: -112, betmgm: -105, williamhill_us: -110, fanatics: -112, betrivers: -110 },
     historicalHitRate: 0.52,
     last10HitRate: 0.60,
     recentGames: generateGameLogs({ pts: 26, reb: 8, ast: 8, blk: 1, stl: 1 })
@@ -307,8 +307,8 @@ export const MOCK_PLAYER_PROPS: PlayerProp[] = [
     team: 'OKC',
     stat: 'PTS',
     line: 31.5,
-    overOdds: { draftkings: -105, fanduel: -108, betmgm: -110, caesars: -105, pointsbetus: -108, betrivers: -105 },
-    underOdds: { draftkings: -115, fanduel: -112, betmgm: -110, caesars: -115, pointsbetus: -112, betrivers: -115 },
+    overOdds: { draftkings: -105, fanduel: -108, betmgm: -110, williamhill_us: -105, fanatics: -108, betrivers: -105 },
+    underOdds: { draftkings: -115, fanduel: -112, betmgm: -110, williamhill_us: -115, fanatics: -112, betrivers: -115 },
     historicalHitRate: 0.62,
     last10HitRate: 0.80,
     recentGames: generateGameLogs({ pts: 33, reb: 5, ast: 6, blk: 1, stl: 2 })
@@ -319,8 +319,8 @@ export const MOCK_PLAYER_PROPS: PlayerProp[] = [
     team: 'DAL',
     stat: 'PTS',
     line: 33.5,
-    overOdds: { draftkings: -112, fanduel: -110, betmgm: -108, caesars: -110, pointsbetus: -110, betrivers: -112 },
-    underOdds: { draftkings: -108, fanduel: -110, betmgm: -112, caesars: -110, pointsbetus: -110, betrivers: -108 },
+    overOdds: { draftkings: -112, fanduel: -110, betmgm: -108, williamhill_us: -110, fanatics: -110, betrivers: -112 },
+    underOdds: { draftkings: -108, fanduel: -110, betmgm: -112, williamhill_us: -110, fanatics: -110, betrivers: -108 },
     historicalHitRate: 0.55,
     last10HitRate: 0.50,
     recentGames: generateGameLogs({ pts: 34, reb: 9, ast: 10, blk: 0, stl: 1 })
@@ -331,8 +331,8 @@ export const MOCK_PLAYER_PROPS: PlayerProp[] = [
     team: 'MIL',
     stat: 'PTS',
     line: 30.5,
-    overOdds: { draftkings: -110, fanduel: -105, betmgm: -112, caesars: -108, pointsbetus: -108, betrivers: -110 },
-    underOdds: { draftkings: -110, fanduel: -115, betmgm: -108, caesars: -112, pointsbetus: -112, betrivers: -110 },
+    overOdds: { draftkings: -110, fanduel: -105, betmgm: -112, williamhill_us: -108, fanatics: -108, betrivers: -110 },
+    underOdds: { draftkings: -110, fanduel: -115, betmgm: -108, williamhill_us: -112, fanatics: -112, betrivers: -110 },
     historicalHitRate: 0.60,
     last10HitRate: 0.70,
     recentGames: generateGameLogs({ pts: 32, reb: 12, ast: 6, blk: 1, stl: 1 })
@@ -343,8 +343,8 @@ export const MOCK_PLAYER_PROPS: PlayerProp[] = [
     team: 'GSW',
     stat: 'PTS',
     line: 27.5,
-    overOdds: { draftkings: -108, fanduel: -110, betmgm: -105, caesars: -108, pointsbetus: -110, betrivers: -108 },
-    underOdds: { draftkings: -112, fanduel: -110, betmgm: -115, caesars: -112, pointsbetus: -110, betrivers: -112 },
+    overOdds: { draftkings: -108, fanduel: -110, betmgm: -105, williamhill_us: -108, fanatics: -110, betrivers: -108 },
+    underOdds: { draftkings: -112, fanduel: -110, betmgm: -115, williamhill_us: -112, fanatics: -110, betrivers: -112 },
     historicalHitRate: 0.54,
     last10HitRate: 0.60,
     recentGames: generateGameLogs({ pts: 28, reb: 5, ast: 5, blk: 0, stl: 1 })

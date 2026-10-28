@@ -41,13 +41,12 @@ const BOOK_COLORS: { [key: string]: string } = {
   draftkings: '#53d337',
   fanduel: '#1493ff',
   betmgm: '#c4a634',
-  caesars: '#1d5c2e',
-  pointsbetus: '#e51a38',
+  williamhill_us: '#1d5c2e',
   betrivers: '#0055a5',
-  espnbet: '#a855f7',
-  superbook: '#f97316',
-  betfred: '#0ea5e9',
   fanatics: '#22c55e',
+  espnbet: '#a855f7',
+  ballybet: '#e11d48',
+  polymarket: '#2e5cff',
   pinnacle: '#dc2626',
 }
 
@@ -55,13 +54,12 @@ const BOOK_NAMES: { [key: string]: string } = {
   draftkings: 'DraftKings',
   fanduel: 'FanDuel',
   betmgm: 'BetMGM',
-  caesars: 'Caesars',
-  pointsbetus: 'PointsBet',
+  williamhill_us: 'Caesars',
   betrivers: 'BetRivers',
-  espnbet: 'ESPN BET',
-  superbook: 'SuperBook',
-  betfred: 'Betfred',
   fanatics: 'Fanatics',
+  espnbet: 'theScore Bet',
+  ballybet: 'Bally Bet',
+  polymarket: 'Polymarket',
   pinnacle: 'Pinnacle',
 }
 
@@ -135,7 +133,7 @@ export default function LineMovement({ events }: LineMovementProps) {
     'draftkings',
     'fanduel',
     'betmgm',
-    'caesars',
+    'williamhill_us',
     'pinnacle',
   ])
 

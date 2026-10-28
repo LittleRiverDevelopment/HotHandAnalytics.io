@@ -22,9 +22,12 @@ const BOOK_NAMES: { [key: string]: string } = {
   draftkings: 'DraftKings',
   fanduel: 'FanDuel',
   betmgm: 'BetMGM',
-  caesars: 'Caesars',
-  pointsbetus: 'PointsBet',
+  williamhill_us: 'Caesars',
   betrivers: 'BetRivers',
+  fanatics: 'Fanatics',
+  espnbet: 'theScore Bet',
+  ballybet: 'Bally Bet',
+  polymarket: 'Polymarket',
 }
 
 interface BetTypeData {

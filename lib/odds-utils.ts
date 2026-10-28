@@ -1,10 +1,7 @@
-import { OddsEvent, ScoreEvent, LineDiscrepancy, EVBet, ArbitrageOpportunity, ArbitrageLeg, Outcome, Market, Bookmaker } from './types'
+import { OddsEvent, ScoreEvent, LineDiscrepancy, EVBet, ArbitrageOpportunity, ArbitrageLeg, Outcome, Market, Bookmaker, SPORTSBOOKS } from './types'
 
-// Colorado books only (exclude Pinnacle from betting display)
-const COLORADO_BOOK_KEYS = [
-  'draftkings', 'fanduel', 'betmgm', 'caesars', 
-  'pointsbetus', 'betrivers', 'espnbet', 'superbook', 'betfred', 'fanatics'
-]
+/** Books we shop. Pinnacle stays in the payload as the fair-odds benchmark. */
+const COLORADO_BOOK_KEYS = SPORTSBOOKS.map(book => book.key)
 
 /** If the book's market is updated much later than Pinnacle, no-vig fair odds are a stale reference. */
 const STALE_PINNACLE_VS_BOOK_MS = 25 * 60 * 1000

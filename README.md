@@ -29,13 +29,16 @@ The app calculates optimal bet sizing using quarter-Kelly criterion for conserva
 
 ## Supported Sportsbooks
 
-Colorado-legal books included:
+Books requested from The Odds API:
 - DraftKings
 - FanDuel
 - BetMGM
 - Caesars
-- PointsBet
 - BetRivers
+- Fanatics
+- theScore Bet
+- Bally Bet
+- Polymarket
 - Pinnacle (fair odds benchmark only)
 
 ## Getting Started

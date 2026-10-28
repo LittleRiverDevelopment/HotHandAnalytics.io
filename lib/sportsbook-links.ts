@@ -5,13 +5,12 @@ export const SPORTSBOOK_HOME_URLS: Record<string, string> = {
   draftkings: 'https://sportsbook.draftkings.com/',
   fanduel: 'https://sportsbook.fanduel.com/',
   betmgm: 'https://sports.betmgm.com/',
-  caesars: 'https://www.caesars.com/sportsbook-and-casino/',
-  pointsbetus: 'https://pointsbet.com/',
+  williamhill_us: 'https://www.caesars.com/sportsbook-and-casino/',
   betrivers: 'https://www.betrivers.com/',
-  espnbet: 'https://espnbet.com/',
-  superbook: 'https://superbook.com/',
-  betfred: 'https://betfred.com/sports',
   fanatics: 'https://sportsbook.fanatics.com/',
+  espnbet: 'https://www.thescore.bet/',
+  ballybet: 'https://www.ballybet.com/',
+  polymarket: 'https://polymarket.com/',
 }
 
 /**
@@ -20,7 +19,7 @@ export const SPORTSBOOK_HOME_URLS: Record<string, string> = {
  */
 export const SPORTSBOOK_MOBILE_URLS: Partial<Record<string, string>> = {
   betmgm: 'https://sports.betmgm.com/en/sports',
-  caesars: 'https://www.caesars.com/sportsbook-and-casino/sports',
+  williamhill_us: 'https://www.caesars.com/sportsbook-and-casino/sports',
 }
 
 export function resolveSportsbookKey(bookTitle: string): string | null {
@@ -33,13 +32,12 @@ export function resolveSportsbookKey(bookTitle: string): string | null {
   if (t.includes('draftkings')) return 'draftkings'
   if (t.includes('fanduel')) return 'fanduel'
   if (t.includes('betmgm')) return 'betmgm'
-  if (t.includes('caesars')) return 'caesars'
-  if (t.includes('pointsbet')) return 'pointsbetus'
+  if (t.includes('caesars') || t.includes('williamhill')) return 'williamhill_us'
   if (t.includes('betrivers') || t.includes('rivers')) return 'betrivers'
-  if (t.includes('espn')) return 'espnbet'
-  if (t.includes('superbook')) return 'superbook'
-  if (t.includes('betfred')) return 'betfred'
   if (t.includes('fanatics')) return 'fanatics'
+  if (t.includes('espn') || t.includes('thescore') || t.includes('the score')) return 'espnbet'
+  if (t.includes('bally')) return 'ballybet'
+  if (t.includes('polymarket')) return 'polymarket'
   return null
 }
 
