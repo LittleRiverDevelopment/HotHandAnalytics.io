@@ -534,6 +534,22 @@ export function findEVBets(events: OddsEvent[], minEV: number = 0.02): EVBet[] {
         })
       }
 
+      const quotedByKey = new Map<string, EVBet['allBookOdds']>()
+      event.bookmakers.forEach(bookmaker => {
+        if (!isColoradoBook(bookmaker.key)) return
+        collectQuotedLines(bookmaker, kind).forEach(line => {
+          const key = outcomeKey(line.name, line.point)
+          const rows = quotedByKey.get(key) ?? []
+          rows.push({
+            book: bookmaker.title,
+            odds: line.price,
+            point: line.point,
+            ...(line.link ? { link: line.link } : {}),
+          })
+          quotedByKey.set(key, rows)
+        })
+      })
+
       event.bookmakers.forEach(bookmaker => {
         if (!isColoradoBook(bookmaker.key)) return
 
@@ -575,6 +591,7 @@ export function findEVBets(events: OddsEvent[], minEV: number = 0.02): EVBet[] {
               commenceTime: event.commence_time,
               ...(line.link ? { bookDeepLink: line.link } : {}),
               isAltLine: !featuredKeys.has(key),
+              allBookOdds: quotedByKey.get(key) ?? [],
             })
           }
         })

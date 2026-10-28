@@ -33,6 +33,8 @@ test('findEVBets flags Lakers +5.5 at DraftKings as a +EV alt line', () => {
   assert.ok(hits.length >= 1, 'expected a +EV hit on Lakers +5.5 DK')
   assert.equal(hits[0].isAltLine, true)
   assert.ok(hits[0].evPercent >= 2)
+  assert.ok(hits[0].allBookOdds.length >= 2)
+  assert.ok(hits[0].allBookOdds.some(row => row.book === 'DraftKings' && row.odds === hits[0].odds))
 })
 
 test('findLineDiscrepancies shops Over 220.5 across books as an alt total', () => {

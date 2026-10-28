@@ -97,6 +97,8 @@ export interface EVBet {
   bookDeepLink?: string
   /** True when this number only appears on alternate_spreads / alternate_totals, not the main line */
   isAltLine?: boolean
+  /** Every shop book quoting this same selection. Already in the odds payload. */
+  allBookOdds: { book: string; odds: number; point?: number; link?: string }[]
 }
 
 export interface ArbitrageLeg {
