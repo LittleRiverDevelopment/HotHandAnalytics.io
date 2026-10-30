@@ -12,6 +12,7 @@ import AltLineBadge from './AltLineBadge'
 import { downloadCsv, lineDiscrepanciesToCsvRows } from '@/lib/csv-export'
 import BookFilter, { bookOptions } from './BookFilter'
 import FairOddsTile from './FairOddsTile'
+import PinnacleLineTile from './PinnacleLineTile'
 
 interface Props {
   discrepancies: LineDiscrepancyType[]
@@ -171,12 +172,18 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
                 </div>
                 <span className={`edge-tag shrink-0 ${getEdgeClass(disc.spread)}`}>+{disc.spread}</span>
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+              <div className={`mt-3 grid gap-2 text-sm ${disc.pinnacleOdds !== undefined ? 'grid-cols-3' : 'grid-cols-2'}`}>
                 <div className="rounded-lg bg-green-500/10 border border-green-500/20 px-2.5 py-2">
                   <p className="text-[10px] uppercase tracking-wide text-green-400/80">Best</p>
                   <p className="odds-badge text-green-400 font-semibold">{formatOdds(disc.bestOdds)}</p>
                   <p className="text-xs text-slate-400 truncate">{disc.bestBook}</p>
                 </div>
+                {disc.pinnacleOdds !== undefined && (
+                  <div className="rounded-lg bg-cyan-500/10 border border-cyan-500/30 px-2.5 py-2">
+                    <p className="text-[10px] uppercase tracking-wide text-cyan-300/80">Pinnacle</p>
+                    <p className="odds-badge text-cyan-300 font-semibold">{formatOdds(disc.pinnacleOdds)}</p>
+                  </div>
+                )}
                 <div className="rounded-lg bg-slate-800/50 border border-slate-700/50 px-2.5 py-2">
                   <p className="text-[10px] uppercase tracking-wide text-slate-500">Worst</p>
                   <p className="odds-badge text-slate-300">{formatOdds(disc.worstOdds)}</p>
@@ -185,6 +192,9 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
               </div>
               {isExpanded && (
                 <div className="mt-3 grid grid-cols-2 gap-2" onClick={e => e.stopPropagation()}>
+                  {disc.pinnacleOdds !== undefined && (
+                    <PinnacleLineTile odds={disc.pinnacleOdds} point={sortedBooks[0]?.point} />
+                  )}
                   {disc.fairOdds !== undefined && (
                     <FairOddsTile odds={disc.fairOdds} point={sortedBooks[0]?.point} />
                   )}
@@ -256,6 +266,9 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
                     Best Odds
                     <ArrowUpDown className="w-3 h-3" />
                   </div>
+                </th>
+                <th className="text-center py-3 px-4 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                  Pinnacle
                 </th>
                 <th className="text-center py-3 px-4 text-xs font-medium text-slate-400 uppercase tracking-wider">
                   Worst Odds
@@ -353,6 +366,11 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
                         </div>
                       </td>
                       <td className="py-3 px-4 text-center">
+                        <span className={`odds-badge font-semibold ${disc.pinnacleOdds !== undefined ? 'text-cyan-300' : 'text-slate-600'}`}>
+                          {disc.pinnacleOdds !== undefined ? formatOdds(disc.pinnacleOdds) : '—'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-center">
                         <div className="flex flex-col items-center">
                           <span className="odds-badge text-slate-400">
                             {formatOdds(disc.worstOdds)}
@@ -392,7 +410,7 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
                     </tr>
                     {isExpanded && (
                       <tr key={`${rowKey}-detail`} className="bg-slate-900/50">
-                        <td colSpan={8} className="p-0 border-b border-slate-800">
+                        <td colSpan={9} className="p-0 border-b border-slate-800">
                           <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
@@ -403,6 +421,9 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
                               All lines — {disc.betType} ({disc.market})
                             </p>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                              {disc.pinnacleOdds !== undefined && (
+                                <PinnacleLineTile odds={disc.pinnacleOdds} point={sortedBooks[0]?.point} />
+                              )}
                               {disc.fairOdds !== undefined && (
                                 <FairOddsTile odds={disc.fairOdds} point={sortedBooks[0]?.point} />
                               )}
