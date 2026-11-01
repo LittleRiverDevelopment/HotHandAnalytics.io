@@ -97,7 +97,7 @@ function DataFreshnessStrip({
   const source = !isLive ? 'Demo data' : isCached ? 'Cached odds' : 'Live fetch'
 
   return (
-    <div className="flex flex-col gap-3 p-3 mb-4 rounded-lg border border-slate-700/50 bg-slate-900/40">
+    <div className="flex flex-col gap-3 p-3 mb-4 rounded-lg border border-slate-700/50 bg-slate-900/80">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-300">
           <div className="flex items-center gap-2">

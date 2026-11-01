@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import SiteBackground from '@/components/SiteBackground'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -21,7 +22,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <div className="grid-bg min-h-screen">
+        <SiteBackground />
+        <div className="grid-bg relative z-10 min-h-screen">
           {children}
         </div>
       </body>
