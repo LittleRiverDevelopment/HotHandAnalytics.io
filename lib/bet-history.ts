@@ -5,7 +5,7 @@ import { HistoricalBet } from './types'
 // `delta` and `cumulative` are derived from the running-total column (self-consistent
 // with the sheet), not recomputed from odds, since some entries include manual
 // adjustments (partial cash-outs, etc.) that a pure odds formula would miss.
-export const BET_HISTORY_SYNCED_AT = "2026-11-01T10:05:16.291Z"
+export const BET_HISTORY_SYNCED_AT = "2026-11-01T17:21:42.490Z"
 
 export const BET_HISTORY: HistoricalBet[] = [
   {
@@ -36,7 +36,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     id: 3,
     date: '2026-01-28',
     description: "Georgia Bulldogs -1.5",
-    sport: "CBB",
+    sport: "NCAAB",
     book: "DraftKings",
     units: 1,
     odds: 105,
@@ -60,7 +60,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     id: 5,
     date: '2026-01-28',
     description: "FSU Moneyline -150",
-    sport: "CBB",
+    sport: "NCAAB",
     book: "FanDuel",
     units: 1,
     odds: -150,
@@ -108,7 +108,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     id: 9,
     date: '2026-02-03',
     description: "Over 140.5 Rutgers-UCLA",
-    sport: "CBB",
+    sport: "NCAAB",
     book: "DraftKings",
     units: 2,
     odds: -119,
@@ -120,7 +120,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     id: 10,
     date: '2026-02-04',
     description: "Clemson Moneyline",
-    sport: "CBB",
+    sport: "NCAAB",
     book: "FanDuel",
     units: 2,
     odds: -146,
@@ -636,7 +636,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     id: 53,
     date: '2026-07-16',
     description: "Denver Nuggets ML",
-    sport: "NBA SL",
+    sport: "NBA",
     book: "FanDuel",
     units: 1,
     odds: -120,
