@@ -5,7 +5,7 @@ import { HistoricalBet } from './types'
 // `delta` and `cumulative` are derived from the running-total column (self-consistent
 // with the sheet), not recomputed from odds, since some entries include manual
 // adjustments (partial cash-outs, etc.) that a pure odds formula would miss.
-export const BET_HISTORY_SYNCED_AT = "2026-11-01T17:21:42.490Z"
+export const BET_HISTORY_SYNCED_AT = "2026-11-01T21:26:53.920Z"
 
 export const BET_HISTORY: HistoricalBet[] = [
   {
@@ -172,9 +172,9 @@ export const BET_HISTORY: HistoricalBet[] = [
     book: "FanDuel",
     units: 1,
     odds: 225,
-    status: 'W',
-    delta: 1,
-    cumulative: 13.091,
+    status: 'L',
+    delta: -1,
+    cumulative: 11.091,
   },
   {
     id: 15,
@@ -186,7 +186,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: -114,
     status: 'L',
     delta: -1,
-    cumulative: 12.091,
+    cumulative: 10.091,
   },
   {
     id: 16,
@@ -198,7 +198,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 102,
     status: 'L',
     delta: -1,
-    cumulative: 11.091,
+    cumulative: 9.091,
   },
   {
     id: 17,
@@ -210,7 +210,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 100,
     status: 'L',
     delta: -1,
-    cumulative: 10.091,
+    cumulative: 8.091,
   },
   {
     id: 18,
@@ -222,7 +222,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: -102,
     status: 'W',
     delta: 1.111,
-    cumulative: 11.202,
+    cumulative: 9.202,
   },
   {
     id: 19,
@@ -234,7 +234,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 110,
     status: 'L',
     delta: -1.5,
-    cumulative: 9.702,
+    cumulative: 7.702,
   },
   {
     id: 20,
@@ -246,7 +246,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 108,
     status: 'L',
     delta: -1,
-    cumulative: 8.702,
+    cumulative: 6.702,
   },
   {
     id: 21,
@@ -258,7 +258,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: -106,
     status: 'L',
     delta: -1,
-    cumulative: 7.702,
+    cumulative: 5.702,
   },
   {
     id: 22,
@@ -270,7 +270,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 107,
     status: 'L',
     delta: -1,
-    cumulative: 6.702,
+    cumulative: 4.702,
   },
   {
     id: 23,
@@ -282,7 +282,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 208,
     status: 'L',
     delta: -1,
-    cumulative: 5.702,
+    cumulative: 3.702,
   },
   {
     id: 24,
@@ -294,7 +294,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 112,
     status: 'L',
     delta: -1,
-    cumulative: 4.702,
+    cumulative: 2.702,
   },
   {
     id: 25,
@@ -306,7 +306,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: -140,
     status: 'L',
     delta: -2,
-    cumulative: 2.702,
+    cumulative: 0.702,
   },
   {
     id: 26,
@@ -318,7 +318,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: -122,
     status: 'W',
     delta: 0.82,
-    cumulative: 3.522,
+    cumulative: 1.522,
   },
   {
     id: 27,
@@ -328,9 +328,9 @@ export const BET_HISTORY: HistoricalBet[] = [
     book: "FanDuel",
     units: 1,
     odds: -106,
-    status: 'W',
-    delta: 1,
-    cumulative: 4.522,
+    status: 'L',
+    delta: -1,
+    cumulative: 0.522,
   },
   {
     id: 28,
@@ -342,7 +342,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 100,
     status: 'L',
     delta: -1,
-    cumulative: 3.522,
+    cumulative: -0.478,
   },
   {
     id: 29,
@@ -354,7 +354,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: -105,
     status: 'W',
     delta: 1.913,
-    cumulative: 5.435,
+    cumulative: 1.435,
   },
   {
     id: 30,
@@ -366,7 +366,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 104,
     status: 'L',
     delta: -1,
-    cumulative: 4.435,
+    cumulative: 0.435,
   },
   {
     id: 31,
@@ -378,7 +378,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 186,
     status: 'W',
     delta: 0.93,
-    cumulative: 5.365,
+    cumulative: 1.365,
   },
   {
     id: 32,
@@ -390,7 +390,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 235,
     status: 'L',
     delta: -1,
-    cumulative: 4.365,
+    cumulative: 0.365,
   },
   {
     id: 33,
@@ -402,7 +402,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 104,
     status: 'W',
     delta: 1.04,
-    cumulative: 5.405,
+    cumulative: 1.405,
   },
   {
     id: 34,
@@ -414,7 +414,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 146,
     status: 'L',
     delta: -1,
-    cumulative: 4.405,
+    cumulative: 0.405,
   },
   {
     id: 35,
@@ -426,7 +426,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 100,
     status: 'W',
     delta: 1,
-    cumulative: 5.405,
+    cumulative: 1.405,
   },
   {
     id: 36,
@@ -438,7 +438,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: -235,
     status: 'W',
     delta: 0.851,
-    cumulative: 6.256,
+    cumulative: 2.256,
   },
   {
     id: 37,
@@ -450,7 +450,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 540,
     status: 'L',
     delta: -0.5,
-    cumulative: 5.756,
+    cumulative: 1.756,
   },
   {
     id: 38,
@@ -462,7 +462,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: -104,
     status: 'L',
     delta: -1,
-    cumulative: 4.756,
+    cumulative: 0.756,
   },
   {
     id: 39,
@@ -474,7 +474,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 442,
     status: 'L',
     delta: -1,
-    cumulative: 3.756,
+    cumulative: -0.244,
   },
   {
     id: 40,
@@ -486,7 +486,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: -141,
     status: 'W',
     delta: 2.565,
-    cumulative: 6.321,
+    cumulative: 2.321,
   },
   {
     id: 41,
@@ -498,7 +498,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 124,
     status: 'W',
     delta: 1.24,
-    cumulative: 7.561,
+    cumulative: 3.561,
   },
   {
     id: 42,
@@ -510,7 +510,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 180,
     status: 'W',
     delta: 1.8,
-    cumulative: 9.361,
+    cumulative: 5.361,
   },
   {
     id: 43,
@@ -522,7 +522,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 285,
     status: 'W',
     delta: 2.85,
-    cumulative: 12.211,
+    cumulative: 8.211,
   },
   {
     id: 44,
@@ -534,7 +534,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 177,
     status: 'W',
     delta: 1.77,
-    cumulative: 13.981,
+    cumulative: 9.981,
   },
   {
     id: 45,
@@ -546,7 +546,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 153,
     status: 'W',
     delta: 1.53,
-    cumulative: 15.511,
+    cumulative: 11.511,
   },
   {
     id: 46,
@@ -558,7 +558,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 175,
     status: 'L',
     delta: -1,
-    cumulative: 14.511,
+    cumulative: 10.511,
   },
   {
     id: 47,
@@ -570,7 +570,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 198,
     status: 'L',
     delta: -1,
-    cumulative: 13.511,
+    cumulative: 9.511,
   },
   {
     id: 48,
@@ -582,7 +582,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 169,
     status: 'W',
     delta: 1.69,
-    cumulative: 15.201,
+    cumulative: 11.201,
   },
   {
     id: 49,
@@ -594,7 +594,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 165,
     status: 'L',
     delta: -1,
-    cumulative: 14.201,
+    cumulative: 10.201,
   },
   {
     id: 50,
@@ -606,7 +606,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 256,
     status: 'L',
     delta: -1,
-    cumulative: 13.201,
+    cumulative: 9.201,
   },
   {
     id: 51,
@@ -618,7 +618,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: -103,
     status: 'L',
     delta: -1,
-    cumulative: 12.201,
+    cumulative: 8.201,
   },
   {
     id: 52,
@@ -630,7 +630,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 165,
     status: 'L',
     delta: -1,
-    cumulative: 11.201,
+    cumulative: 7.201,
   },
   {
     id: 53,
@@ -642,7 +642,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: -120,
     status: 'L',
     delta: -1,
-    cumulative: 10.201,
+    cumulative: 6.201,
   },
   {
     id: 54,
@@ -654,7 +654,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 100,
     status: 'W',
     delta: 1,
-    cumulative: 11.201,
+    cumulative: 7.201,
   },
   {
     id: 55,
@@ -666,7 +666,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 170,
     status: 'L',
     delta: -1,
-    cumulative: 10.201,
+    cumulative: 6.201,
   },
   {
     id: 56,
@@ -678,7 +678,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: -122,
     status: 'L',
     delta: -2,
-    cumulative: 8.201,
+    cumulative: 4.201,
   },
   {
     id: 57,
@@ -690,7 +690,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 111,
     status: 'W',
     delta: 1.11,
-    cumulative: 9.311,
+    cumulative: 5.311,
   },
   {
     id: 58,
@@ -702,7 +702,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 111,
     status: 'W',
     delta: 1.11,
-    cumulative: 10.421,
+    cumulative: 6.421,
   },
   {
     id: 59,
@@ -714,7 +714,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 157,
     status: 'W',
     delta: 1.57,
-    cumulative: 11.991,
+    cumulative: 7.991,
   },
   {
     id: 60,
@@ -726,7 +726,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 100,
     status: 'L',
     delta: -1,
-    cumulative: 10.991,
+    cumulative: 6.991,
   },
   {
     id: 61,
@@ -738,7 +738,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 211,
     status: 'L',
     delta: -1,
-    cumulative: 9.991,
+    cumulative: 5.991,
   },
   {
     id: 62,
@@ -750,7 +750,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: -109,
     status: 'W',
     delta: 0.921,
-    cumulative: 10.912,
+    cumulative: 6.912,
   },
   {
     id: 63,
@@ -762,7 +762,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 105,
     status: 'W',
     delta: 1.05,
-    cumulative: 11.962,
+    cumulative: 7.962,
   },
   {
     id: 64,
@@ -774,7 +774,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 121,
     status: 'W',
     delta: 1.21,
-    cumulative: 13.172,
+    cumulative: 9.172,
   },
   {
     id: 65,
@@ -786,7 +786,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 104,
     status: 'W',
     delta: 1.04,
-    cumulative: 14.212,
+    cumulative: 10.212,
   },
   {
     id: 66,
@@ -798,7 +798,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: -132,
     status: 'W',
     delta: 0.752,
-    cumulative: 14.96388,
+    cumulative: 10.96388,
   },
   {
     id: 67,
@@ -810,7 +810,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 126,
     status: 'W',
     delta: 1.26,
-    cumulative: 16.22388,
+    cumulative: 12.22388,
   },
   {
     id: 68,
@@ -822,7 +822,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 104,
     status: 'L',
     delta: -1,
-    cumulative: 15.22388,
+    cumulative: 11.22388,
   },
   {
     id: 69,
@@ -834,7 +834,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: -110,
     status: 'Push',
     delta: 0,
-    cumulative: 15.22388,
+    cumulative: 11.22388,
   },
   {
     id: 70,
@@ -846,7 +846,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: -108,
     status: 'L',
     delta: -1.5,
-    cumulative: 13.72388,
+    cumulative: 9.72388,
   },
   {
     id: 71,
@@ -858,7 +858,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 100,
     status: 'L',
     delta: -1,
-    cumulative: 12.72388,
+    cumulative: 8.72388,
   },
   {
     id: 72,
@@ -870,7 +870,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 176,
     status: 'W',
     delta: 1.056,
-    cumulative: 13.77988,
+    cumulative: 9.77988,
   },
   {
     id: 73,
@@ -882,7 +882,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 100,
     status: 'L',
     delta: -1,
-    cumulative: 12.77988,
+    cumulative: 8.77988,
   },
   {
     id: 74,
@@ -894,7 +894,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 110,
     status: 'L',
     delta: -1,
-    cumulative: 11.77988,
+    cumulative: 7.77988,
   },
   {
     id: 75,
@@ -906,7 +906,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: -103,
     status: 'W',
     delta: 0.977,
-    cumulative: 12.75688,
+    cumulative: 8.75688,
   },
   {
     id: 76,
@@ -918,7 +918,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: -116,
     status: 'W',
     delta: 0.862,
-    cumulative: 13.61888,
+    cumulative: 9.61888,
   },
   {
     id: 77,
@@ -930,7 +930,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 156,
     status: 'L',
     delta: -1,
-    cumulative: 12.61888,
+    cumulative: 8.61888,
   },
   {
     id: 78,
@@ -942,7 +942,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 181,
     status: 'W',
     delta: 1.18,
-    cumulative: 13.79888,
+    cumulative: 9.79888,
   },
   {
     id: 79,
@@ -954,7 +954,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 114,
     status: 'L',
     delta: -1,
-    cumulative: 12.79888,
+    cumulative: 8.79888,
   },
   {
     id: 80,
@@ -966,7 +966,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 140,
     status: 'L',
     delta: -1,
-    cumulative: 11.79888,
+    cumulative: 7.79888,
   },
   {
     id: 81,
@@ -978,7 +978,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 102,
     status: 'L',
     delta: -1,
-    cumulative: 10.79888,
+    cumulative: 6.79888,
   },
   {
     id: 82,
@@ -990,7 +990,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 110,
     status: 'L',
     delta: -1,
-    cumulative: 9.79888,
+    cumulative: 5.79888,
   },
   {
     id: 83,
@@ -1002,7 +1002,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 157,
     status: 'L',
     delta: -1,
-    cumulative: 8.79888,
+    cumulative: 4.79888,
   },
   {
     id: 84,
@@ -1014,7 +1014,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: -110,
     status: 'Push',
     delta: 0,
-    cumulative: 8.79888,
+    cumulative: 4.79888,
   },
   {
     id: 85,
@@ -1026,7 +1026,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: -186,
     status: 'W',
     delta: 0.532,
-    cumulative: 9.33088,
+    cumulative: 5.33088,
   },
   {
     id: 86,
@@ -1038,7 +1038,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: -140,
     status: 'L',
     delta: -2,
-    cumulative: 7.33088,
+    cumulative: 3.33088,
   },
   {
     id: 87,
@@ -1050,7 +1050,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: -154,
     status: 'W',
     delta: 0.974,
-    cumulative: 8.30488,
+    cumulative: 4.30488,
   },
   {
     id: 88,
@@ -1062,7 +1062,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 117,
     status: 'W',
     delta: 1.17,
-    cumulative: 9.47488,
+    cumulative: 5.47488,
   },
   {
     id: 89,
@@ -1074,7 +1074,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 114,
     status: 'L',
     delta: -1.5,
-    cumulative: 7.97488,
+    cumulative: 3.97488,
   },
   {
     id: 90,
@@ -1086,7 +1086,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: -108,
     status: 'W',
     delta: 0.925,
-    cumulative: 8.89988,
+    cumulative: 4.89988,
   },
   {
     id: 91,
@@ -1098,7 +1098,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 139,
     status: 'L',
     delta: -1,
-    cumulative: 7.89988,
+    cumulative: 3.89988,
   },
   {
     id: 92,
@@ -1110,7 +1110,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: -108,
     status: 'W',
     delta: 0.93,
-    cumulative: 8.82988,
+    cumulative: 4.82988,
   },
   {
     id: 93,
@@ -1122,7 +1122,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: -150,
     status: 'L',
     delta: -2.5,
-    cumulative: 6.32988,
+    cumulative: 2.32988,
   },
   {
     id: 94,
@@ -1134,7 +1134,7 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: -106,
     status: 'W',
     delta: 0.95,
-    cumulative: 7.27988,
+    cumulative: 3.27988,
   },
   {
     id: 95,
@@ -1146,6 +1146,6 @@ export const BET_HISTORY: HistoricalBet[] = [
     odds: 100,
     status: 'W',
     delta: 1,
-    cumulative: 8.27988,
+    cumulative: 4.27988,
   },
 ]
