@@ -5,7 +5,7 @@ import { HistoricalBet } from './types'
 // `delta` and `cumulative` are derived from the running-total column (self-consistent
 // with the sheet), not recomputed from odds, since some entries include manual
 // adjustments (partial cash-outs, etc.) that a pure odds formula would miss.
-export const BET_HISTORY_SYNCED_AT = "2026-11-01T21:26:53.920Z"
+export const BET_HISTORY_SYNCED_AT = "2026-11-02T14:03:44.396Z"
 
 export const BET_HISTORY: HistoricalBet[] = [
   {
@@ -1147,5 +1147,17 @@ export const BET_HISTORY: HistoricalBet[] = [
     status: 'W',
     delta: 1,
     cumulative: 4.27988,
+  },
+  {
+    id: 96,
+    date: '2026-11-01',
+    description: "Rachaad White anytime TD",
+    sport: "NFL",
+    book: "DraftKings",
+    units: 1,
+    odds: 176,
+    status: 'W',
+    delta: 1.76,
+    cumulative: 6.03988,
   },
 ]
