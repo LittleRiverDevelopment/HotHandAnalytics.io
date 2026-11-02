@@ -11,7 +11,7 @@ import {
   outcomeKey,
   type MarketKind,
 } from '@/lib/odds-utils'
-import { Grid3X3, Info } from 'lucide-react'
+import { Grid3X3 } from 'lucide-react'
 
 interface EdgeHeatmapProps {
   events: OddsEvent[]
@@ -254,10 +254,6 @@ export default function EdgeHeatmap({ events }: EdgeHeatmapProps) {
         </>
       )}
 
-      <div className="p-3 border-t border-slate-800 flex items-center gap-2 text-xs text-slate-500">
-        <Info className="w-3.5 h-3.5" />
-        <span>Pinnacle = fair odds baseline. Books sorted left→right by edge. Green highlight = best available odds. Alt rows with under 1% edge are hidden unless &quot;All alt lines&quot; is on.</span>
-      </div>
     </div>
   )
 }

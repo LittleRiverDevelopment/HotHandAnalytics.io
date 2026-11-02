@@ -19,8 +19,6 @@ import {
   Wand2,
   TrendingUp,
   TrendingDown,
-  AlertTriangle,
-  Info,
   Skull,
 } from 'lucide-react'
 import {
@@ -368,44 +366,6 @@ export default function BankrollSimulator() {
         </div>
         <div className="h-48 md:h-[320px]">
           <Line data={chartData} options={chartOptions} />
-        </div>
-      </div>
-
-      <div className="card p-4">
-        <div className="flex items-start gap-3">
-          <div className="p-2 bg-yellow-500/10 rounded-lg">
-            <AlertTriangle className="w-4 h-4 text-yellow-400" />
-          </div>
-          <div>
-            <h3 className="font-medium text-sm">How to read this</h3>
-            <p className="text-sm text-slate-400 mt-1">
-              Each of the {params.numSimulations} lines is a randomly simulated betting career at your win
-              rate and odds; the chart shows the 10th, 50th (median), and 90th percentile bankroll at
-              each bet number. Percent-of-bankroll staking compounds (grows/shrinks your stake as your
-              bankroll changes) while flat staking keeps the dollar amount constant. This assumes every
-              bet has the same win probability and price, and that outcomes are independent — real
-              betting careers involve varying edges, odds, and streaks, so treat this as a risk/reward
-              sanity check rather than a precise forecast.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="card p-4">
-        <div className="flex items-start gap-3">
-          <div className="p-2 bg-cyan-500/10 rounded-lg">
-            <Info className="w-4 h-4 text-cyan-400" />
-          </div>
-          <div>
-            <h3 className="font-medium text-sm">Why this matters for sizing</h3>
-            <p className="text-sm text-slate-400 mt-1">
-              Betting a large % of bankroll per play grows the median outcome fastest but also sharply
-              raises the risk of ruin — try bumping the stake % up and watch the red &quot;Risk of Ruin&quot;
-              number move. This is the same tension Kelly Criterion sizing (used in the +EV Finder) is
-              built to manage: bet enough to compound growth, not so much that a normal losing streak
-              wipes you out.
-            </p>
-          </div>
         </div>
       </div>
     </div>

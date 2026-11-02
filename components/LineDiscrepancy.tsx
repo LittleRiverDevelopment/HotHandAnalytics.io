@@ -461,29 +461,6 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
           </div>
         )}
       </div>
-      
-      <div className="card p-4">
-        <div className="flex items-start gap-3">
-          <div className="p-2 bg-green-500/10 rounded-lg">
-            <TrendingUp className="w-4 h-4 text-green-400" />
-          </div>
-          <div>
-            <h3 className="font-medium text-sm">How to use Line Discrepancies</h3>
-            <p className="text-sm text-slate-400 mt-1">
-              Line discrepancies show the difference in odds between sportsbooks. 
-              A higher edge means a bigger price difference. Always bet the best available line.
-              Confidence (0–100) rises when more books quote that outcome and the best-to-worst gap is wider.
-              Click any row to expand and see every book&apos;s line side by side.
-            </p>
-            <p className="text-sm text-slate-400 mt-2">
-              <strong className="text-slate-300">About betting links:</strong> We use The Odds API&apos;s deep links which typically open
-              the event page at the sportsbook. Most books don&apos;t support automatic bet slip population via URL parameters.
-              You&apos;ll need to manually find and add the bet after clicking. If you previously experienced automatic bet slip
-              population, please let us know which sportsbook(s) supported this - it may help us restore that functionality.
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

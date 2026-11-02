@@ -331,30 +331,6 @@ export default function ArbitrageFinder({ arbs, scores }: Props) {
           </div>
         )}
       </div>
-
-      <div className="card p-4">
-        <div className="flex items-start gap-3">
-          <div className="p-2 bg-yellow-500/10 rounded-lg">
-            <AlertTriangle className="w-4 h-4 text-yellow-400" />
-          </div>
-          <div>
-            <h3 className="font-medium text-sm">Understanding Arbitrage Betting</h3>
-            <p className="text-sm text-slate-400 mt-1">
-              Each row bets every side of the same market at different books where the combined implied
-              probability is under 100% — a profit locked in no matter which side wins. The stake split
-              for each leg is sized so every outcome pays back the exact same profit. Odds move fast:
-              confirm both prices are still live before placing either leg, and place the leg with the
-              tighter line or lower limits first. Confidence (0–100) is higher with a bigger margin and
-              when both books updated their lines close together in time (less risk one side already moved).
-            </p>
-            <p className="text-sm text-slate-400 mt-2">
-              <strong className="text-slate-300">Note:</strong> Book links use The Odds API deep links when available,
-              but most sportsbooks require manual bet slip entry. If you experienced automatic bet slip population
-              in the past, please let us know which book(s) - we&apos;re working to restore that where possible.
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

@@ -336,23 +336,6 @@ export default function BonusParlays({ events, scores }: Props) {
           </p>
         </div>
       )}
-
-      <div className="card p-4">
-        <div className="flex items-start gap-3">
-          <div className="p-2 bg-yellow-500/10 rounded-lg">
-            <AlertTriangle className="w-4 h-4 text-yellow-400" />
-          </div>
-          <div>
-            <h3 className="font-medium text-sm">How this parlay is built</h3>
-            <p className="text-sm text-slate-400 mt-1">
-              Each leg is a price that book has to itself: better than the next book on that same
-              side, one game per leg, all on one ticket. The line does not have to be positive EV.
-              Fair EV shows up when Pinnacle has a matching number. Confirm the price is still up
-              before you place it.
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
