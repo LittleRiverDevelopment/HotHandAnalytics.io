@@ -45,6 +45,19 @@ test('findLineDiscrepancies shops Over 220.5 across books as an alt total', () =
   assert.equal(row.isAltLine, true)
   assert.ok(row.spread >= 5)
   assert.equal(typeof row.fairOdds, 'number')
+  assert.equal(row.pinnacleOdds, -108)
+  assert.notEqual(row.bestBook, 'Pinnacle')
+})
+
+test('findLineDiscrepancies shows the posted Pinnacle line without making it the shop price', () => {
+  const row = findLineDiscrepancies(MOCK_EVENTS).find(
+    d => d.eventId === 'mock1' && d.market === 'Moneyline' && d.betType === 'Los Angeles Lakers'
+  )
+  assert.ok(row)
+  assert.equal(row.pinnacleOdds, -107)
+  assert.equal(row.bestBook, 'FanDuel')
+  assert.equal(row.bestOdds, -105)
+  assert.equal(row.allBookOdds.some(book => book.book === 'Pinnacle'), false)
 })
 
 test('stripAltMarkets removes +EV that only exists on alt numbers', () => {

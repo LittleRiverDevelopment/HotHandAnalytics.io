@@ -514,6 +514,7 @@ export function findLineDiscrepancies(events: OddsEvent[]): LineDiscrepancy[] {
             worstDeepLink: worst.link,
             isAltLine: !featuredKeys.has(betKey),
             ...(fairOdds !== undefined ? { fairOdds } : {}),
+            ...(pinnacleLine ? { pinnacleOdds: pinnacleLine.price } : {}),
           })
         }
       })

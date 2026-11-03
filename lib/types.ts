@@ -76,6 +76,8 @@ export interface LineDiscrepancy {
   isAltLine?: boolean
   /** Pinnacle no-vig price for this selection, when both sides are quoted */
   fairOdds?: number
+  /** Pinnacle's posted price for this selection. Not used as the best or worst shop price. */
+  pinnacleOdds?: number
 }
 
 export interface EVBet {
