@@ -1,7 +1,5 @@
 name: CI
 
-# PR-only test run: deploy.yml only runs on main pushes and manual dispatch,
-# so this workflow is what validates changes before they merge.
 on:
   pull_request:
     branches: [main]

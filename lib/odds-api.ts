@@ -1,13 +1,13 @@
 import { OddsEvent, ODDS_API_BOOKMAKERS, ScoreEvent, SportKey } from './types'
 import { pruneDistantAltOutcomes, rankEventsForAltFetch } from './odds-utils'
-import { readKeyOverrides } from './admin-settings'
+import { isAdminUnlocked, readKeyOverrides } from './admin-settings'
 
 const BASE_URL = 'https://api.the-odds-api.com/v4'
-const EXHAUSTED_KEYS_STORAGE_KEY = 'hothand_exhausted_odds_keys'
-const CACHE_STORAGE_KEY = 'hothand_odds_cache'
-const SCORES_CACHE_STORAGE_KEY = 'hothand_scores_cache'
-const ALT_CACHE_STORAGE_KEY = 'hothand_alt_odds_cache'
-const INCLUDE_ALT_LINES_KEY = 'hothand_include_alt_lines'
+const EXHAUSTED_KEYS_STORAGE_KEY = 'linesnipe_exhausted_odds_keys'
+const CACHE_STORAGE_KEY = 'linesnipe_odds_cache'
+const SCORES_CACHE_STORAGE_KEY = 'linesnipe_scores_cache'
+const ALT_CACHE_STORAGE_KEY = 'linesnipe_alt_odds_cache'
+const INCLUDE_ALT_LINES_KEY = 'linesnipe_include_alt_lines'
 // Scores change constantly while games are live, so cached scores go stale fast.
 const SCORES_CACHE_TTL_MS = 60 * 1000
 
@@ -61,16 +61,23 @@ function markKeyHasCredits(key: string): void {
   }
 }
 
-/** Key 1, then key 2. A key saved in this browser replaces the matching site key. */
+/**
+ * Positive EV, Line Shop, and Arbitrage need the primary key, so it is used
+ * without the admin password. The backup key is sent only while admin is unlocked.
+ * A key saved in this browser replaces the matching site key.
+ */
 export function listOddsApiKeys(): string[] {
   const { keys: overrides } = readKeyOverrides()
   const primary = overrides[0] || process.env.NEXT_PUBLIC_ODDS_API_KEY || ''
-  const backup = overrides[1] || process.env.NEXT_PUBLIC_ODDS_API_KEY_2 || ''
+  const backup = isAdminUnlocked()
+    ? (overrides[1] || process.env.NEXT_PUBLIC_ODDS_API_KEY_2 || '')
+    : ''
   const keys = [primary.trim(), backup.trim()].filter(Boolean)
   return keys.filter((key, index) => keys.indexOf(key) === index)
 }
 
 export function oddsKeyState(slot: 1 | 2): 'missing' | 'ready' | 'spent' {
+  if (slot === 2 && !isAdminUnlocked()) return 'missing'
   const saved = readKeyOverrides().keys[slot - 1]
   const site = slot === 1 ? process.env.NEXT_PUBLIC_ODDS_API_KEY : process.env.NEXT_PUBLIC_ODDS_API_KEY_2
   const key = (saved || site || '').trim()
@@ -83,6 +90,7 @@ export function oddsKeyDetails(slot: 1 | 2): {
   source: 'browser' | 'site' | 'none' | 'unavailable'
   state: 'missing' | 'ready' | 'spent'
 } {
+  if (slot === 2 && !isAdminUnlocked()) return { source: 'none', state: 'missing' }
   const overrides = readKeyOverrides()
   const site = slot === 1 ? process.env.NEXT_PUBLIC_ODDS_API_KEY : process.env.NEXT_PUBLIC_ODDS_API_KEY_2
   return {

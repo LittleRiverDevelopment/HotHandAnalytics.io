@@ -1,5 +1,16 @@
 /** Browser-only overrides. Site defaults remain part of the static build. */
-export const ODDS_KEY_STORAGE_KEYS = ['hothand_odds_api_key', 'hothand_odds_api_key_2'] as const
+export const ODDS_KEY_STORAGE_KEYS = ['linesnipe_odds_api_key', 'linesnipe_odds_api_key_2'] as const
+/** Session flag set after the in-app admin password. Convenience guard, not authentication. */
+export const ADMIN_UNLOCK_STORAGE_KEY = 'linesnipe_admin_unlocked'
+
+export function isAdminUnlocked(): boolean {
+  try {
+    if (typeof window === 'undefined') return false
+    return window.sessionStorage.getItem(ADMIN_UNLOCK_STORAGE_KEY) === '1'
+  } catch {
+    return false
+  }
+}
 
 type KeyStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 export type KeyOverrides = [string, string]
