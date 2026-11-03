@@ -1,10 +1,9 @@
 import type { Metadata, Viewport } from 'next'
-import SiteBackground from '@/components/SiteBackground'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'HotHand Analytics | Sports Betting Edge Finder',
-  description: 'Find edges in sports betting lines. Line discrepancies, +EV bets, and player prop analysis.',
+  title: 'LineSnipe | Positive EV, Line Shop, Arbitrage',
+  description: 'Shop sportsbook lines, find positive expected value, and spot arbitrage.',
 }
 
 export const viewport: Viewport = {
@@ -22,7 +21,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <SiteBackground />
         <div className="grid-bg relative z-10 min-h-screen">
           {children}
         </div>

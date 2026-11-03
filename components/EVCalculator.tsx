@@ -142,7 +142,7 @@ export default function EVCalculator({ evBets, scores }: Props) {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2 min-w-0">
           <Calculator className="w-5 h-5 text-green-400 shrink-0" />
-          <h2 className="text-lg font-semibold">+EV Finder</h2>
+          <h2 className="text-lg font-semibold">Positive EV Finder</h2>
           <span className="text-sm text-slate-400">
             {sortedBets.length}
             {sortedBets.length > VISIBLE_ROW_CAP && (

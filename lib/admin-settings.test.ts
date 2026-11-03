@@ -1,6 +1,6 @@
 import { test, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
-import { ODDS_KEY_STORAGE_KEYS, readKeyOverrides, saveKeyOverrides } from './admin-settings'
+import { ADMIN_UNLOCK_STORAGE_KEY, ODDS_KEY_STORAGE_KEYS, readKeyOverrides, saveKeyOverrides } from './admin-settings'
 import { listOddsApiKeys, oddsKeyDetails, fetchOddsClient, getIncludeAltLines, setIncludeAltLines } from './odds-api'
 
 class FakeStorage {
@@ -23,17 +23,24 @@ class FakeStorage {
 
 const oldWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
 const oldStorage = Object.getOwnPropertyDescriptor(globalThis, 'localStorage')
+const oldSession = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage')
 const oldFetch = globalThis.fetch
 const oldPrimary = process.env.NEXT_PUBLIC_ODDS_API_KEY
 const oldBackup = process.env.NEXT_PUBLIC_ODDS_API_KEY_2
 let storage: FakeStorage
+let session: FakeStorage
 let requests: string[]
 
 beforeEach(() => {
   storage = new FakeStorage()
+  session = new FakeStorage()
   requests = []
-  Object.defineProperty(globalThis, 'window', { configurable: true, value: { localStorage: storage } })
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: { localStorage: storage, sessionStorage: session },
+  })
   Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: storage })
+  Object.defineProperty(globalThis, 'sessionStorage', { configurable: true, value: session })
   process.env.NEXT_PUBLIC_ODDS_API_KEY = 'synthetic-site-primary'
   process.env.NEXT_PUBLIC_ODDS_API_KEY_2 = 'synthetic-site-backup'
   globalThis.fetch = async input => {
@@ -47,6 +54,8 @@ afterEach(() => {
   else Reflect.deleteProperty(globalThis, 'window')
   if (oldStorage) Object.defineProperty(globalThis, 'localStorage', oldStorage)
   else Reflect.deleteProperty(globalThis, 'localStorage')
+  if (oldSession) Object.defineProperty(globalThis, 'sessionStorage', oldSession)
+  else Reflect.deleteProperty(globalThis, 'sessionStorage')
   globalThis.fetch = oldFetch
   if (oldPrimary === undefined) delete process.env.NEXT_PUBLIC_ODDS_API_KEY
   else process.env.NEXT_PUBLIC_ODDS_API_KEY = oldPrimary
@@ -54,38 +63,49 @@ afterEach(() => {
   else process.env.NEXT_PUBLIC_ODDS_API_KEY_2 = oldBackup
 })
 
-test('empty overrides retain both site defaults and truthful configuration status', () => {
+test('empty overrides expose only the primary site key until admin is unlocked', () => {
   assert.deepEqual(readKeyOverrides(), { ok: true, keys: ['', ''] })
-  assert.deepEqual(listOddsApiKeys(), ['synthetic-site-primary', 'synthetic-site-backup'])
+  assert.deepEqual(listOddsApiKeys(), ['synthetic-site-primary'])
   assert.deepEqual(oddsKeyDetails(1), { source: 'site', state: 'ready' })
+  assert.deepEqual(oddsKeyDetails(2), { source: 'none', state: 'missing' })
+  session.setItem(ADMIN_UNLOCK_STORAGE_KEY, '1')
+  assert.deepEqual(listOddsApiKeys(), ['synthetic-site-primary', 'synthetic-site-backup'])
+  assert.deepEqual(oddsKeyDetails(2), { source: 'site', state: 'ready' })
   assert.equal(requests.length, 0)
 })
 
 test('save trims overrides, gives per-slot precedence, and makes no requests', () => {
   assert.deepEqual(saveKeyOverrides([' synthetic-browser-primary ', '']), { ok: true })
   assert.deepEqual(readKeyOverrides().keys, ['synthetic-browser-primary', ''])
-  assert.deepEqual(listOddsApiKeys(), ['synthetic-browser-primary', 'synthetic-site-backup'])
+  assert.deepEqual(listOddsApiKeys(), ['synthetic-browser-primary'])
   assert.deepEqual(oddsKeyDetails(1), { source: 'browser', state: 'ready' })
+  assert.equal(oddsKeyDetails(2).source, 'none')
+  session.setItem(ADMIN_UNLOCK_STORAGE_KEY, '1')
+  assert.deepEqual(listOddsApiKeys(), ['synthetic-browser-primary', 'synthetic-site-backup'])
   assert.equal(oddsKeyDetails(2).source, 'site')
   assert.equal(requests.length, 0)
 })
 
-test('backup override and duplicate-key deduplication preserve existing behavior', () => {
+test('backup override stays hidden until unlock, then duplicate keys collapse', () => {
   saveKeyOverrides(['', 'synthetic-browser-backup'])
+  assert.deepEqual(listOddsApiKeys(), ['synthetic-site-primary'])
+  session.setItem(ADMIN_UNLOCK_STORAGE_KEY, '1')
   assert.deepEqual(listOddsApiKeys(), ['synthetic-site-primary', 'synthetic-browser-backup'])
   saveKeyOverrides(['synthetic-same-key', 'synthetic-same-key'])
   assert.deepEqual(listOddsApiKeys(), ['synthetic-same-key'])
 })
 
 test('reset removes only overrides, retains cache and unrelated data, and makes no requests', () => {
-  storage.setItem('hothand_odds_cache', '{"synthetic":"cached payload"}')
-  storage.setItem('hothand_exhausted_odds_keys', '{}')
+  storage.setItem('linesnipe_odds_cache', '{"synthetic":"cached payload"}')
+  storage.setItem('linesnipe_exhausted_odds_keys', '{}')
   saveKeyOverrides(['synthetic-browser-primary', 'synthetic-browser-backup'])
   assert.deepEqual(saveKeyOverrides(['', '']), { ok: true })
   assert.equal(storage.getItem(ODDS_KEY_STORAGE_KEYS[0]), null)
   assert.equal(storage.getItem(ODDS_KEY_STORAGE_KEYS[1]), null)
-  assert.equal(storage.getItem('hothand_odds_cache'), '{"synthetic":"cached payload"}')
-  assert.equal(storage.getItem('hothand_exhausted_odds_keys'), '{}')
+  assert.equal(storage.getItem('linesnipe_odds_cache'), '{"synthetic":"cached payload"}')
+  assert.equal(storage.getItem('linesnipe_exhausted_odds_keys'), '{}')
+  assert.deepEqual(listOddsApiKeys(), ['synthetic-site-primary'])
+  session.setItem(ADMIN_UNLOCK_STORAGE_KEY, '1')
   assert.deepEqual(listOddsApiKeys(), ['synthetic-site-primary', 'synthetic-site-backup'])
   assert.equal(requests.length, 0)
 })
@@ -108,6 +128,8 @@ test('blocked reads are disclosed, save fails without writes, site fallback rema
   assert.equal(result.ok, false)
   assert.equal(storage.data.size, 0)
   assert.equal(oddsKeyDetails(1).source, 'unavailable')
+  assert.deepEqual(listOddsApiKeys(), ['synthetic-site-primary'])
+  session.setItem(ADMIN_UNLOCK_STORAGE_KEY, '1')
   assert.deepEqual(listOddsApiKeys(), ['synthetic-site-primary', 'synthetic-site-backup'])
 })
 
@@ -158,13 +180,14 @@ test('rollback failure is explicit and error never includes supplied keys', () =
 
 test('recorded quota flag is distinguished from configured status', () => {
   const now = new Date()
-  storage.setItem('hothand_exhausted_odds_keys', JSON.stringify({
+  storage.setItem('linesnipe_exhausted_odds_keys', JSON.stringify({
     ['synthetic-site-primary'.slice(-8)]: `${now.getUTCFullYear()}-${now.getUTCMonth() + 1}`,
   }))
   assert.deepEqual(oddsKeyDetails(1), { source: 'site', state: 'spent' })
 })
 
-test('invalid primary still falls back to backup on explicit refresh', async () => {
+test('invalid primary still falls back to backup on explicit refresh after unlock', async () => {
+  session.setItem(ADMIN_UNLOCK_STORAGE_KEY, '1')
   globalThis.fetch = async input => {
     requests.push(String(input))
     return new Response(requests.length === 1 ? '{}' : '[]', { status: requests.length === 1 ? 401 : 200 })
@@ -176,7 +199,8 @@ test('invalid primary still falls back to backup on explicit refresh', async () 
   assert.ok(requests[1].includes('synthetic-site-backup'))
 })
 
-test('quota-exhausted primary still falls back to backup on explicit refresh', async () => {
+test('quota-exhausted primary still falls back to backup on explicit refresh after unlock', async () => {
+  session.setItem(ADMIN_UNLOCK_STORAGE_KEY, '1')
   globalThis.fetch = async input => {
     requests.push(String(input))
     return new Response(requests.length === 1 ? '{}' : '[]', { status: requests.length === 1 ? 429 : 200 })
@@ -188,6 +212,7 @@ test('quota-exhausted primary still falls back to backup on explicit refresh', a
 })
 
 test('blocked quota writes do not interrupt primary-to-backup failover', async () => {
+  session.setItem(ADMIN_UNLOCK_STORAGE_KEY, '1')
   storage.failWrite = () => true
   globalThis.fetch = async input => {
     requests.push(String(input))
@@ -203,6 +228,19 @@ test('blocked alt-line preference storage cannot prevent opening the app', () =>
   storage.failWrite = () => true
   assert.equal(getIncludeAltLines(), false)
   assert.doesNotThrow(() => setIncludeAltLines(true))
+})
+
+test('locked refresh never sends the backup key', async () => {
+  saveKeyOverrides(['', 'synthetic-browser-backup'])
+  globalThis.fetch = async input => {
+    requests.push(String(input))
+    return new Response('{}', { status: 401 })
+  }
+  const result = await fetchOddsClient('baseball_mlb', undefined, true)
+  assert.equal(result.error, 'Invalid API key')
+  assert.equal(requests.length, 1)
+  assert.match(requests[0], /synthetic-site-primary/)
+  assert.equal(requests.some(url => url.includes('synthetic-site-backup') || url.includes('synthetic-browser-backup')), false)
 })
 
 test('network exceptions never echo key-bearing URLs into visible errors', async () => {

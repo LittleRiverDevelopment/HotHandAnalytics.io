@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, FormEvent } from 'react'
 import { X, Key, Lock, AlertCircle, RefreshCw } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { listOddsApiKeys, oddsKeyDetails } from '@/lib/odds-api'
-import { readKeyOverrides, saveKeyOverrides, KeyOverrides } from '@/lib/admin-settings'
+import { ADMIN_UNLOCK_STORAGE_KEY, readKeyOverrides, saveKeyOverrides, KeyOverrides } from '@/lib/admin-settings'
 
 interface SettingsProps {
   isOpen: boolean
@@ -14,7 +14,6 @@ interface SettingsProps {
   refreshError: string | null
 }
 
-const ADMIN_UNLOCK_KEY = 'hothand_admin_unlocked'
 // This static-build password is a convenience guard, not secure authentication.
 const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || ''
 type KeyDetails = ReturnType<typeof oddsKeyDetails>
@@ -45,7 +44,7 @@ export default function Settings({ isOpen, onClose, onRefresh, isRefreshing, ref
     if (!sessionRead.current) {
       sessionRead.current = true
       try {
-        setUnlocked(sessionStorage.getItem(ADMIN_UNLOCK_KEY) === '1')
+        setUnlocked(sessionStorage.getItem(ADMIN_UNLOCK_STORAGE_KEY) === '1')
       } catch {
         setSessionNotice('Session storage is unavailable. Unlock applies to this page only.')
       }
@@ -65,7 +64,7 @@ export default function Settings({ isOpen, onClose, onRefresh, isRefreshing, ref
 
   useEffect(() => {
     if (isOpen && !isRefreshing) updateDetails()
-  }, [isOpen, isRefreshing])
+  }, [isOpen, isRefreshing, unlocked])
 
   // Keep keyboard focus in the dialog and return it to the opener when closed.
   useEffect(() => {
@@ -113,7 +112,7 @@ export default function Settings({ isOpen, onClose, onRefresh, isRefreshing, ref
       return
     }
     try {
-      sessionStorage.setItem(ADMIN_UNLOCK_KEY, '1')
+      sessionStorage.setItem(ADMIN_UNLOCK_STORAGE_KEY, '1')
     } catch {
       setSessionNotice('Session storage is unavailable. Unlock applies to this page only.')
     }
@@ -124,7 +123,7 @@ export default function Settings({ isOpen, onClose, onRefresh, isRefreshing, ref
 
   const handleLock = () => {
     try {
-      sessionStorage.removeItem(ADMIN_UNLOCK_KEY)
+      sessionStorage.removeItem(ADMIN_UNLOCK_STORAGE_KEY)
     } catch {
       setSessionNotice('Locked on this page. Close the tab to end any previously saved unlock session.')
     }
@@ -241,7 +240,8 @@ export default function Settings({ isOpen, onClose, onRefresh, isRefreshing, ref
                     ))}
                     <p className="text-xs text-slate-400">
                       Overrides affect this browser only. Blank fields use the site defaults.
-                      Primary is tried first, with backup on supported failures.
+                      Positive EV, Line Shop, and Arbitrage use the primary key without this password.
+                      The backup key is sent only while admin stays unlocked, and only after the primary key fails.
                       Status reflects configuration and recorded quota limits, not a live key check.
                     </p>
                     <button type="submit" disabled={!dirty || !storageAvailable || isRefreshing}
@@ -288,11 +288,14 @@ export default function Settings({ isOpen, onClose, onRefresh, isRefreshing, ref
                   </div>
                   <div className="flex items-start gap-2 text-xs text-slate-400">
                     <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                    <p>Convenience guard only. Site keys and the password remain in the browser bundle; browser overrides are stored on this device.</p>
+                    <p>Convenience guard only. The primary key is used without this password. The backup key is not sent until admin is unlocked. Site keys and the password remain in the browser bundle; browser overrides are stored on this device.</p>
                   </div>
                 </div>
               ) : (
                 <form onSubmit={handleUnlock} className="space-y-4">
+                  <p className="text-xs text-slate-400">
+                    The three boards use the primary odds key without this password. The backup key stays locked.
+                  </p>
                   <div>
                     <label htmlFor="admin-password" className="block text-sm font-medium mb-2">Admin password</label>
                     <input id="admin-password" type="password" value={password}

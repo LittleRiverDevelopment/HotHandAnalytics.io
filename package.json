@@ -1,24 +1,19 @@
 {
-  "name": "hothand-analytics",
+  "name": "linesnipe",
   "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "test": "npx --yes tsx --test lib/admin-settings.test.ts lib/odds-books.test.ts lib/odds-utils-alt.test.ts scripts/sync-bet-history.test.mjs"
+    "test": "npx --yes tsx --test lib/admin-settings.test.ts lib/odds-books.test.ts lib/odds-utils-alt.test.ts"
   },
   "dependencies": {
-    "chart.js": "^4.4.1",
-    "chartjs-adapter-date-fns": "^3.0.0",
-    "clsx": "^2.1.0",
     "date-fns": "^3.3.1",
     "framer-motion": "^11.0.3",
     "lucide-react": "^0.323.0",
     "next": "14.1.0",
     "react": "^18.2.0",
-    "react-chartjs-2": "^5.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
