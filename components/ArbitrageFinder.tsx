@@ -6,7 +6,7 @@ import { ArbitrageOpportunity, ScoreEvent } from '@/lib/types'
 import { formatOdds } from '@/lib/odds-utils'
 import { format } from 'date-fns'
 import BookOpenLink from './BookOpenLink'
-import LiveScoreBadge, { findScoreForGame } from './LiveScore'
+import LiveScoreBadge, { findScoreForGame, isLiveGame, StartTime } from './LiveScore'
 import AltLineBadge from './AltLineBadge'
 import { downloadCsv, arbitrageToCsvRows } from '@/lib/csv-export'
 import BookFilter, { bookOptions } from './BookFilter'
@@ -165,9 +165,14 @@ export default function ArbitrageFinder({ arbs, scores }: Props) {
                     {arb.market}
                     {arb.isAltLine && <AltLineBadge />}
                   </p>
-                  {liveScore && (
+                  {(isLiveGame(arb.commenceTime, liveScore) || liveScore?.completed) && (
                     <div className="mt-1">
-                      <LiveScoreBadge score={liveScore} homeTeam={arb.homeTeam} awayTeam={arb.awayTeam} />
+                      <LiveScoreBadge
+                        score={liveScore}
+                        homeTeam={arb.homeTeam}
+                        awayTeam={arb.awayTeam}
+                        commenceTime={arb.commenceTime}
+                      />
                     </div>
                   )}
                 </div>
@@ -250,7 +255,7 @@ export default function ArbitrageFinder({ arbs, scores }: Props) {
                   onClick={() => setSortField('time')}
                 >
                   <div className="flex items-center justify-end gap-1">
-                    Starts
+                    Time
                     <ArrowUpDown className="w-3 h-3" />
                   </div>
                 </th>
@@ -272,9 +277,12 @@ export default function ArbitrageFinder({ arbs, scores }: Props) {
                             {arb.market}
                             {arb.isAltLine && <AltLineBadge />}
                           </span>
-                          {liveScore && (
-                            <LiveScoreBadge score={liveScore} homeTeam={arb.homeTeam} awayTeam={arb.awayTeam} />
-                          )}
+                          <LiveScoreBadge
+                            score={liveScore}
+                            homeTeam={arb.homeTeam}
+                            awayTeam={arb.awayTeam}
+                            commenceTime={arb.commenceTime}
+                          />
                         </div>
                       </td>
                       <td className="py-3 px-4">
@@ -309,12 +317,7 @@ export default function ArbitrageFinder({ arbs, scores }: Props) {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <div className="flex flex-col items-end">
-                          <span className="text-sm">{format(new Date(arb.commenceTime), 'h:mm a')}</span>
-                          <span className="text-xs text-slate-500">
-                            {format(new Date(arb.commenceTime), 'MMM d, yyyy')}
-                          </span>
-                        </div>
+                        <StartTime commenceTime={arb.commenceTime} score={liveScore} />
                       </td>
                     </tr>
                   )

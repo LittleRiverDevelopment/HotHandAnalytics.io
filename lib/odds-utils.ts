@@ -131,6 +131,48 @@ export function findMatchingScore(
   return best && bestDelta <= SCORE_TEAM_FALLBACK_MS ? best : undefined
 }
 
+export type GameDisplayStatus = 'upcoming' | 'live' | 'final'
+
+/**
+ * The odds feed does not include finished games, so a commence time in the past
+ * means the game is in play. That stays true when the scores feed has not posted
+ * a number yet, or the team names on the score lines do not match the odds names.
+ * A score marked completed is FINAL.
+ */
+export function gameDisplayStatus(
+  commenceTime: string | undefined,
+  score: Pick<ScoreEvent, 'completed' | 'scores'> | undefined,
+  now: number = Date.now()
+): GameDisplayStatus {
+  if (score?.completed) return 'final'
+  if (score?.scores && score.scores.length > 0) return 'live'
+  const start = commenceTime ? Date.parse(commenceTime) : NaN
+  if (!Number.isNaN(start) && start <= now) return 'live'
+  return 'upcoming'
+}
+
+function normalizeTeamName(name: string): string {
+  return name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+}
+
+/** Score string for a team. Accepts the odds name or the score feed's own name. */
+export function teamScoreValue(
+  entries: ScoreEvent['scores'] | undefined,
+  ...names: Array<string | undefined>
+): string | undefined {
+  if (!entries || entries.length === 0) return undefined
+  const targets = new Set(
+    names.filter((name): name is string => !!name && name.trim().length > 0).map(normalizeTeamName)
+  )
+  if (targets.size === 0) return undefined
+  return entries.find(entry => targets.has(normalizeTeamName(entry.name)))?.score
+}
+
 /** Upcoming tip-offs, in-progress games, and recently started games without a FINAL score. */
 export function isUpcomingOrLive(
   event: Pick<OddsEvent, 'id' | 'home_team' | 'away_team' | 'commence_time'>,

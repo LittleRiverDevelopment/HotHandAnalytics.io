@@ -7,7 +7,7 @@ import { EVBet, ScoreEvent } from '@/lib/types'
 import { formatOdds, formatOddsTimestamp } from '@/lib/odds-utils'
 import { format } from 'date-fns'
 import BookOpenLink from './BookOpenLink'
-import LiveScoreBadge, { findScoreForGame } from './LiveScore'
+import LiveScoreBadge, { findScoreForGame, isLiveGame, StartTime } from './LiveScore'
 import AltLineBadge from './AltLineBadge'
 import { downloadCsv, evBetsToCsvRows } from '@/lib/csv-export'
 import BookFilter, { bookOptions } from './BookFilter'
@@ -266,9 +266,14 @@ export default function EVCalculator({ evBets, scores }: Props) {
                     <span>{bet.selection}</span>
                     {bet.isAltLine && <AltLineBadge />}
                   </p>
-                  {liveScore && (
+                  {(isLiveGame(bet.commenceTime, liveScore) || liveScore?.completed) && (
                     <div className="mt-1">
-                      <LiveScoreBadge score={liveScore} homeTeam={bet.homeTeam} awayTeam={bet.awayTeam} />
+                      <LiveScoreBadge
+                        score={liveScore}
+                        homeTeam={bet.homeTeam}
+                        awayTeam={bet.awayTeam}
+                        commenceTime={bet.commenceTime}
+                      />
                     </div>
                   )}
                 </div>
@@ -287,7 +292,13 @@ export default function EVCalculator({ evBets, scores }: Props) {
                 </div>
               </div>
               <p className="mt-2 text-xs text-slate-500">
-                Kelly ${getKellyBet(bet.kellyCriterion)} · {format(new Date(bet.commenceTime), 'MMM d, h:mm a')}
+                Kelly ${getKellyBet(bet.kellyCriterion)}
+                {' · '}
+                {isLiveGame(bet.commenceTime, liveScore) ? (
+                  <span className="font-semibold text-red-400">Live</span>
+                ) : (
+                  format(new Date(bet.commenceTime), 'MMM d, h:mm a')
+                )}
               </p>
               {isExpanded && (
                 <div className="mt-3">
@@ -362,7 +373,7 @@ export default function EVCalculator({ evBets, scores }: Props) {
                   onClick={() => setSortField('time')}
                 >
                   <div className="flex items-center justify-end gap-1">
-                    Starts
+                    Time
                     <ArrowUpDown className="w-3 h-3" />
                   </div>
                 </th>
@@ -398,9 +409,12 @@ export default function EVCalculator({ evBets, scores }: Props) {
                         <div className="flex flex-col min-w-0 gap-1">
                         <span className="font-medium text-sm">{bet.awayTeam}</span>
                         <span className="text-slate-400 text-sm">@ {bet.homeTeam}</span>
-                        {liveScore && (
-                          <LiveScoreBadge score={liveScore} homeTeam={bet.homeTeam} awayTeam={bet.awayTeam} />
-                        )}
+                        <LiveScoreBadge
+                          score={liveScore}
+                          homeTeam={bet.homeTeam}
+                          awayTeam={bet.awayTeam}
+                          commenceTime={bet.commenceTime}
+                        />
                         </div>
                       </div>
                     </td>
@@ -455,14 +469,7 @@ export default function EVCalculator({ evBets, scores }: Props) {
                       </div>
                     </td>
                     <td className="py-3 px-4 text-right">
-                      <div className="flex flex-col items-end">
-                        <span className="text-sm">
-                          {format(new Date(bet.commenceTime), 'h:mm a')}
-                        </span>
-                        <span className="text-xs text-slate-500">
-                          {format(new Date(bet.commenceTime), 'MMM d, yyyy')}
-                        </span>
-                      </div>
+                      <StartTime commenceTime={bet.commenceTime} score={liveScore} />
                     </td>
                     <td className="py-3 px-4 text-center">
                       <div className="flex items-center justify-center gap-1">

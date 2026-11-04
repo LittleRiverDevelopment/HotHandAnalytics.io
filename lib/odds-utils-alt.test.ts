@@ -7,11 +7,13 @@ import {
   filterUpcomingOrLiveEvents,
   findEVBets,
   findLineDiscrepancies,
+  gameDisplayStatus,
   isUpcomingOrLive,
   parseOddsTimestamp,
   pruneDistantAltOutcomes,
   rankEventsForAltFetch,
   stripAltMarkets,
+  teamScoreValue,
 } from './odds-utils'
 
 test('collectQuotedLines includes alternate spreads without duplicating the main number', () => {
@@ -112,6 +114,35 @@ function scoreFor(
     last_update: new Date().toISOString(),
   }
 }
+
+test('gameDisplayStatus marks a started game live before a score is posted', () => {
+  const now = Date.parse('2026-11-04T02:00:00.000Z')
+  const started = new Date(now - 30 * 60 * 1000).toISOString()
+  const upcoming = new Date(now + 2 * HOUR).toISOString()
+  const quiet = {
+    completed: false,
+    scores: null,
+  }
+
+  assert.equal(gameDisplayStatus(started, undefined, now), 'live')
+  assert.equal(gameDisplayStatus(started, quiet, now), 'live')
+  assert.equal(gameDisplayStatus(upcoming, quiet, now), 'upcoming')
+  assert.equal(gameDisplayStatus(started, { completed: true, scores: [{ name: 'A', score: '1' }, { name: 'B', score: '2' }] }, now), 'final')
+  assert.equal(
+    gameDisplayStatus(upcoming, { completed: false, scores: [{ name: 'A', score: '0' }, { name: 'B', score: '0' }] }, now),
+    'live'
+  )
+})
+
+test('teamScoreValue matches accent and spacing differences', () => {
+  const entries = [
+    { name: 'Montréal Canadiens', score: '4' },
+    { name: 'Winnipeg Jets', score: '0' },
+  ]
+  assert.equal(teamScoreValue(entries, 'Montreal Canadiens'), '4')
+  assert.equal(teamScoreValue(entries, 'winnipeg  jets'), '0')
+  assert.equal(teamScoreValue(entries, 'Boston Bruins'), undefined)
+})
 
 test('isUpcomingOrLive keeps future games and drops completed ones', () => {
   const now = Date.parse('2026-09-06T18:00:00.000Z')

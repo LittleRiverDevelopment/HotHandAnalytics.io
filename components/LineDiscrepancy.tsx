@@ -7,7 +7,7 @@ import { LineDiscrepancy as LineDiscrepancyType, ScoreEvent } from '@/lib/types'
 import { formatOdds } from '@/lib/odds-utils'
 import { format } from 'date-fns'
 import BookOpenLink from './BookOpenLink'
-import LiveScoreBadge, { findScoreForGame } from './LiveScore'
+import LiveScoreBadge, { findScoreForGame, isLiveGame, StartTime } from './LiveScore'
 import AltLineBadge from './AltLineBadge'
 import { downloadCsv, lineDiscrepanciesToCsvRows } from '@/lib/csv-export'
 import BookFilter, { bookOptions } from './BookFilter'
@@ -163,9 +163,14 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
                     <span>{disc.market}</span>
                     {disc.isAltLine && <AltLineBadge />}
                   </p>
-                  {liveScore && (
+                  {(isLiveGame(disc.commenceTime, liveScore) || liveScore?.completed) && (
                     <div className="mt-1">
-                      <LiveScoreBadge score={liveScore} homeTeam={disc.homeTeam} awayTeam={disc.awayTeam} />
+                      <LiveScoreBadge
+                        score={liveScore}
+                        homeTeam={disc.homeTeam}
+                        awayTeam={disc.awayTeam}
+                        commenceTime={disc.commenceTime}
+                      />
                     </div>
                   )}
                 </div>
@@ -312,9 +317,12 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
                           <div className="flex flex-col min-w-0 gap-1">
                             <span className="font-medium text-sm">{disc.awayTeam}</span>
                             <span className="text-slate-400 text-sm">@ {disc.homeTeam}</span>
-                            {liveScore && (
-                              <LiveScoreBadge score={liveScore} homeTeam={disc.homeTeam} awayTeam={disc.awayTeam} />
-                            )}
+                            <LiveScoreBadge
+                              score={liveScore}
+                              homeTeam={disc.homeTeam}
+                              awayTeam={disc.awayTeam}
+                              commenceTime={disc.commenceTime}
+                            />
                           </div>
                         </div>
                       </td>
@@ -380,14 +388,7 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <div className="flex flex-col items-end">
-                          <span className="text-sm">
-                            {format(new Date(disc.commenceTime), 'h:mm a')}
-                          </span>
-                          <span className="text-xs text-slate-500">
-                            {format(new Date(disc.commenceTime), 'MMM d')}
-                          </span>
-                        </div>
+                        <StartTime commenceTime={disc.commenceTime} score={liveScore} datePattern="MMM d" />
                       </td>
                     </tr>
                     {isExpanded && (
