@@ -169,8 +169,9 @@ export const STAT_LABELS: Record<StatType, string> = {
 }
 
 /**
- * Books shown on the board. Caesars is `williamhill_us`. theScore Bet is still `espnbet`.
+ * Books on Positive EV and Arbitrage. Caesars is `williamhill_us`. theScore Bet is still `espnbet`.
  * Polymarket is the one prediction market that fits in the 10-book request.
+ * Pinnacle is fetched with these books and shopped on Line Shop, but it is not listed here.
  * PointsBet US, SuperBook, and US Betfred are not on the feed.
  */
 export const SPORTSBOOKS: Sportsbook[] = [
@@ -186,7 +187,8 @@ export const SPORTSBOOKS: Sportsbook[] = [
 ]
 
 /**
- * Books on each odds request. Pinnacle is the fair-odds benchmark, not a bet on the board.
+ * Books on each odds request. Pinnacle is the fair-odds benchmark and a Line Shop price.
+ * It stays off Positive EV and Arbitrage so those boards do not bet Pinnacle against itself.
  * The Odds API bills one region per 10 bookmakers, per market, so this list stays at 10 or fewer.
  * Hard Rock has no Colorado feed, and bet365's only key is the Australian one.
  */
