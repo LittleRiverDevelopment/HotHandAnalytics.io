@@ -1,7 +1,8 @@
 import { OddsEvent, ScoreEvent, LineDiscrepancy, EVBet, ArbitrageOpportunity, ArbitrageLeg, Outcome, Market, Bookmaker, SPORTSBOOKS } from './types'
 
-/** Books we shop. Pinnacle stays in the payload as the fair-odds benchmark. */
+/** Positive EV and Arbitrage shop these books. Line Shop also shops Pinnacle. */
 const COLORADO_BOOK_KEYS = SPORTSBOOKS.map(book => book.key)
+const PINNACLE_BOOK_KEY = 'pinnacle'
 
 /** If the book's market is updated much later than Pinnacle, no-vig fair odds are a stale reference. */
 const STALE_PINNACLE_VS_BOOK_MS = 25 * 60 * 1000
@@ -478,6 +479,12 @@ function isColoradoBook(bookKey: string): boolean {
   return COLORADO_BOOK_KEYS.includes(bookKey.toLowerCase())
 }
 
+/** Line Shop compares the board books and Pinnacle. +EV and arbitrage keep Pinnacle as the benchmark only. */
+function isLineShopBook(bookKey: string): boolean {
+  const key = bookKey.toLowerCase()
+  return key === PINNACLE_BOOK_KEY || isColoradoBook(key)
+}
+
 /** How actionable the shop looks: more books + larger price gap → higher score (0–100). */
 export function computeLineShopConfidence(bookCount: number, spread: number): number {
   const coverage = Math.min(60, 22 + Math.max(0, bookCount - 2) * 9.5)
@@ -506,7 +513,7 @@ export function findLineDiscrepancies(events: OddsEvent[]): LineDiscrepancy[] {
       > = new Map()
 
       event.bookmakers.forEach(bookmaker => {
-        if (!isColoradoBook(bookmaker.key)) return
+        if (!isLineShopBook(bookmaker.key)) return
 
         collectQuotedLines(bookmaker, kind).forEach(line => {
           const key = outcomeKey(line.name, line.point)

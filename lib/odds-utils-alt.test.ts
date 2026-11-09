@@ -5,6 +5,7 @@ import { OddsEvent, ScoreEvent } from './types'
 import {
   collectQuotedLines,
   filterUpcomingOrLiveEvents,
+  findArbitrageOpportunities,
   findEVBets,
   findLineDiscrepancies,
   gameDisplayStatus,
@@ -47,6 +48,25 @@ test('findLineDiscrepancies shops Over 220.5 across books as an alt total', () =
   assert.equal(row.isAltLine, true)
   assert.ok(row.spread >= 5)
   assert.equal(typeof row.fairOdds, 'number')
+  assert.ok(row.allBookOdds.some(book => book.book === 'Pinnacle'))
+})
+
+test('findLineDiscrepancies ranks Pinnacle with the other shopped books', () => {
+  const rows = findLineDiscrepancies(MOCK_EVENTS)
+  const withPinnacle = rows.filter(row => row.allBookOdds.some(book => book.book === 'Pinnacle'))
+  assert.ok(withPinnacle.length > 0, 'expected Pinnacle prices on shopped lines')
+  const best = rows.filter(row => row.bestBook === 'Pinnacle')
+  assert.ok(best.length > 0, 'expected Pinnacle to be the best price on at least one line')
+  assert.ok(best.every(row => row.allBookOdds.some(book => book.book === 'Pinnacle' && book.odds === row.bestOdds)))
+})
+
+test('positive EV and arbitrage still leave Pinnacle off the bet board', () => {
+  const ev = findEVBets(MOCK_EVENTS)
+  assert.equal(ev.some(bet => bet.book === 'Pinnacle'), false)
+  assert.equal(ev.some(bet => bet.allBookOdds.some(row => row.book === 'Pinnacle')), false)
+
+  const arbs = findArbitrageOpportunities(MOCK_EVENTS, 0)
+  assert.equal(arbs.some(arb => arb.legs.some(leg => leg.book === 'Pinnacle')), false)
 })
 
 test('stripAltMarkets removes +EV that only exists on alt numbers', () => {
