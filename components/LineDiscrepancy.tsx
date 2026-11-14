@@ -12,6 +12,8 @@ import AltLineBadge from './AltLineBadge'
 import { downloadCsv, lineDiscrepanciesToCsvRows } from '@/lib/csv-export'
 import BookFilter, { bookOptions } from './BookFilter'
 import FairOddsTile from './FairOddsTile'
+import LiveMatchupsToggle, { useShowLiveMatchups } from './LiveMatchupsToggle'
+import { includeMatchup } from '@/lib/show-live-matchups'
 
 interface Props {
   discrepancies: LineDiscrepancyType[]
@@ -29,6 +31,7 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
   const [filterMarket, setFilterMarket] = useState<string>('all')
   const [bookFilter, setBookFilter] = useState('all')
+  const { showLiveMatchups, setShowLiveMatchups } = useShowLiveMatchups()
   const books = useMemo(
     () => bookOptions(discrepancies.map(d => d.bestBook)),
     [discrepancies]
@@ -63,12 +66,17 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
 
   const filteredDiscrepancies = useMemo(() => {
     return sortedDiscrepancies.filter(d => {
+      if (!includeMatchup(
+        showLiveMatchups,
+        d.commenceTime,
+        findScoreForGame(scores, d.eventId, d.homeTeam, d.awayTeam, d.commenceTime)
+      )) return false
       if (bookFilter !== 'all' && d.bestBook !== bookFilter) return false
       if (filterMarket === 'all') return true
       if (filterMarket === 'alt') return !!d.isAltLine
       return d.market.toLowerCase() === filterMarket.toLowerCase()
     })
-  }, [sortedDiscrepancies, filterMarket, bookFilter])
+  }, [sortedDiscrepancies, filterMarket, bookFilter, showLiveMatchups, scores])
   
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -105,7 +113,8 @@ export default function LineDiscrepancyTable({ discrepancies, scores }: Props) {
           </span>
         </div>
         
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <LiveMatchupsToggle checked={showLiveMatchups} onChange={setShowLiveMatchups} />
           <BookFilter value={bookFilter} books={books} onChange={setBookFilter} />
           <select
             value={filterMarket}

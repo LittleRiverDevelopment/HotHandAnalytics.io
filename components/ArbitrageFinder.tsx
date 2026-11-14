@@ -10,6 +10,8 @@ import LiveScoreBadge, { findScoreForGame, isLiveGame, StartTime } from './LiveS
 import AltLineBadge from './AltLineBadge'
 import { downloadCsv, arbitrageToCsvRows } from '@/lib/csv-export'
 import BookFilter, { bookOptions } from './BookFilter'
+import LiveMatchupsToggle, { useShowLiveMatchups } from './LiveMatchupsToggle'
+import { includeMatchup } from '@/lib/show-live-matchups'
 
 interface Props {
   arbs: ArbitrageOpportunity[]
@@ -23,6 +25,7 @@ export default function ArbitrageFinder({ arbs, scores }: Props) {
   const [minProfit, setMinProfit] = useState(0)
   const [stakeTotal, setStakeTotal] = useState(1000)
   const [bookFilter, setBookFilter] = useState('all')
+  const { showLiveMatchups, setShowLiveMatchups } = useShowLiveMatchups()
   const books = useMemo(
     () => bookOptions(arbs.flatMap(arb => arb.legs.map(leg => leg.book))),
     [arbs]
@@ -32,6 +35,11 @@ export default function ArbitrageFinder({ arbs, scores }: Props) {
     return [...arbs]
       .filter(a => a.profitPercent >= minProfit)
       .filter(a => bookFilter === 'all' || a.legs.some(leg => leg.book === bookFilter))
+      .filter(a => includeMatchup(
+        showLiveMatchups,
+        a.commenceTime,
+        findScoreForGame(scores, a.eventId, a.homeTeam, a.awayTeam, a.commenceTime)
+      ))
       .sort((a, b) => {
         switch (sortField) {
           case 'profit':
@@ -50,7 +58,7 @@ export default function ArbitrageFinder({ arbs, scores }: Props) {
             return 0
         }
       })
-  }, [arbs, sortField, minProfit, bookFilter])
+  }, [arbs, sortField, minProfit, bookFilter, showLiveMatchups, scores])
 
   const getProfitColor = (p: number) => {
     if (p >= 3) return 'text-green-400'
@@ -79,6 +87,7 @@ export default function ArbitrageFinder({ arbs, scores }: Props) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <LiveMatchupsToggle checked={showLiveMatchups} onChange={setShowLiveMatchups} />
           <BookFilter value={bookFilter} books={books} onChange={setBookFilter} />
           <label className="flex items-center gap-2 min-h-[44px] text-sm text-slate-400">
             Min %

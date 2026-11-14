@@ -12,6 +12,8 @@ import AltLineBadge from './AltLineBadge'
 import { downloadCsv, evBetsToCsvRows } from '@/lib/csv-export'
 import BookFilter, { bookOptions } from './BookFilter'
 import FairOddsTile from './FairOddsTile'
+import LiveMatchupsToggle, { useShowLiveMatchups } from './LiveMatchupsToggle'
+import { includeMatchup } from '@/lib/show-live-matchups'
 
 interface Props {
   evBets: EVBet[]
@@ -77,6 +79,7 @@ export default function EVCalculator({ evBets, scores }: Props) {
   const [marketFilter, setMarketFilter] = useState('all')
   const [bookFilter, setBookFilter] = useState('all')
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
+  const { showLiveMatchups, setShowLiveMatchups } = useShowLiveMatchups()
   const books = useMemo(() => bookOptions(evBets.map(bet => bet.book)), [evBets])
 
   const sortedBets = useMemo(() => {
@@ -88,6 +91,11 @@ export default function EVCalculator({ evBets, scores }: Props) {
         return bet.market.toLowerCase() === marketFilter.toLowerCase()
       })
       .filter(bet => bookFilter === 'all' || bet.book === bookFilter)
+      .filter(bet => includeMatchup(
+        showLiveMatchups,
+        bet.commenceTime,
+        findScoreForGame(scores, bet.eventId, bet.homeTeam, bet.awayTeam, bet.commenceTime)
+      ))
       .sort((a, b) => {
         switch (sortField) {
           case 'ev':
@@ -106,7 +114,7 @@ export default function EVCalculator({ evBets, scores }: Props) {
             return 0
         }
       })
-  }, [evBets, sortField, minEV, marketFilter, bookFilter])
+  }, [evBets, sortField, minEV, marketFilter, bookFilter, showLiveMatchups, scores])
   
   const getEVColor = (ev: number) => {
     if (ev >= 5) return 'text-green-400'
@@ -152,6 +160,7 @@ export default function EVCalculator({ evBets, scores }: Props) {
         </div>
         
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <LiveMatchupsToggle checked={showLiveMatchups} onChange={setShowLiveMatchups} />
           <BookFilter value={bookFilter} books={books} onChange={setBookFilter} />
           <select
             aria-label="Market"
