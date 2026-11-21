@@ -8,6 +8,7 @@ import type { User } from '@supabase/supabase-js'
 import { validateAuthFields, type AuthMode } from '@/lib/auth-form'
 import { getSupabaseBrowserClient } from '@/lib/supabase-browser'
 import { browserSupabaseEnv, describeSupabaseAuthSetup, type SupabaseAuthSetup } from '@/lib/supabase-public'
+import { useAuthSession } from './AuthSession'
 
 const MISSING_MESSAGE = 'Signed out. Email login is not configured for this build. The odds boards stay available.'
 const SECRET_MESSAGE = 'Signed out. The public login setting contains a secret key, so login stays off. Use the anon key.'
@@ -36,8 +37,8 @@ function requestError(error: { message?: string } | null): string {
 
 export default function AccountAuth() {
   const [setup] = useState<SupabaseAuthSetup>(() => describeSupabaseAuthSetup(browserSupabaseEnv()))
-  const [clientFailed, setClientFailed] = useState(false)
-  const [user, setUser] = useState<User | null>(null)
+  const { user } = useAuthSession()
+  const clientFailed = setup === 'ready' && getSupabaseBrowserClient() === null
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<AuthMode>('sign-in')
   const [email, setEmail] = useState('')
@@ -48,34 +49,6 @@ export default function AccountAuth() {
   const dialogRef = useRef<HTMLDivElement>(null)
   const blockedMessage = setupMessage(setup, clientFailed)
   const label = user ? accountLabel(user) : ''
-
-  useEffect(() => {
-    if (setup !== 'ready') return
-    const supabase = getSupabaseBrowserClient()
-    if (!supabase) {
-      setClientFailed(true)
-      return
-    }
-    let active = true
-    supabase.auth.getSession().then(({ data, error: sessionError }) => {
-      if (!active) return
-      if (sessionError) {
-        setNotice('Signed out. A saved login could not be read.')
-        setUser(null)
-        return
-      }
-      setUser(data.session?.user ?? null)
-    }).catch(() => {
-      if (active) setNotice('Signed out. A saved login could not be read.')
-    })
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-    })
-    return () => {
-      active = false
-      data.subscription.unsubscribe()
-    }
-  }, [setup])
 
   useEffect(() => {
     if (!open) return
@@ -128,7 +101,6 @@ export default function AccountAuth() {
       setNotice(requestError(signOutError))
       return
     }
-    setUser(null)
     setPassword('')
   }
 
@@ -146,7 +118,6 @@ export default function AccountAuth() {
     }
     const supabase = getSupabaseBrowserClient()
     if (!supabase) {
-      setClientFailed(true)
       setError(INVALID_MESSAGE)
       return
     }
@@ -166,7 +137,6 @@ export default function AccountAuth() {
           return
         }
         if (data.session?.user) {
-          setUser(data.session.user)
           setPassword('')
           close()
           return
@@ -183,7 +153,6 @@ export default function AccountAuth() {
         setError(requestError(signInError))
         return
       }
-      if (data.user) setUser(data.user)
       setPassword('')
       close()
     } catch {

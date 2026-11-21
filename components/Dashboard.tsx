@@ -34,6 +34,7 @@ import {
 } from '@/lib/odds-api'
 import Settings from './Settings'
 import AccountAuth from './AccountAuth'
+import { useAuthSession } from './AuthSession'
 
 type Tab = 'ev' | 'discrepancies' | 'arbitrage'
 
@@ -176,6 +177,7 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
   const closeSettings = useCallback(() => setShowSettings(false), [])
+  const { isAdmin } = useAuthSession()
   const [cacheAge, setCacheAge] = useState<number | null>(null)
   const [includeAltLines, setIncludeAltLinesState] = useState(() => getIncludeAltLines())
   const [altGames, setAltGames] = useState(0)
@@ -407,15 +409,17 @@ export default function Dashboard() {
                 ))}
               </select>
 
-              <button
-                type="button"
-                onClick={() => setShowSettings(true)}
-                title="Admin"
-                aria-label="Admin"
-                className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-slate-800/50 hover:bg-slate-700/50 transition-colors"
-              >
-                <SettingsIcon className="w-4 h-4" />
-              </button>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setShowSettings(true)}
+                  title="Admin"
+                  aria-label="Admin"
+                  className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-slate-800/50 hover:bg-slate-700/50 transition-colors"
+                >
+                  <SettingsIcon className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -515,11 +519,12 @@ export default function Dashboard() {
       </footer>
 
       <Settings
-        isOpen={showSettings}
+        isOpen={showSettings && isAdmin}
         onClose={closeSettings}
         onRefresh={() => loadData(true)}
         isRefreshing={isLoading || altLoading}
         refreshError={error}
+        accountAdmin={isAdmin}
       />
     </div>
   )
