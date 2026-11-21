@@ -17,7 +17,8 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          # @supabase/supabase-js 2.119 needs Node 22. Node 20 has no global WebSocket, so createClient throws.
+          node-version: "22"
           cache: npm
 
       - name: Install dependencies

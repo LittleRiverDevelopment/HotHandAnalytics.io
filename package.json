@@ -6,9 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "npx --yes tsx --test lib/admin-settings.test.ts lib/odds-books.test.ts lib/odds-utils-alt.test.ts lib/show-live-matchups.test.ts"
+    "test": "npx --yes tsx --test lib/admin-settings.test.ts lib/odds-books.test.ts lib/odds-utils-alt.test.ts lib/show-live-matchups.test.ts lib/supabase-auth.test.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.119.2",
     "date-fns": "^3.3.1",
     "framer-motion": "^11.0.3",
     "lucide-react": "^0.323.0",

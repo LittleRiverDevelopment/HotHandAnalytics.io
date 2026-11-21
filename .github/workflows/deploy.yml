@@ -24,7 +24,8 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          # @supabase/supabase-js 2.119 needs Node 22. Node 20 has no global WebSocket, so createClient throws.
+          node-version: "22"
           cache: "npm"
 
       - name: Install dependencies
@@ -39,6 +40,9 @@ jobs:
           NEXT_PUBLIC_ODDS_API_KEY: ${{ secrets.NEXT_PUBLIC_ODDS_API_KEY }}
           NEXT_PUBLIC_ODDS_API_KEY_2: ${{ secrets.NEXT_PUBLIC_ODDS_API_KEY_2 }}
           NEXT_PUBLIC_ADMIN_PASSWORD: ${{ secrets.NEXT_PUBLIC_ADMIN_PASSWORD }}
+          # Public login settings. Empty values leave the deployed site signed out.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

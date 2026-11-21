@@ -15,8 +15,14 @@ Odds come from [The Odds API](https://the-odds-api.com/) in the browser. The fir
 | `NEXT_PUBLIC_ODDS_API_KEY` | The three tabs. No admin password. |
 | `NEXT_PUBLIC_ODDS_API_KEY_2` | Backup only, and only after the admin password is entered in this tab. |
 | `NEXT_PUBLIC_ADMIN_PASSWORD` | Unlocks Admin so the backup key can be sent. Client-side convenience guard, not real security. |
+| `NEXT_PUBLIC_SUPABASE_URL` | Public Supabase project URL for email/password accounts. |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public anon or publishable key. Never the service-role key or database password. |
 
 Same pattern as HotHand: `NEXT_PUBLIC_*` values are compiled into the static site. Do not commit real keys. Put them in `.env` locally (see `.env.example`) or in GitHub Actions secrets for the Pages deploy.
+
+Email login uses the Supabase JS client. Sign in, sign up, and sign out sit in the header. The Positive EV, Line Shop, and Arbitrage tabs stay available when you are signed out. If the Supabase URL or anon key is blank, the header stays on Signed out and the boards still load. The admin password is separate and only unlocks the backup odds key.
+
+In the Supabase project, turn on the Email provider. Under Authentication → URL configuration, set the Site URL to this site and add redirect URLs for the deployed address and for `http://localhost:3000`. Sign-up returns to the current page. If email confirmation is on, a new account stays signed out until that message is confirmed. The anon key is compiled into the site. Never put a service-role key or database password in `NEXT_PUBLIC_SUPABASE_ANON_KEY` or anywhere else in this repo.
 
 ```bash
 npm install

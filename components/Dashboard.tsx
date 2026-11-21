@@ -33,6 +33,7 @@ import {
   ALT_EVENT_CAP,
 } from '@/lib/odds-api'
 import Settings from './Settings'
+import AccountAuth from './AccountAuth'
 
 type Tab = 'ev' | 'discrepancies' | 'arbitrage'
 
@@ -393,12 +394,13 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <AccountAuth />
               <select
                 value={selectedSport}
                 onChange={(e) => setSelectedSport(e.target.value as SportKey)}
                 aria-label="Sport"
-                className="bg-slate-800/50 border border-slate-700 rounded-lg px-2 sm:px-3 py-2 text-sm focus:outline-none focus:border-green-500"
+                className="min-w-0 max-w-[38vw] sm:max-w-[11rem] bg-slate-800/50 border border-slate-700 rounded-lg px-2 sm:px-3 py-2 text-sm focus:outline-none focus:border-green-500"
               >
                 {SPORTS.map(sport => (
                   <option key={sport.key} value={sport.key}>{sport.title}</option>
