@@ -149,7 +149,7 @@ export default function PlayerPropAnalyzer({ playerProps }: Props) {
       
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         <div className="lg:col-span-1 space-y-4">
-          <div className="card p-4 space-y-4">
+          <div className={`card p-4 space-y-4 relative ${isPlayerDropdownOpen ? 'z-30' : ''}`}>
             <div className="relative">
               <label className="block text-sm text-slate-400 mb-1">Player</label>
               <button
@@ -166,7 +166,7 @@ export default function PlayerPropAnalyzer({ playerProps }: Props) {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-lg overflow-hidden z-10"
+                    className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-lg z-30 max-h-60 overflow-y-auto overscroll-contain"
                   >
                     {playerProps.map(prop => (
                       <button
