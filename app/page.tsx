@@ -1,6 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import { AuthSessionProvider } from '@/components/AuthSession'
 
 const Dashboard = dynamic(() => import('@/components/Dashboard'), {
   ssr: false,
@@ -15,5 +16,9 @@ const Dashboard = dynamic(() => import('@/components/Dashboard'), {
 })
 
 export default function Home() {
-  return <Dashboard />
+  return (
+    <AuthSessionProvider>
+      <Dashboard />
+    </AuthSessionProvider>
+  )
 }

@@ -12,6 +12,8 @@ interface SettingsProps {
   onRefresh: () => Promise<void>
   isRefreshing: boolean
   refreshError: string | null
+  /** Signed-in account already granted admin in Supabase. Skips the shared password. */
+  accountAdmin?: boolean
 }
 
 // This static-build password is a convenience guard, not secure authentication.
@@ -19,7 +21,7 @@ const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || ''
 type KeyDetails = ReturnType<typeof oddsKeyDetails>
 const EMPTY_DETAILS: KeyDetails = { source: 'none', state: 'missing' }
 
-export default function Settings({ isOpen, onClose, onRefresh, isRefreshing, refreshError }: SettingsProps) {
+export default function Settings({ isOpen, onClose, onRefresh, isRefreshing, refreshError, accountAdmin = false }: SettingsProps) {
   const [unlocked, setUnlocked] = useState(false)
   const [password, setPassword] = useState('')
   const [passwordError, setPasswordError] = useState('')
@@ -44,7 +46,12 @@ export default function Settings({ isOpen, onClose, onRefresh, isRefreshing, ref
     if (!sessionRead.current) {
       sessionRead.current = true
       try {
-        setUnlocked(sessionStorage.getItem(ADMIN_UNLOCK_STORAGE_KEY) === '1')
+        if (accountAdmin) {
+          sessionStorage.setItem(ADMIN_UNLOCK_STORAGE_KEY, '1')
+          setUnlocked(true)
+        } else {
+          setUnlocked(sessionStorage.getItem(ADMIN_UNLOCK_STORAGE_KEY) === '1')
+        }
       } catch {
         setSessionNotice('Session storage is unavailable. Unlock applies to this page only.')
       }
@@ -60,7 +67,7 @@ export default function Settings({ isOpen, onClose, onRefresh, isRefreshing, ref
     setMessage('')
     setConfirmReset(false)
     setRefreshAttempted(false)
-  }, [isOpen])
+  }, [isOpen, accountAdmin])
 
   useEffect(() => {
     if (isOpen && !isRefreshing) updateDetails()
@@ -100,6 +107,17 @@ export default function Settings({ isOpen, onClose, onRefresh, isRefreshing, ref
       opener?.focus()
     }
   }, [isOpen, onClose])
+
+  const handleUnlockAsAccount = () => {
+    try {
+      sessionStorage.setItem(ADMIN_UNLOCK_STORAGE_KEY, '1')
+    } catch {
+      setSessionNotice('Session storage is unavailable. Unlock applies to this page only.')
+    }
+    setUnlocked(true)
+    setPassword('')
+    setPasswordError('')
+  }
 
   const handleUnlock = (event: FormEvent) => {
     event.preventDefault()
@@ -194,7 +212,7 @@ export default function Settings({ isOpen, onClose, onRefresh, isRefreshing, ref
                   </div>
                   <div>
                     <h2 id="admin-title" className="text-lg font-semibold leading-tight">Admin</h2>
-                    <p className="text-xs text-slate-400">{unlocked ? 'Personal odds settings' : 'Password required'}</p>
+                    <p className="text-xs text-slate-400">{unlocked ? 'Personal odds settings' : accountAdmin ? 'Admin account' : 'Password required'}</p>
                   </div>
                 </div>
                 <button type="button" onClick={onClose} aria-label="Close admin"
@@ -291,6 +309,13 @@ export default function Settings({ isOpen, onClose, onRefresh, isRefreshing, ref
                     <p>Convenience guard only. The primary key is used without this password. The backup key is not sent until admin is unlocked. Site keys and the password remain in the browser bundle; browser overrides are stored on this device.</p>
                   </div>
                 </div>
+              ) : accountAdmin ? (
+                <form onSubmit={event => { event.preventDefault(); handleUnlockAsAccount() }} className="space-y-4">
+                  <p className="text-xs text-slate-400">
+                    This account is an admin. The three boards keep working. Unlocking lets this tab send the backup odds key.
+                  </p>
+                  <button type="submit" className="w-full min-h-[44px] px-4 py-2.5 bg-green-700 hover:bg-green-600 rounded-lg text-sm font-medium transition-colors">Unlock admin</button>
+                </form>
               ) : (
                 <form onSubmit={handleUnlock} className="space-y-4">
                   <p className="text-xs text-slate-400">
