@@ -8,7 +8,7 @@ A sports-betting board for finding a better price. One page:
 - **Overview** — counts and the top prices from the same odds already loaded
 - **Bonus** — same-game parlays built from those prices
 - **Analytics** — edge heatmap and line movement saved in this browser
-- **Player Props** — sample prop board. It does not call the odds API
+- **Player Props** — recent NBA game logs for the players in `scripts/fetch_gamelogs.py`. The line starts at the recent average. It is not a sportsbook price, and it does not call the odds API
 - **Bet Tracker** — the saved bet history
 - **Bankroll Sim** — a bankroll projection from that history
 

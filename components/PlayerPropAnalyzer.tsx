@@ -6,7 +6,7 @@ import { User, TrendingUp, Target, Calendar, ChevronDown, BarChart3 } from 'luci
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartData, ChartOptions } from 'chart.js'
 import { Bar } from 'react-chartjs-2'
 import { PlayerProp, StatType, STAT_LABELS, PlayerGameLog } from '@/lib/types'
-import { PLAYER_STAT_LINES } from '@/lib/mock-data'
+import { PLAYER_STAT_LINES } from '@/lib/player-gamelogs'
 import { format, parseISO } from 'date-fns'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)

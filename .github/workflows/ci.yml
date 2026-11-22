@@ -26,3 +26,6 @@ jobs:
 
       - name: Test
         run: npm test
+
+      - name: Test game log helpers
+        run: python3 scripts/fetch_gamelogs_test.py
