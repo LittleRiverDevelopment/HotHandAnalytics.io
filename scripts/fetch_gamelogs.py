@@ -4,8 +4,8 @@
 The local script used nba_api and wrote every season to CSV for R. stats.nba.com
 does not answer from the host that builds this site, so this job reads the same
 box-score fields from ESPN's public game log. The tab charts at most 30 games,
-so each player keeps the newest 30 regular-season games. Assists, blocks, and
-steals stay on the row because the tab shows them.
+so each player keeps the newest 30 regular-season games. A name with no NBA
+match is skipped, same as the local script.
 """
 
 from __future__ import annotations
@@ -20,9 +20,24 @@ from datetime import date, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+# Same list as the local top-stars script. Accents are matched loosely.
 PLAYERS = [
-    "Nikola Jokic",
+    "Nikola Jokić",
+    "Shai Gilgeous-Alexander",
+    "Luka Dončić",
+    "Giannis Antetokounmpo",
+    "Victor Wembanyama",
     "LeBron James",
+    "Jayson Tatum",
+    "Anthony Edwards",
+    "Tyrese Maxey",
+    "Jalen Brunson",
+    "Jamal Murray",
+    "Devin Booker",
+    "Stephen Curry",
+    "Kevin Durant",
+    "Donovan Mitchell",
+    "Cooper Flagg",
 ]
 KEEP_GAMES = 30
 LINE_SAMPLE = 10
@@ -207,7 +222,7 @@ def fetch_json(url: str) -> dict:
 
 
 def search_players(full_name: str) -> list[dict]:
-    query = urllib.parse.urlencode({"query": full_name, "limit": 5, "type": "player"})
+    query = urllib.parse.urlencode({"query": full_name, "limit": 10, "type": "player"})
     payload = fetch_json(f"https://site.api.espn.com/apis/common/v3/search?{query}")
     found = []
     for item in payload.get("items") or []:
@@ -263,10 +278,19 @@ def fetch_season_rows(player_id: str, season: str) -> list[dict]:
     return rows_from_gamelog(fetch_json(url))
 
 
-def fetch_player(full_name: str, today: date) -> dict:
+def fetch_player(full_name: str, today: date) -> dict | None:
     import time
 
-    found = find_player(full_name, search_players(full_name))
+    catalog = search_players(full_name)
+    try:
+        found = find_player(full_name, catalog)
+    except ValueError:
+        partial = [player["full_name"] for player in catalog][:3]
+        print(
+            f"Skipping {full_name} - player ID not found. Close names: {partial}",
+            file=sys.stderr,
+        )
+        return None
     season = current_season(today)
     rows = fetch_season_rows(found["id"], season)
     if len(rows) < KEEP_GAMES:
@@ -274,7 +298,8 @@ def fetch_player(full_name: str, today: date) -> dict:
         rows = fetch_season_rows(found["id"], previous_season(season)) + rows
     games = recent_games(rows)
     if not games:
-        raise ValueError(f"No regular-season games returned for {full_name}")
+        print(f"Skipping {full_name} - no regular-season games", file=sys.stderr)
+        return None
     return player_record(found["id"], found["full_name"], games)
 
 
@@ -293,6 +318,8 @@ def main() -> int:
             import time
             time.sleep(0.4)
         record = fetch_player(name, today)
+        if record is None:
+            continue
         records.append(record)
         lines[record["playerId"]] = stat_lines(
             [
@@ -307,6 +334,9 @@ def main() -> int:
             ]
         )
         print(f"Saved {len(record['recentGames'])} games for {record['playerName']}", file=sys.stderr)
+
+    if not records:
+        raise ValueError("No players were saved")
 
     fetched_at = datetime.now().astimezone().isoformat(timespec="seconds")
     rendered = render_module(records, lines, season, fetched_at)
