@@ -170,7 +170,8 @@ export const STAT_LABELS: Record<StatType, string> = {
 
 /**
  * Books on Positive EV and Arbitrage. Caesars is `williamhill_us`. theScore Bet is still `espnbet`.
- * Polymarket is the one prediction market that fits in the 10-book request.
+ * Polymarket US (`polymarket_us`) is the one prediction market in the 10-book request.
+ * Its board price includes the small-account taker fee.
  * Pinnacle is fetched with these books and shopped on Line Shop, but it is not listed here.
  * PointsBet US, SuperBook, and US Betfred are not on the feed.
  */
@@ -183,7 +184,7 @@ export const SPORTSBOOKS: Sportsbook[] = [
   { key: 'fanatics', name: 'Fanatics' },
   { key: 'espnbet', name: 'theScore Bet' },
   { key: 'ballybet', name: 'Bally Bet' },
-  { key: 'polymarket', name: 'Polymarket' },
+  { key: 'polymarket_us', name: 'Polymarket US' },
 ]
 
 /**
