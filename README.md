@@ -1,10 +1,16 @@
 # LineSnipe
 
-A smaller sports-betting board for finding a better price. Three tabs, one page:
+A sports-betting board for finding a better price. One page:
 
 - **Positive EV Finder** — bets priced better than Pinnacle no-vig fair odds, including alternate spreads and totals when Alt lines is on
 - **Line Shop** — best vs worst price on the same number across the books
 - **Arbitrage** — two-way books whose combined implied probability is under 100%
+- **Overview** — counts and the top prices from the same odds already loaded
+- **Bonus** — same-game parlays built from those prices
+- **Analytics** — edge heatmap and line movement saved in this browser
+- **Player Props** — sample prop board. It does not call the odds API
+- **Bet Tracker** — the saved bet history
+- **Bankroll Sim** — a bankroll projection from that history
 
 Odds come from [The Odds API](https://the-odds-api.com/) in the browser. The first visit shows labeled demo data. Refresh pulls live odds and may use API credits. Results stay in this browser until you refresh again.
 
