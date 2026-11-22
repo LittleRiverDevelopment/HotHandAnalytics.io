@@ -10,7 +10,7 @@ export const SPORTSBOOK_HOME_URLS: Record<string, string> = {
   fanatics: 'https://sportsbook.fanatics.com/',
   espnbet: 'https://www.thescore.bet/',
   ballybet: 'https://www.ballybet.com/',
-  polymarket: 'https://polymarket.com/',
+  polymarket_us: 'https://polymarket.us/',
   pinnacle: 'https://www.pinnacle.com/',
 }
 
@@ -38,7 +38,7 @@ export function resolveSportsbookKey(bookTitle: string): string | null {
   if (t.includes('fanatics')) return 'fanatics'
   if (t.includes('espn') || t.includes('thescore') || t.includes('the score')) return 'espnbet'
   if (t.includes('bally')) return 'ballybet'
-  if (t.includes('polymarket')) return 'polymarket'
+  if (t.includes('polymarket')) return 'polymarket_us'
   if (t.includes('pinnacle')) return 'pinnacle'
   return null
 }

@@ -8,6 +8,8 @@ A smaller sports-betting board for finding a better price. Three tabs, one page:
 
 Odds come from [The Odds API](https://the-odds-api.com/) in the browser. The first visit shows labeled demo data. Refresh pulls live odds and may use API credits. Results stay in this browser until you refresh again.
 
+Polymarket on the boards is Polymarket US. The price includes the small-account taker fee, so a 50¢ contract is shown near -110 instead of +100.
+
 ## Keys
 
 | Variable | Who can use it |
