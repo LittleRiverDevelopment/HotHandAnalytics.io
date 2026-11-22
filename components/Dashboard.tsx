@@ -36,7 +36,8 @@ import MobileBottomNav from './MobileBottomNav'
 import LiveScoreBadge, { findScoreForGame } from './LiveScore'
 import { OddsEvent, ScoreEvent, LineDiscrepancy, EVBet, ArbitrageOpportunity, PlayerProp, SPORTS, SportKey } from '@/lib/types'
 import { findLineDiscrepancies, findEVBets, findArbitrageOpportunities, stripAltMarkets, filterUpcomingOrLiveEvents } from '@/lib/odds-utils'
-import { MOCK_EVENTS, MOCK_PLAYER_PROPS } from '@/lib/mock-data'
+import { MOCK_EVENTS } from '@/lib/mock-data'
+import { PLAYER_GAMELOG_PLAYERS } from '@/lib/player-gamelogs'
 import {
   fetchOddsClient,
   fetchScoresClient,
@@ -187,7 +188,7 @@ export default function Dashboard() {
   const [evBets, setEvBets] = useState<EVBet[]>([])
   const [arbs, setArbs] = useState<ArbitrageOpportunity[]>([])
   const [events, setEvents] = useState<OddsEvent[]>([])
-  const [playerProps] = useState<PlayerProp[]>(MOCK_PLAYER_PROPS)
+  const [playerProps] = useState<PlayerProp[]>(PLAYER_GAMELOG_PLAYERS)
   const [moreOpen, setMoreOpen] = useState(false)
   const [selectedSport, setSelectedSport] = useState<SportKey>('basketball_nba')
   const [isLive, setIsLive] = useState(false)
@@ -739,7 +740,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between p-3 mb-4 bg-slate-800/30 rounded-lg border border-slate-700/50">
                 <div className="flex items-center gap-3 text-sm">
                   <div className="w-2 h-2 bg-purple-400 rounded-full" />
-                  <span className="text-slate-400">Sample data • No API calls used</span>
+                  <span className="text-slate-400">NBA game logs • line starts at the recent average, not a book price</span>
                 </div>
               </div>
               <PlayerPropAnalyzer playerProps={playerProps} />

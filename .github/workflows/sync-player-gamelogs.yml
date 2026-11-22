@@ -1,0 +1,52 @@
+name: Sync Player Game Logs
+
+on:
+  schedule:
+    # 13:00 UTC is 6:00am America/Denver during standard time.
+    - cron: "0 13 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  # Needed to dispatch the deploy workflow after a data-sync push (GITHUB_TOKEN
+  # pushes don't trigger on:push workflows; workflow_dispatch is the documented exception).
+  actions: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Sync NBA game logs
+        id: sync
+        run: |
+          set +e
+          python3 scripts/fetch_gamelogs.py
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          set -e
+
+      # Exit 42 means the logs were reachable but the games did not change.
+      - name: Discard unchanged logs
+        if: steps.sync.outputs.exit_code == '42'
+        run: git checkout -- lib/player-gamelogs.ts
+
+      - name: Fail job on real sync error
+        if: steps.sync.outputs.exit_code != '0' && steps.sync.outputs.exit_code != '42'
+        run: exit 1
+
+      - name: Commit and push updated game logs
+        if: steps.sync.outputs.exit_code == '0'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add lib/player-gamelogs.ts
+          git commit -m "Auto-sync player game logs"
+          git push
+
+      - name: Publish the updated logs
+        if: steps.sync.outputs.exit_code == '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml --repo "$GITHUB_REPOSITORY" --ref main
