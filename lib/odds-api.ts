@@ -1,6 +1,6 @@
 import { OddsEvent, ODDS_API_BOOKMAKERS, ScoreEvent, SportKey } from './types'
 import { pruneDistantAltOutcomes, rankEventsForAltFetch } from './odds-utils'
-import { withPolymarketUsTakerPrices, withPolymarketUsTakerPricesList } from './polymarket-us'
+import { withExchangeTakerPrices, withExchangeTakerPricesList } from './exchange-fees'
 import { isAdminUnlocked, readKeyOverrides } from './admin-settings'
 
 const BASE_URL = 'https://api.the-odds-api.com/v4'
@@ -358,7 +358,7 @@ export async function fetchOddsClient(
       }
     }
 
-    const data = result.notModified ? result.data : withPolymarketUsTakerPricesList(result.data)
+    const data = result.notModified ? result.data : withExchangeTakerPricesList(result.data)
 
     setCache(cacheKey, {
       data,
@@ -473,7 +473,7 @@ export async function fetchPlayerProps(
     if (!result.ok || !result.data) {
       return { data: null, error: result.error, remainingRequests: result.remainingRequests }
     }
-    const data = result.notModified ? result.data : withPolymarketUsTakerPrices(result.data)
+    const data = result.notModified ? result.data : withExchangeTakerPrices(result.data)
     return { data, error: null, remainingRequests: result.remainingRequests }
   } catch (error) {
     return { data: null, error: 'Network request failed. Check your connection and try again.' }
@@ -585,7 +585,7 @@ async function fetchEventAltLines(
       return { data: null, error: result.error, remainingRequests: result.remainingRequests }
     }
 
-    const data = result.notModified ? result.data : withPolymarketUsTakerPrices(result.data)
+    const data = result.notModified ? result.data : withExchangeTakerPrices(result.data)
     setAltCacheEntry(key, {
       data,
       timestamp: Date.now(),

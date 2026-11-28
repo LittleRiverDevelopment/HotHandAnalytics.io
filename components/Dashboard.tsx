@@ -21,6 +21,7 @@ import {
   History,
   Dice5,
   Target,
+  ArrowLeftRight,
   ChevronRight,
 } from 'lucide-react'
 import LineDiscrepancyTable from './LineDiscrepancy'
@@ -32,11 +33,13 @@ import LineMovement, { recordOddsSnapshot } from './LineMovement'
 import PlayerPropAnalyzer from './PlayerPropAnalyzer'
 import BetTracker from './BetTracker'
 import BankrollSimulator from './BankrollSimulator'
+import ExchangeDeltaBoard from './ExchangeDelta'
 import MobileBottomNav from './MobileBottomNav'
 import LiveScoreBadge, { findScoreForGame } from './LiveScore'
 import { OddsEvent, ScoreEvent, LineDiscrepancy, EVBet, ArbitrageOpportunity, PlayerProp, SPORTS, SportKey } from '@/lib/types'
 import { findLineDiscrepancies, findEVBets, findArbitrageOpportunities, stripAltMarkets, filterUpcomingOrLiveEvents } from '@/lib/odds-utils'
 import { MOCK_EVENTS } from '@/lib/mock-data'
+import { withExchangeTakerPricesList } from '@/lib/exchange-fees'
 import { PLAYER_GAMELOG_PLAYERS } from '@/lib/player-gamelogs'
 import {
   fetchOddsClient,
@@ -53,7 +56,7 @@ import Settings from './Settings'
 import AccountAuth from './AccountAuth'
 import { useAuthSession } from './AuthSession'
 
-type Tab = 'ev' | 'discrepancies' | 'arbitrage' | 'overview' | 'bonus' | 'analytics' | 'props' | 'tracker' | 'simulator'
+type Tab = 'ev' | 'discrepancies' | 'arbitrage' | 'overview' | 'bonus' | 'analytics' | 'props' | 'tracker' | 'simulator' | 'exchanges'
 
 function formatCacheAge(ms: number): string {
   const minutes = Math.floor(ms / 60000)
@@ -298,7 +301,7 @@ export default function Dashboard() {
         setCacheAge(null)
         scoresRef.current = []
         setScores([])
-        publishBoard(prepEvents(MOCK_EVENTS), [])
+        publishBoard(prepEvents(withExchangeTakerPricesList(MOCK_EVENTS)), [])
         setAltGames(includeAltLines ? MOCK_EVENTS.filter(e =>
           e.bookmakers.some(b => b.markets.some(m => m.key.startsWith('alternate_')))
         ).length : 0)
@@ -314,7 +317,7 @@ export default function Dashboard() {
       }
       setCacheAge(getCacheAge(selectedSport))
 
-      const eventData = prepEvents(result.data || MOCK_EVENTS)
+      const eventData = prepEvents(result.data || withExchangeTakerPricesList(MOCK_EVENTS))
 
       if (result.data) recordOddsSnapshot(result.data, { force: forceRefresh })
       publishBoard(eventData)
@@ -343,7 +346,7 @@ export default function Dashboard() {
     } catch {
       if (loadId !== loadGenRef.current) return
       setError('Failed to fetch data')
-      const fallback = prepEvents(MOCK_EVENTS)
+      const fallback = prepEvents(withExchangeTakerPricesList(MOCK_EVENTS))
       publishBoard(fallback, [])
       setScores([])
       setIsLive(false)
@@ -362,7 +365,7 @@ export default function Dashboard() {
     if (hasCachedData(selectedSport)) {
       loadData(false)
     } else {
-      const fallback = includeAltLines ? MOCK_EVENTS : stripAltMarkets(MOCK_EVENTS)
+      const fallback = withExchangeTakerPricesList(includeAltLines ? MOCK_EVENTS : stripAltMarkets(MOCK_EVENTS))
       scoresRef.current = []
       setScores([])
       publishBoard(fallback, [])
@@ -381,6 +384,7 @@ export default function Dashboard() {
     { id: 'overview', label: 'Overview', icon: Activity },
     { id: 'bonus', label: 'Bonus', icon: Gift },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { id: 'exchanges', label: 'Exchanges', icon: ArrowLeftRight },
     { id: 'props', label: 'Player Props', icon: User },
     { id: 'tracker', label: 'Bet Tracker', icon: History },
     { id: 'simulator', label: 'Bankroll Sim', icon: Dice5 },
@@ -726,6 +730,19 @@ export default function Dashboard() {
               {freshness}
               <EdgeHeatmap events={events} />
               <LineMovement events={events} />
+            </motion.div>
+          )}
+
+          {activeTab === 'exchanges' && (
+            <motion.div
+              key="exchanges"
+              role="tabpanel"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              {freshness}
+              <ExchangeDeltaBoard events={events} scores={scores} />
             </motion.div>
           )}
 

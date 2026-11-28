@@ -86,8 +86,8 @@ export const MOCK_EVENTS: OddsEvent[] = [
         ]
       },
       {
-        key: 'fanatics',
-        title: 'Fanatics',
+        key: 'kalshi',
+        title: 'Kalshi',
         last_update: new Date().toISOString(),
         markets: [
           { key: 'h2h', last_update: new Date().toISOString(), outcomes: [{ name: 'Los Angeles Lakers', price: -112 }, { name: 'Boston Celtics', price: -108 }] },
@@ -95,6 +95,16 @@ export const MOCK_EVENTS: OddsEvent[] = [
           { key: 'totals', last_update: new Date().toISOString(), outcomes: [{ name: 'Over', price: -112, point: 224.5 }, { name: 'Under', price: -108, point: 224.5 }] },
           altSpreads('Los Angeles Lakers', 'Boston Celtics', [[1.5, -115, -105], [3.5, -108, -112], [5.5, -105, -115], [7.5, -108, -112]]),
           altTotals([[220.5, -108, -112], [228.5, -115, -105], [232.5, -122, 102]]),
+        ]
+      },
+      {
+        key: 'polymarket_us',
+        title: 'Polymarket US',
+        last_update: new Date().toISOString(),
+        markets: [
+          { key: 'h2h', last_update: new Date().toISOString(), outcomes: [{ name: 'Los Angeles Lakers', price: -110 }, { name: 'Boston Celtics', price: -110 }] },
+          { key: 'spreads', last_update: new Date().toISOString(), outcomes: [{ name: 'Los Angeles Lakers', price: -110, point: 2.5 }, { name: 'Boston Celtics', price: -110, point: -2.5 }] },
+          { key: 'totals', last_update: new Date().toISOString(), outcomes: [{ name: 'Over', price: -110, point: 224.5 }, { name: 'Under', price: -110, point: 224.5 }] },
         ]
       },
       {

@@ -28,7 +28,7 @@ ChartJS.register(
 const HISTORY_STORAGE_KEY = 'hothand_line_history'
 const MAX_HISTORY_POINTS = 50
 
-interface LineSnapshot {
+export interface LineSnapshot {
   timestamp: number
   odds: { [gameId: string]: { [bookKey: string]: number } }
 }
@@ -43,7 +43,8 @@ const BOOK_COLORS: { [key: string]: string } = {
   betmgm: '#c4a634',
   williamhill_us: '#1d5c2e',
   betrivers: '#0055a5',
-  fanatics: '#22c55e',
+  kalshi: '#22c55e',
+  polymarket_us: '#2e5cff',
   espnbet: '#a855f7',
   ballybet: '#e11d48',
   polymarket: '#2e5cff',
@@ -56,14 +57,15 @@ const BOOK_NAMES: { [key: string]: string } = {
   betmgm: 'BetMGM',
   williamhill_us: 'Caesars',
   betrivers: 'BetRivers',
-  fanatics: 'Fanatics',
+  kalshi: 'Kalshi',
+  polymarket_us: 'Polymarket US',
   espnbet: 'theScore Bet',
   ballybet: 'Bally Bet',
   polymarket: 'Polymarket',
   pinnacle: 'Pinnacle',
 }
 
-function getHistory(): LineSnapshot[] {
+export function getLineHistory(): LineSnapshot[] {
   if (typeof window === 'undefined') return []
   try {
     const stored = localStorage.getItem(HISTORY_STORAGE_KEY)
@@ -94,7 +96,7 @@ export function recordOddsSnapshot(
 ): void {
   if (events.length === 0) return
 
-  const history = getHistory()
+  const history = getLineHistory()
   const lastSnapshot = history[history.length - 1]
   const minGapMs = options?.force ? 0 : 15_000
 
@@ -138,7 +140,7 @@ export default function LineMovement({ events }: LineMovementProps) {
   ])
 
   useEffect(() => {
-    setHistory(getHistory())
+    setHistory(getLineHistory())
     if (events.length > 0 && !selectedGame) {
       setSelectedGame(events[0].id)
     }
