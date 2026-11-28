@@ -22,7 +22,6 @@ import {
   Dice5,
   Target,
   ChevronRight,
-  Sparkles,
 } from 'lucide-react'
 import LineDiscrepancyTable from './LineDiscrepancy'
 import EVCalculator from './EVCalculator'
@@ -33,7 +32,6 @@ import LineMovement, { recordOddsSnapshot } from './LineMovement'
 import PlayerPropAnalyzer from './PlayerPropAnalyzer'
 import BetTracker from './BetTracker'
 import BankrollSimulator from './BankrollSimulator'
-import TrendsCenter from './TrendsCenter'
 import MobileBottomNav from './MobileBottomNav'
 import LiveScoreBadge, { findScoreForGame } from './LiveScore'
 import { OddsEvent, ScoreEvent, LineDiscrepancy, EVBet, ArbitrageOpportunity, PlayerProp, SPORTS, SportKey } from '@/lib/types'
@@ -55,7 +53,7 @@ import Settings from './Settings'
 import AccountAuth from './AccountAuth'
 import { useAuthSession } from './AuthSession'
 
-type Tab = 'ev' | 'discrepancies' | 'arbitrage' | 'overview' | 'bonus' | 'analytics' | 'props' | 'tracker' | 'simulator' | 'trends'
+type Tab = 'ev' | 'discrepancies' | 'arbitrage' | 'overview' | 'bonus' | 'analytics' | 'props' | 'tracker' | 'simulator'
 
 function formatCacheAge(ms: number): string {
   const minutes = Math.floor(ms / 60000)
@@ -386,7 +384,6 @@ export default function Dashboard() {
     { id: 'props', label: 'Player Props', icon: User },
     { id: 'tracker', label: 'Bet Tracker', icon: History },
     { id: 'simulator', label: 'Bankroll Sim', icon: Dice5 },
-    { id: 'trends', label: 'Trends', icon: Sparkles },
   ] as const
   const topEVBets = evBets.slice(0, 3)
   const topDiscrepancies = discrepancies.slice(0, 3)
@@ -774,17 +771,6 @@ export default function Dashboard() {
             </motion.div>
           )}
 
-          {activeTab === 'trends' && (
-            <motion.div
-              key="trends"
-              role="tabpanel"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-            >
-              <TrendsCenter />
-            </motion.div>
-          )}
         </AnimatePresence>
       </main>
 

@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "npx --yes tsx --test lib/admin-settings.test.ts lib/account-admin.test.ts lib/odds-books.test.ts lib/polymarket-us.test.ts lib/odds-utils-alt.test.ts lib/show-live-matchups.test.ts lib/supabase-auth.test.ts lib/trendscenter.test.ts scripts/sync-bet-history.test.mjs"
+    "test": "npx --yes tsx --test lib/admin-settings.test.ts lib/account-admin.test.ts lib/odds-books.test.ts lib/polymarket-us.test.ts lib/odds-utils-alt.test.ts lib/show-live-matchups.test.ts lib/supabase-auth.test.ts scripts/sync-bet-history.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.2",
