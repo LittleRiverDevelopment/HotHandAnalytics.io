@@ -11,6 +11,7 @@ A sports-betting board for finding a better price. One page:
 - **Player Props** — recent NBA game logs for the players in `scripts/fetch_gamelogs.py`. The line starts at the recent average. It is not a sportsbook price, and it does not call the odds API
 - **Bet Tracker** — the saved bet history
 - **Bankroll Sim** — a bankroll projection from that history
+- **Trends** — today's TrendsCenter trends for one sport. Needs `NEXT_PUBLIC_TRENDSCENTER_KEY`
 
 Odds come from [The Odds API](https://the-odds-api.com/) in the browser. The first visit shows labeled demo data. Refresh pulls live odds and may use API credits. Results stay in this browser until you refresh again.
 
@@ -25,6 +26,7 @@ Polymarket on the boards is Polymarket US. The price includes the small-account 
 | `NEXT_PUBLIC_ADMIN_PASSWORD` | Older shared password. The admin screen now opens for an admin account and does not ask for this password. |
 | `NEXT_PUBLIC_SUPABASE_URL` | Public Supabase project URL for email/password accounts. |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public anon or publishable key. Never the service-role key or database password. |
+| `NEXT_PUBLIC_TRENDSCENTER_KEY` | Trends tab only. A `tc_test_` sandbox key is the one to try. Compiled into the page. |
 
 Same pattern as HotHand: `NEXT_PUBLIC_*` values are compiled into the static site. Do not commit real keys. Put them in `.env` locally (see `.env.example`) or in GitHub Actions secrets for the Pages deploy.
 

@@ -43,6 +43,8 @@ jobs:
           # Public login settings. Empty values leave the deployed site signed out.
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          # Optional. Empty leaves the Trends tab asking for a key. The value is compiled into the site.
+          NEXT_PUBLIC_TRENDSCENTER_KEY: ${{ secrets.NEXT_PUBLIC_TRENDSCENTER_KEY }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
