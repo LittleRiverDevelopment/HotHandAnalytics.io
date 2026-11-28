@@ -17,6 +17,10 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # The TrendsCenter key is a github-pages environment secret. Only jobs
+    # that name this environment can read it. main is the allowed branch.
+    environment:
+      name: github-pages
     steps:
       - name: Checkout
         uses: actions/checkout@v4
