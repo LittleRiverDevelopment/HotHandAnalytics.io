@@ -7,7 +7,7 @@ export const SPORTSBOOK_HOME_URLS: Record<string, string> = {
   betmgm: 'https://sports.betmgm.com/',
   williamhill_us: 'https://www.caesars.com/sportsbook-and-casino/',
   betrivers: 'https://www.betrivers.com/',
-  fanatics: 'https://sportsbook.fanatics.com/',
+  kalshi: 'https://kalshi.com/',
   espnbet: 'https://www.thescore.bet/',
   ballybet: 'https://www.ballybet.com/',
   polymarket_us: 'https://polymarket.us/',
@@ -35,7 +35,7 @@ export function resolveSportsbookKey(bookTitle: string): string | null {
   if (t.includes('betmgm')) return 'betmgm'
   if (t.includes('caesars') || t.includes('williamhill')) return 'williamhill_us'
   if (t.includes('betrivers') || t.includes('rivers')) return 'betrivers'
-  if (t.includes('fanatics')) return 'fanatics'
+  if (t.includes('kalshi')) return 'kalshi'
   if (t.includes('espn') || t.includes('thescore') || t.includes('the score')) return 'espnbet'
   if (t.includes('bally')) return 'ballybet'
   if (t.includes('polymarket')) return 'polymarket_us'
